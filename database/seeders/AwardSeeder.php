@@ -34,14 +34,14 @@ class AwardSeeder extends Seeder
             ],
 
             [
-                "name" => "Wolf Prize in Medicine",
-                "category" => "Medicine",
-                "image_url" => "https://example.com/wolf.jpg",
-                "description" => "The Wolf Prize in Medicine honors scientists whose work significantly impacts global medicine and life sciences. It is one of the highest international honors and often predicts future Nobel laureates. The award celebrates contributions that advance disease understanding, therapeutic innovation, and molecular biology.",
-                "notable_winners" => "Shinya Yamanaka, Marc Feldmann & Ravinder Maini, Bert Vogelstein",
-                "country" => "Israel",
-                "year_started" => 1978,
-                "website" => "https://wolf-prize.org"
+                "name" => "Keio Medical Science Prize",
+                "category" => "Biomedical / Translational Research",
+                "image_url" => "https://example.com/keio.jpg",
+                "description" => "The Keio Medical Science Prize recognizes outstanding contributions in the field of biomedical and translational research. It focuses on breakthroughs that significantly advance the understanding of disease mechanisms and lead to innovative therapeutic approaches. Many laureates have influenced global drug development and clinical medicine.",
+                "notable_winners" => "Shinya Yamanaka, Tasuku Honjo, Yoshinori Ohsumi",
+                "country" => "Japan",
+                "year_started" => 1996,
+                "website" => "https://www.ms-fund.keio.ac.jp/en/prize/"
             ],
 
             [
@@ -118,7 +118,7 @@ class AwardSeeder extends Seeder
                 "notable_winners" => "James P. Allison, Emmanuelle Charpentier, Dan Barouch",
                 "country" => "Taiwan",
                 "year_started" => 2012,
-                "website" => "https://tang-prize.org"
+                "website" => "https://www.tang-prize.org"
             ],
         ];
 
