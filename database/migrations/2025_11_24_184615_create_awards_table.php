@@ -12,7 +12,7 @@ return new class extends Migration
             $table->id();
             $table->string('name');
             $table->string('category')->nullable();
-            $table->string('image_url')->nullable();
+            $table->json('images')->nullable();
             $table->text('description');
             $table->text('notable_winners')->nullable();
             $table->string('country')->nullable();

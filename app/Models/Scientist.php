@@ -11,9 +11,13 @@ class Scientist extends Model
         'nationality',
         'birth_year',
         'death_year',
-        'image_url',
+        'images',
         'bio',
         'impact',
         'field',
+    ];
+
+    protected $casts = [
+        'images' => 'array',
     ];
 }

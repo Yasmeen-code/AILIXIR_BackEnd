@@ -13,7 +13,7 @@ class AwardController extends Controller
             return [
                 'id' => $award->id,
                 'name' => $award->name,
-                'image_url' => $award->image_url,
+                'images' => $award->images,
                 'short_description' => substr($award->description, 0, 100) . '...',
             ];
         });
@@ -29,6 +29,16 @@ class AwardController extends Controller
             return response()->json(['message' => 'Award not found'], 404);
         }
 
-        return response()->json($award);
+        return response()->json([
+            'id' => $award->id,
+            'name' => $award->name,
+            'category' => $award->category,
+            'images' => $award->images,
+            'description' => $award->description,
+            'notable_winners' => $award->notable_winners,
+            'country' => $award->country,
+            'year_started' => $award->year_started,
+            'website' => $award->website,
+        ]);
     }
 }

@@ -9,11 +9,15 @@ class Award extends Model
     protected $fillable = [
         'name',
         'category',
-        'image_url',
+        'images',
         'description',
         'notable_winners',
         'country',
         'year_started',
         'website'
+    ];
+
+    protected $casts = [
+        'images' => 'array',
     ];
 }

@@ -8,7 +8,7 @@ class ScientistController extends Controller
 {
     public function index()
     {
-        return Scientist::select('id', 'name', 'image_url', 'bio')
+        return Scientist::select('id', 'name', 'images', 'bio')
             ->get()
             ->map(function ($s) {
                 $s->short_bio = substr($s->bio, 0, 150) . '...';
