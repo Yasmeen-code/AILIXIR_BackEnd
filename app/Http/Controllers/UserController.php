@@ -11,81 +11,122 @@ use Illuminate\Validation\Rule;
 
 class UserController extends Controller
 {
+    // ========== Helper Response Functions ==========
+    private function success($message, $data = [], $code = 200)
+    {
+        return response()->json([
+            'success' => true,
+            'message' => $message,
+            'data' => $data
+        ], $code);
+    }
+
+    private function error($message, $code = 400)
+    {
+        return response()->json([
+            'success' => false,
+            'message' => $message
+        ], $code);
+    }
+
+    // ========== Helper Pagination Response ==========
+    private function paginationResponse($message, $results)
+    {
+        return $this->success($message, [
+            'results' => $results->items(),
+            'pagination' => [
+                'currentPage'   => $results->currentPage(),
+                'totalPages'    => $results->lastPage(),
+                'totalResults'  => $results->total(),
+                'hasNextPage'   => $results->hasMorePages(),
+                'hasPrevPage'   => $results->currentPage() > 1,
+            ]
+        ]);
+    }
+
     // ================== REGISTER ==================
     public function register(Request $request)
     {
-        $request->validate([
-            'name' => 'required|string|max:255',
-            'email' => 'required|email|unique:users,email',
-            'password' => 'required|string|min:6|confirmed',
-        ]);
+        try {
+            $validated = $request->validate([
+                'name' => 'required|string|max:255',
+                'email' => 'required|email|unique:users,email',
+                'password' => 'required|string|min:6|confirmed',
+            ]);
 
-        $user = User::create([
-            'name' => $request->name,
-            'email' => $request->email,
-            'password' => Hash::make($request->password),
-            'role' => 'normal',
-            'is_verified' => false, // new
-        ]);
+            $user = User::create([
+                'name' => $validated['name'],
+                'email' => $validated['email'],
+                'password' => Hash::make($validated['password']),
+                'role' => 'normal',
+                'is_verified' => false,
+            ]);
 
-        // generate OTP
-        $otp = rand(100000, 999999);
-        $user->email_verification_otp = $otp;
-        $user->save();
+            // OTP
+            $otp = random_int(100000, 999999);
+            $user->email_verification_otp = $otp;
+            $user->save();
 
-        // send OTP email
-        Mail::raw("Your verification OTP is: $otp", function ($message) use ($user) {
-            $message->to($user->email)->subject('Email Verification OTP');
-        });
+            Mail::raw("Your verification OTP is: $otp", function ($message) use ($user) {
+                $message->to($user->email)->subject('Email Verification OTP');
+            });
 
-        return response()->json([
-            'message' => 'Registered successfully. Please verify your email with the OTP sent.',
-        ]);
+            return $this->success(
+                'Registered successfully. Please verify your email.',
+                ['email' => $user->email]
+            );
+        } catch (\Exception $e) {
+            return $this->error('Registration failed: ' . $e->getMessage(), 500);
+        }
     }
 
     // ================== VERIFY EMAIL ==================
     public function verifyEmail(Request $request)
     {
-        $request->validate([
+        $validated = $request->validate([
             'email' => 'required|email',
             'otp' => 'required|digits:6',
         ]);
 
-        $user = User::where('email', $request->email)->first();
-        if (!$user) return response()->json(['message' => 'User not found'], 404);
+        $user = User::where('email', $validated['email'])->first();
+        if (!$user) return $this->error('User not found', 404);
 
-        if ($user->email_verification_otp == $request->otp) {
-            $user->is_verified = true;
-            $user->email_verification_otp = null;
-            $user->save();
-            return response()->json(['message' => 'Email verified successfully']);
-        }
+        if ($user->is_verified)
+            return $this->error('Email already verified');
 
-        return response()->json(['message' => 'Invalid OTP'], 400);
+        if ($user->email_verification_otp != $validated['otp'])
+            return $this->error('Invalid OTP');
+
+        $user->is_verified = true;
+        $user->email_verification_otp = null;
+        $user->email_verified_at = now(); // تحديث العمود بالوقت الحالي
+        $user->save();
+
+        return $this->success('Email verified successfully');
     }
 
     // ================== LOGIN ==================
     public function login(Request $request)
     {
-        $request->validate([
+        $validated = $request->validate([
             'email' => 'required|email',
             'password' => 'required|string',
         ]);
 
-        $user = User::where('email', $request->email)->first();
+        $user = User::where('email', $validated['email'])->first();
 
-        if (!$user || !Hash::check($request->password, $user->password)) {
-            return response()->json(['message' => 'Invalid credentials'], 401);
-        }
+        if (!$user)
+            return $this->error('Email not found', 404);
 
-        if (!$user->is_verified) {
-            return response()->json(['message' => 'Please verify your email first'], 403);
-        }
+        if (!Hash::check($validated['password'], $user->password))
+            return $this->error('Incorrect password', 401);
+
+        if (!$user->is_verified)
+            return $this->error('Please verify your email first', 403);
 
         $token = $user->createToken('auth_token')->plainTextToken;
 
-        return response()->json([
-            'message' => 'Login successful',
+        return $this->success('Login successful', [
             'token' => $token,
             'user' => $user
         ]);
@@ -94,15 +135,16 @@ class UserController extends Controller
     // ================== PROFILE ==================
     public function profile(Request $request)
     {
-        $user = $request->user()->load('researcher');
-        return response()->json($user);
+        return $this->success('Profile retrieved', [
+            'user' => $request->user()->load('researcher')
+        ]);
     }
 
     // ================== LOGOUT ==================
     public function logout(Request $request)
     {
         $request->user()->currentAccessToken()->delete();
-        return response()->json(['message' => 'Logged out successfully']);
+        return $this->success('Logged out successfully');
     }
 
     // ================== UPDATE PROFILE ==================
@@ -110,7 +152,7 @@ class UserController extends Controller
     {
         $user = $request->user();
 
-        $request->validate([
+        $validated = $request->validate([
             'name' => 'sometimes|string|max:255',
             'email' => ['sometimes', 'email', Rule::unique('users')->ignore($user->id)],
             'password' => 'sometimes|string|min:6|confirmed',
@@ -121,49 +163,50 @@ class UserController extends Controller
             'photo' => 'sometimes|string|max:255',
         ]);
 
-        if ($request->has('name')) $user->name = $request->name;
-        if ($request->has('email')) $user->email = $request->email;
-        if ($request->has('password')) $user->password = Hash::make($request->password);
+        try {
+            // Update user fields
+            $user->fill($validated);
 
-        if ($user->role === 'normal') {
-            $user->role = 'researcher';
-            $user->save();
-
-            $researcher = Researcher::create([
-                'user_id' => $user->id,
-                'specialization' => $request->specialization ?? null,
-                'university' => $request->university ?? null,
-                'years_of_experience' => $request->years_of_experience ?? null,
-                'bio' => $request->bio ?? null,
-                'photo' => $request->photo ?? null,
-            ]);
-        } else {
-            $user->save();
-            if ($user->researcher) {
-                $user->researcher->update([
-                    'specialization' => $request->specialization ?? $user->researcher->specialization,
-                    'university' => $request->university ?? $user->researcher->university,
-                    'years_of_experience' => $request->years_of_experience ?? $user->researcher->years_of_experience,
-                    'bio' => $request->bio ?? $user->researcher->bio,
-                    'photo' => $request->photo ?? $user->researcher->photo,
-                ]);
+            if (isset($validated['password'])) {
+                $user->password = Hash::make($validated['password']);
             }
-        }
 
-        return response()->json([
-            'message' => 'Profile updated successfully',
-            'user' => $user->load('researcher')
-        ]);
+            // Make user researcher if needed
+            if ($user->role === 'normal' && ($request->specialization || $request->university)) {
+                $user->role = 'researcher';
+                $user->save();
+
+                Researcher::create([
+                    'user_id' => $user->id,
+                    'specialization' => $request->specialization,
+                    'university' => $request->university,
+                    'years_of_experience' => $request->years_of_experience,
+                    'bio' => $request->bio,
+                    'photo' => $request->photo,
+                ]);
+            } else {
+                $user->save();
+
+                if ($user->researcher) {
+                    $user->researcher->update($validated);
+                }
+            }
+
+            return $this->success('Profile updated', $user->load('researcher'));
+        } catch (\Exception $e) {
+            return $this->error('Error updating profile: ' . $e->getMessage(), 500);
+        }
     }
 
     // ================== FORGOT PASSWORD - SEND OTP ==================
     public function sendForgotPasswordOtp(Request $request)
     {
-        $request->validate(['email' => 'required|email']);
-        $user = User::where('email', $request->email)->first();
-        if (!$user) return response()->json(['message' => 'User not found'], 404);
+        $validated = $request->validate(['email' => 'required|email']);
 
-        $otp = rand(100000, 999999);
+        $user = User::where('email', $validated['email'])->first();
+        if (!$user) return $this->error('User not found', 404);
+
+        $otp = random_int(100000, 999999);
         $user->password_reset_otp = $otp;
         $user->save();
 
@@ -171,28 +214,28 @@ class UserController extends Controller
             $message->to($user->email)->subject('Password Reset OTP');
         });
 
-        return response()->json(['message' => 'OTP sent to your email']);
+        return $this->success('OTP sent', ['email' => $user->email]);
     }
 
     // ================== RESET PASSWORD ==================
     public function resetPassword(Request $request)
     {
-        $request->validate([
+        $validated = $request->validate([
             'email' => 'required|email',
             'otp' => 'required|digits:6',
             'password' => 'required|string|min:6|confirmed',
         ]);
 
-        $user = User::where('email', $request->email)->first();
-        if (!$user) return response()->json(['message' => 'User not found'], 404);
+        $user = User::where('email', $validated['email'])->first();
+        if (!$user) return $this->error('User not found', 404);
 
-        if ($user->password_reset_otp != $request->otp)
-            return response()->json(['message' => 'Invalid OTP'], 400);
+        if ($user->password_reset_otp != $validated['otp'])
+            return $this->error('Invalid OTP');
 
-        $user->password = Hash::make($request->password);
+        $user->password = Hash::make($validated['password']);
         $user->password_reset_otp = null;
         $user->save();
 
-        return response()->json(['message' => 'Password reset successfully']);
+        return $this->success('Password reset successfully');
     }
 }
