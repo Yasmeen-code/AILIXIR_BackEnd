@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Mail;
 use App\Models\User;
 use App\Models\Researcher;
 use Illuminate\Validation\Rule;
+use Cloudinary\Cloudinary;
 
 class UserController extends Controller
 {
@@ -160,18 +161,41 @@ class UserController extends Controller
             'university' => 'sometimes|string|max:255',
             'years_of_experience' => 'sometimes|integer|min:0',
             'bio' => 'sometimes|string',
-            'photo' => 'sometimes|string|max:255',
+            'photo' => 'sometimes|file|image|mimes:jpeg,png,jpg|max:2048',
         ]);
 
         try {
-            // Update user fields
             $user->fill($validated);
 
             if (isset($validated['password'])) {
                 $user->password = Hash::make($validated['password']);
             }
 
-            // Make user researcher if needed
+            if ($request->hasFile('photo')) {
+                try {
+                    $cloudinary = new Cloudinary([
+                        'cloud' => [
+                            'cloud_name' => env('CLOUDINARY_CLOUD_NAME'),
+                            'api_key'    => env('CLOUDINARY_API_KEY'),
+                            'api_secret' => env('CLOUDINARY_API_SECRET'),
+                        ],
+                        'url' => ['secure' => true]
+                    ]);
+
+                    $result = $cloudinary->uploadApi()->upload(
+                        $request->file('photo')->getRealPath(),
+                        ['resource_type' => 'auto']
+                    );
+
+                    $validated['photo'] = $result['secure_url'];
+                } catch (\Exception $e) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Error uploading photo: ' . $e->getMessage()
+                    ], 500);
+                }
+            }
+
             if ($user->role === 'normal' && ($request->specialization || $request->university)) {
                 $user->role = 'researcher';
                 $user->save();
@@ -182,7 +206,7 @@ class UserController extends Controller
                     'university' => $request->university,
                     'years_of_experience' => $request->years_of_experience,
                     'bio' => $request->bio,
-                    'photo' => $request->photo,
+                    'photo' => $validated['photo'] ?? null,
                 ]);
             } else {
                 $user->save();
@@ -192,12 +216,18 @@ class UserController extends Controller
                 }
             }
 
-            return $this->success('Profile updated', $user->load('researcher'));
+            return response()->json([
+                'success' => true,
+                'message' => 'Profile updated',
+                'data' => $user->load('researcher'),
+            ]);
         } catch (\Exception $e) {
-            return $this->error('Error updating profile: ' . $e->getMessage(), 500);
+            return response()->json([
+                'success' => false,
+                'message' => 'Error updating profile: ' . $e->getMessage()
+            ], 500);
         }
     }
-
     // ================== FORGOT PASSWORD - SEND OTP ==================
     public function sendForgotPasswordOtp(Request $request)
     {
