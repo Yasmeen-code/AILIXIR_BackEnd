@@ -172,28 +172,29 @@ class UserController extends Controller
             }
 
             if ($request->hasFile('photo')) {
-                try {
-                    $cloudinary = new Cloudinary([
-                        'cloud' => [
-                            'cloud_name' => env('CLOUDINARY_CLOUD_NAME'),
-                            'api_key'    => env('CLOUDINARY_API_KEY'),
-                            'api_secret' => env('CLOUDINARY_API_SECRET'),
-                        ],
-                        'url' => ['secure' => true]
-                    ]);
+                $file = $request->file('photo');
+                $originalName = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
+                $extension = $file->getClientOriginalExtension();
 
-                    $result = $cloudinary->uploadApi()->upload(
-                        $request->file('photo')->getRealPath(),
-                        ['resource_type' => 'auto']
-                    );
+                $cloudinary = new Cloudinary([
+                    'cloud' => [
+                        'cloud_name' => env('CLOUDINARY_CLOUD_NAME'),
+                        'api_key'    => env('CLOUDINARY_API_KEY'),
+                        'api_secret' => env('CLOUDINARY_API_SECRET'),
+                    ],
+                    'url' => ['secure' => true]
+                ]);
 
-                    $validated['photo'] = $result['secure_url'];
-                } catch (\Exception $e) {
-                    return response()->json([
-                        'success' => false,
-                        'message' => 'Error uploading photo: ' . $e->getMessage()
-                    ], 500);
-                }
+                $result = $cloudinary->uploadApi()->upload(
+                    $file->getRealPath(),
+                    [
+                        'resource_type' => 'auto',
+                        'public_id' => 'users/' . $originalName,
+                        'overwrite' => true,
+                    ]
+                );
+
+                $validated['photo'] = $result['secure_url'];
             }
 
             if ($user->role === 'normal' && ($request->specialization || $request->university)) {
