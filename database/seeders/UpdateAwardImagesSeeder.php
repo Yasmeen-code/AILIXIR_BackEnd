@@ -10,7 +10,6 @@ class UpdateAwardImagesSeeder extends Seeder
 {
     public function run(): void
     {
-        // أسماء الملفات الموجودة فعليًا في public/imgs/awards
         $awardsImages = [
             'Nobel Prize in Physiology or Medicine' => ['nobel.jpg'],
             'Lasker Award' => ['lasker.jpg', 'lasker_2.jpg'],
@@ -49,9 +48,9 @@ class UpdateAwardImagesSeeder extends Seeder
                 $result = $cloudinary->uploadApi()->upload(
                     $filePath,
                     [
-                        'resource_type' => 'auto', // يسمح بأي امتداد
-                        'public_id' => 'awards/' . pathinfo($image, PATHINFO_FILENAME), // يرفع الملف داخل مجلد awards
-                        'overwrite' => true // لو نفس الاسم موجود، يتم استبداله
+                        'resource_type' => 'auto',
+                        'public_id' => 'awards/' . pathinfo($image, PATHINFO_FILENAME),
+                        'overwrite' => true
                     ]
                 );
 
