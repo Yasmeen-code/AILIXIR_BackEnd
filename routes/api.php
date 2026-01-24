@@ -8,10 +8,8 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\FileController;
 use App\Http\Controllers\ResearcherController;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\NewsController;
 use Cloudinary\Cloudinary;
-
-
-
 //awards
 Route::get('/awards', [AwardController::class, 'index']);
 Route::get('/awards/{id}', [AwardController::class, 'show']);
@@ -34,6 +32,30 @@ Route::prefix('user')->group(function () {
         Route::post('logout', [UserController::class, 'logout']);
     });
 });
+
+//News
+Route::get('/news', [NewsController::class, 'list']);
+Route::get('/news/clear', [NewsController::class, 'clear']);
+Route::get('/news/refresh', [NewsController::class, 'refresh']);
+Route::get('/news/categories', [NewsController::class, 'getCategories']);
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 //cloudinary file upload test route
 Route::post('/upload-file', function (Request $request) {
