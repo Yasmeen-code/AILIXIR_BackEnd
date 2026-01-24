@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class Scientist extends Model
 {
@@ -20,4 +21,11 @@ class Scientist extends Model
     protected $casts = [
         'images' => 'array',
     ];
+
+    public function awards(): BelongsToMany
+    {
+        return $this->belongsToMany(Award::class)
+            ->withPivot('year_won', 'contribution')
+            ->withTimestamps();
+    }
 }

@@ -10,14 +10,15 @@ use App\Http\Controllers\ResearcherController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\NewsController;
 use Cloudinary\Cloudinary;
-//awards
+// ==================== AWARDS ====================
 Route::get('/awards', [AwardController::class, 'index']);
 Route::get('/awards/{id}', [AwardController::class, 'show']);
+Route::get('/awards/{id}/scientists', [AwardController::class, 'getScientistsByAward']);
 
-//scientists
+// ==================== SCIENTISTS ====================
 Route::get('/scientists', [ScientistController::class, 'index']);
 Route::get('/scientists/{id}', [ScientistController::class, 'show']);
-
+Route::get('/scientists/{id}/awards', [ScientistController::class, 'getAwardsByScientist']);
 //user
 Route::prefix('user')->group(function () {
     Route::post('register', [UserController::class, 'register']);
