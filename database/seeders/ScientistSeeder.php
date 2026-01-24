@@ -4,13 +4,17 @@ namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
 use App\Models\Scientist;
+use Cloudinary\Cloudinary;
 
 class ScientistSeeder extends Seeder
 {
-    public function run()
+    public function run(): void
     {
-        $scientists = [
+        // حذف الداتا القديمة
+        Scientist::truncate();
+        $this->command->info('Deleted all existing scientists data.');
 
+        $scientists = [
             [
                 'name' => 'Ibn Sina',
                 'nationality' => 'Persian',
@@ -20,27 +24,24 @@ class ScientistSeeder extends Seeder
                 'bio' => 'Ibn Sina, known as Avicenna, was a Persian polymath who wrote the famous medical encyclopedia "The Canon of Medicine", which was used in Europe for 600 years.',
                 'impact' => 'Laid the foundation for clinical pharmacology and herbal-based treatments, influencing modern drug discovery concepts.',
             ],
-
             [
                 'name' => 'Alexander Fleming',
                 'nationality' => 'British',
                 'birth_year' => 1881,
                 'death_year' => 1955,
                 'field' => 'Microbiology',
-                'bio' => 'Fleming was a biologist and pharmacologist best known for discovering penicillin in 1928, the world’s first antibiotic.',
+                'bio' => 'Fleming was a biologist and pharmacologist best known for discovering penicillin in 1928, the world\'s first antibiotic.',
                 'impact' => 'Revolutionized medicine by introducing antibiotics, saving millions of lives and shaping drug development against bacterial infections.',
             ],
-
             [
                 'name' => 'Paul Ehrlich',
                 'nationality' => 'German',
                 'birth_year' => 1854,
                 'death_year' => 1915,
                 'field' => 'Immunology, Chemotherapy',
-                'bio' => 'Paul Ehrlich was a physician and scientist who developed the first targeted drug therapy and introduced the concept of “magic bullets”.',
+                'bio' => 'Paul Ehrlich was a physician and scientist who developed the first targeted drug therapy and introduced the concept of "magic bullets".',
                 'impact' => 'Founder of chemotherapy and target-based drug discovery approaches widely used today.',
             ],
-
             [
                 'name' => 'Gertrude Elion',
                 'nationality' => 'American',
@@ -50,7 +51,6 @@ class ScientistSeeder extends Seeder
                 'bio' => 'Nobel Prize–winning scientist who developed revolutionary drugs for leukemia, AIDS, and prevention of organ transplant rejection.',
                 'impact' => 'Pioneer of rational drug design methods and biochemical targeting.',
             ],
-
             [
                 'name' => 'Tu Youyou',
                 'nationality' => 'Chinese',
@@ -60,7 +60,6 @@ class ScientistSeeder extends Seeder
                 'bio' => 'Chinese scientist who discovered artemisinin, a breakthrough treatment for malaria, saving millions of lives.',
                 'impact' => 'Opened a new era of natural-product-based drug discovery and modernized traditional medicine approaches.',
             ],
-
             [
                 'name' => 'Louis Pasteur',
                 'nationality' => 'French',
@@ -88,7 +87,6 @@ class ScientistSeeder extends Seeder
                 'bio' => 'Jonas Salk was an American medical researcher who developed the first successful polio vaccine.',
                 'impact' => 'His work laid the foundation for modern vaccine development and antiviral drug strategies.',
             ],
-
             [
                 'name' => 'Selman Waksman',
                 'nationality' => 'American',
@@ -125,14 +123,22 @@ class ScientistSeeder extends Seeder
                 'bio' => 'Linus Pauling was a chemist who contributed to molecular bonding theories and structural biology, influencing drug design.',
                 'impact' => 'Helped establish molecular medicine and understanding protein structures critical for drug development.',
             ],
-
         ];
+
+        $cloudinary = new Cloudinary([
+            'cloud' => [
+                'cloud_name' => env('CLOUDINARY_CLOUD_NAME'),
+                'api_key'    => env('CLOUDINARY_API_KEY'),
+                'api_secret' => env('CLOUDINARY_API_SECRET'),
+            ],
+            'url' => ['secure' => true]
+        ]);
 
         foreach ($scientists as $scientist) {
             $baseName = strtolower($scientist['name']);
             $baseName = preg_replace('/[^a-z0-9]+/', '_', $baseName);
 
-            $imagePaths = [];
+            $uploadedUrls = [];
             $index = 1;
 
             while (true) {
@@ -146,13 +152,36 @@ class ScientistSeeder extends Seeder
                     break;
                 }
 
-                $imagePaths[] = "imgs/scientists/{$fileName}";
+                try {
+                    $result = $cloudinary->uploadApi()->upload(
+                        $fullPath,
+                        [
+                            'resource_type' => 'auto',
+                            'public_id' => 'scientists/' . pathinfo($fileName, PATHINFO_FILENAME),
+                            'overwrite' => true
+                        ]
+                    );
+
+                    $uploadedUrls[] = $result['secure_url'];
+                    $this->command->info("Uploaded: {$fileName}");
+                } catch (\Exception $e) {
+                    $this->command->error("Failed to upload {$fileName}: " . $e->getMessage());
+                }
+
                 $index++;
             }
 
-            $scientist['images'] = $imagePaths;
+            if (!empty($uploadedUrls)) {
+                $scientist['images'] = $uploadedUrls;
+                $this->command->info("Uploaded " . count($uploadedUrls) . " images for {$scientist['name']}");
+            } else {
+                $scientist['images'] = [];
+                $this->command->warn("No images found for {$scientist['name']}");
+            }
 
             Scientist::create($scientist);
         }
+
+        $this->command->info('All scientists seeded successfully with Cloudinary images!');
     }
 }
