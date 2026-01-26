@@ -100,7 +100,7 @@ class UserController extends Controller
 
         $user->is_verified = true;
         $user->email_verification_otp = null;
-        $user->email_verified_at = now(); // تحديث العمود بالوقت الحالي
+        $user->email_verified_at = now();
         $user->save();
 
         return $this->success('Email verified successfully');

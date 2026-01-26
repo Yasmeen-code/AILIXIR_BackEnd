@@ -34,18 +34,20 @@ Route::prefix('user')->group(function () {
     });
 });
 
-//News
-Route::get('/news', [NewsController::class, 'list']);
-Route::get('/news/clear', [NewsController::class, 'clear']);
+// ====================NEWS====================
+// Public routes
+Route::get('/news', [NewsController::class, 'index']);
 Route::get('/news/refresh', [NewsController::class, 'refresh']);
+Route::get('/news/clear', [NewsController::class, 'clear']);
 Route::get('/news/categories', [NewsController::class, 'getCategories']);
+Route::post('/news/{articleId}/share', [NewsController::class, 'shareArticle']);
 
-
-
-
-
-
-
+// Protected routes
+Route::middleware('auth:sanctum')->group(function () {
+    Route::post('/news/{articleId}/save', [NewsController::class, 'saveArticle']);
+    Route::get('/news/saved', [NewsController::class, 'getSavedArticles']);
+    Route::delete('/news/saved/{savedArticleId}', [NewsController::class, 'unsaveArticle']);
+});
 
 
 
