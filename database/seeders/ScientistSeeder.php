@@ -26,7 +26,7 @@ class ScientistSeeder extends Seeder
                     'bio' => 'Ibn Sina, known as Avicenna, was a Persian polymath who wrote the famous medical encyclopedia "The Canon of Medicine", which was used in Europe for 600 years.',
                     'impact' => 'Laid the foundation for clinical pharmacology and herbal-based treatments, influencing modern drug discovery concepts.',
                 ],
-                'awards' => [] // مافيش جوايز مسجلة تاريخياً
+                'awards' => []
             ],
             [
                 'info' => [
@@ -95,7 +95,7 @@ class ScientistSeeder extends Seeder
                     'bio' => 'Founder of modern microbiology and creator of vaccines for rabies and anthrax.',
                     'impact' => 'Established immunology principles essential for vaccine development and infectious disease treatment.',
                 ],
-                'awards' => [] // مافيش Nobel Prize لكن له إنجازات كبيرة
+                'awards' => []
             ],
             [
                 'info' => [

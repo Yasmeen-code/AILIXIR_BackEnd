@@ -9,6 +9,7 @@ use App\Models\User;
 use App\Models\Researcher;
 use Illuminate\Validation\Rule;
 use Cloudinary\Cloudinary;
+use Illuminate\Support\Arr;
 
 class UserController extends Controller
 {
@@ -148,7 +149,6 @@ class UserController extends Controller
         return $this->success('Logged out successfully');
     }
 
-    // ================== UPDATE PROFILE ==================
     public function updateProfile(Request $request)
     {
         $user = $request->user();
@@ -165,16 +165,17 @@ class UserController extends Controller
         ]);
 
         try {
-            $user->fill($validated);
+            $photoUrl = null;
 
-            if (isset($validated['password'])) {
-                $user->password = Hash::make($validated['password']);
-            }
-
+            // 1. أولاً: حملي الصورة لو موجودة
             if ($request->hasFile('photo')) {
-                $file = $request->file('photo');
-                $originalName = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
-                $extension = $file->getClientOriginalExtension();
+                // ⚠️ تأكدي إن الـ env vars موجودة في Railway!
+                if (!env('CLOUDINARY_API_SECRET')) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Cloudinary API Secret missing in Railway'
+                    ], 500);
+                }
 
                 $cloudinary = new Cloudinary([
                     'cloud' => [
@@ -185,19 +186,34 @@ class UserController extends Controller
                     'url' => ['secure' => true]
                 ]);
 
+                $file = $request->file('photo');
                 $result = $cloudinary->uploadApi()->upload(
                     $file->getRealPath(),
                     [
                         'resource_type' => 'auto',
-                        'public_id' => 'users/' . $originalName,
+                        'public_id' => 'users/' . $user->id . '_' . time(), // استخدمي ID المستخدم عشان ميتكررش
                         'overwrite' => true,
                     ]
                 );
-
-                $validated['photo'] = $result['secure_url'];
+                $photoUrl = $result['secure_url'];
             }
 
-            if ($user->role === 'normal' && ($request->specialization || $request->university)) {
+            // 2. جهزي البيانات (شيلي الصورة القديمة من validated)
+            $userData = Arr::except($validated, ['photo', 'password', 'specialization', 'university', 'years_of_experience', 'bio']);
+
+            if (isset($validated['password'])) {
+                $userData['password'] = Hash::make($validated['password']);
+            }
+
+            if ($photoUrl) {
+                $userData['photo'] = $photoUrl; // حطي الـ URL الجديد
+            }
+
+            // 3. حدثي الـ User
+            $user->fill($userData);
+
+            // 4. منطق الـ Researcher
+            if ($user->role === 'normal' && ($request->filled('specialization') || $request->filled('university'))) {
                 $user->role = 'researcher';
                 $user->save();
 
@@ -205,27 +221,39 @@ class UserController extends Controller
                     'user_id' => $user->id,
                     'specialization' => $request->specialization,
                     'university' => $request->university,
-                    'years_of_experience' => $request->years_of_experience,
+                    'years_of_experience' => $request->years_of_experience ?? 0,
                     'bio' => $request->bio,
-                    'photo' => $validated['photo'] ?? null,
+                    'photo' => $photoUrl,
                 ]);
             } else {
                 $user->save();
 
+                // حدثي Researcher لو موجود
                 if ($user->researcher) {
-                    $user->researcher->update($validated);
+                    $researcherData = [
+                        'specialization' => $request->specialization ?? $user->researcher->specialization,
+                        'university' => $request->university ?? $user->researcher->university,
+                        'years_of_experience' => $request->years_of_experience ?? $user->researcher->years_of_experience,
+                        'bio' => $request->bio ?? $user->researcher->bio,
+                    ];
+
+                    if ($photoUrl) {
+                        $researcherData['photo'] = $photoUrl;
+                    }
+
+                    $user->researcher->update($researcherData);
                 }
             }
 
             return response()->json([
                 'success' => true,
                 'message' => 'Profile updated',
-                'data' => $user->load('researcher'),
+                'data' => $user->fresh()->load('researcher'),
             ]);
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Error updating profile: ' . $e->getMessage()
+                'message' => 'Error: ' . $e->getMessage()
             ], 500);
         }
     }
