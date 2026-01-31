@@ -5,7 +5,9 @@ use Illuminate\Http\Request;
 use Cloudinary\Cloudinary;
 use App\Http\Controllers\NewsController;
 
-
+Route::get('/', function () {
+    return view('welcome');
+});
 
 Route::get('/upload-test', function () {
     return view('upload-test');
