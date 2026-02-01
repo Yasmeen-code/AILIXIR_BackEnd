@@ -27,7 +27,14 @@ class NewsController extends BaseController
 
             return $this->successResponse('Articles retrieved successfully', [
                 'results' => $result['articles']->map->toArray(),
-                'pagination' => $result['meta'],
+                'pagination' => [
+                    'currentPage' => $result['meta']['current_page'] ?? $page,
+                    'totalPages' => $result['meta']['last_page'] ?? 1,
+                    'totalResults' => $result['meta']['total'] ?? 0,
+                    'perPage' => $result['meta']['per_page'] ?? $perPage,
+                    'hasNextPage' => ($result['meta']['current_page'] ?? $page) < ($result['meta']['last_page'] ?? 1),
+                    'hasPrevPage' => ($result['meta']['current_page'] ?? $page) > 1
+                ]
             ]);
         } catch (\Exception $e) {
             Log::error('Index error: ' . $e->getMessage());
