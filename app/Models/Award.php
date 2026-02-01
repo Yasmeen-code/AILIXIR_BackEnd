@@ -22,9 +22,9 @@ class Award extends Model
         'images' => 'array',
     ];
 
-    public function scientists(): BelongsToMany
+    public function scientists()
     {
-        return $this->belongsToMany(Scientist::class)
+        return $this->belongsToMany(Scientist::class, 'award_scientist')
             ->withPivot('year_won', 'contribution')
             ->withTimestamps();
     }
