@@ -3,11 +3,10 @@
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\AwardController;
-use App\Http\Controllers\ScientistController;
+use App\Http\Controllers\Api\ScientistController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\FileController;
-use App\Http\Controllers\ResearcherController;
-use App\Http\Controllers\UserController;
+use App\Http\Controllers\Api\UserController;
 use App\Http\Controllers\Api\NewsController;
 use Cloudinary\Cloudinary;
 // ==================== AWARDS ====================

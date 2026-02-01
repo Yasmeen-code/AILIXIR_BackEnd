@@ -1,7 +1,8 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\Api;
 
+use App\Http\Controllers\Api\BaseController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
@@ -11,41 +12,8 @@ use Illuminate\Validation\Rule;
 use Cloudinary\Cloudinary;
 use Illuminate\Support\Arr;
 
-class UserController extends Controller
+class UserController extends BaseController
 {
-    // ========== Helper Response Functions ==========
-    private function success($message, $data = [], $code = 200)
-    {
-        return response()->json([
-            'success' => true,
-            'message' => $message,
-            'data' => $data
-        ], $code);
-    }
-
-    private function error($message, $code = 400)
-    {
-        return response()->json([
-            'success' => false,
-            'message' => $message
-        ], $code);
-    }
-
-    // ========== Helper Pagination Response ==========
-    private function paginationResponse($message, $results)
-    {
-        return $this->success($message, [
-            'results' => $results->items(),
-            'pagination' => [
-                'currentPage'   => $results->currentPage(),
-                'totalPages'    => $results->lastPage(),
-                'totalResults'  => $results->total(),
-                'hasNextPage'   => $results->hasMorePages(),
-                'hasPrevPage'   => $results->currentPage() > 1,
-            ]
-        ]);
-    }
-
     // ================== REGISTER ==================
     public function register(Request $request)
     {
@@ -73,12 +41,12 @@ class UserController extends Controller
                 $message->to($user->email)->subject('Email Verification OTP');
             });
 
-            return $this->success(
+            return $this->successResponse(
                 'Registered successfully. Please verify your email.',
                 ['email' => $user->email]
             );
         } catch (\Exception $e) {
-            return $this->error('Registration failed: ' . $e->getMessage(), 500);
+            return $this->errorResponse('Registration failed: ' . $e->getMessage(), 500);
         }
     }
 
@@ -91,20 +59,20 @@ class UserController extends Controller
         ]);
 
         $user = User::where('email', $validated['email'])->first();
-        if (!$user) return $this->error('User not found', 404);
+        if (!$user) return $this->errorResponse('User not found', 404);
 
         if ($user->is_verified)
-            return $this->error('Email already verified');
+            return $this->errorResponse('Email already verified', 400);
 
         if ($user->email_verification_otp != $validated['otp'])
-            return $this->error('Invalid OTP');
+            return $this->errorResponse('Invalid OTP', 400);
 
         $user->is_verified = true;
         $user->email_verification_otp = null;
         $user->email_verified_at = now();
         $user->save();
 
-        return $this->success('Email verified successfully');
+        return $this->successResponse('Email verified successfully');
     }
 
     // ================== LOGIN ==================
@@ -118,17 +86,17 @@ class UserController extends Controller
         $user = User::where('email', $validated['email'])->first();
 
         if (!$user)
-            return $this->error('Email not found', 404);
+            return $this->errorResponse('Email not found', 404);
 
         if (!Hash::check($validated['password'], $user->password))
-            return $this->error('Incorrect password', 401);
+            return $this->errorResponse('Incorrect password', 401);
 
         if (!$user->is_verified)
-            return $this->error('Please verify your email first', 403);
+            return $this->errorResponse('Please verify your email first', 403);
 
         $token = $user->createToken('auth_token')->plainTextToken;
 
-        return $this->success('Login successful', [
+        return $this->successResponse('Login successful', [
             'token' => $token,
             'user' => $user
         ]);
@@ -137,7 +105,7 @@ class UserController extends Controller
     // ================== PROFILE ==================
     public function profile(Request $request)
     {
-        return $this->success('Profile retrieved', [
+        return $this->successResponse('Profile retrieved', [
             'user' => $request->user()->load('researcher')
         ]);
     }
@@ -146,7 +114,7 @@ class UserController extends Controller
     public function logout(Request $request)
     {
         $request->user()->currentAccessToken()->delete();
-        return $this->success('Logged out successfully');
+        return $this->successResponse('Logged out successfully');
     }
 
     public function updateProfile(Request $request)
@@ -167,14 +135,9 @@ class UserController extends Controller
         try {
             $photoUrl = null;
 
-            // 1. أولاً: حملي الصورة لو موجودة
             if ($request->hasFile('photo')) {
-                // ⚠️ تأكدي إن الـ env vars موجودة في Railway!
                 if (!env('CLOUDINARY_API_SECRET')) {
-                    return response()->json([
-                        'success' => false,
-                        'message' => 'Cloudinary API Secret missing in Railway'
-                    ], 500);
+                    return $this->errorResponse('Cloudinary API Secret missing in Railway', 500);
                 }
 
                 $cloudinary = new Cloudinary([
@@ -191,14 +154,13 @@ class UserController extends Controller
                     $file->getRealPath(),
                     [
                         'resource_type' => 'auto',
-                        'public_id' => 'users/' . $user->id . '_' . time(), // استخدمي ID المستخدم عشان ميتكررش
+                        'public_id' => 'users/' . $user->id . '_' . time(),
                         'overwrite' => true,
                     ]
                 );
                 $photoUrl = $result['secure_url'];
             }
 
-            // 2. جهزي البيانات (شيلي الصورة القديمة من validated)
             $userData = Arr::except($validated, ['photo', 'password', 'specialization', 'university', 'years_of_experience', 'bio']);
 
             if (isset($validated['password'])) {
@@ -206,13 +168,11 @@ class UserController extends Controller
             }
 
             if ($photoUrl) {
-                $userData['photo'] = $photoUrl; // حطي الـ URL الجديد
+                $userData['photo'] = $photoUrl;
             }
 
-            // 3. حدثي الـ User
             $user->fill($userData);
 
-            // 4. منطق الـ Researcher
             if ($user->role === 'normal' && ($request->filled('specialization') || $request->filled('university'))) {
                 $user->role = 'researcher';
                 $user->save();
@@ -228,7 +188,6 @@ class UserController extends Controller
             } else {
                 $user->save();
 
-                // حدثي Researcher لو موجود
                 if ($user->researcher) {
                     $researcherData = [
                         'specialization' => $request->specialization ?? $user->researcher->specialization,
@@ -245,25 +204,19 @@ class UserController extends Controller
                 }
             }
 
-            return response()->json([
-                'success' => true,
-                'message' => 'Profile updated',
-                'data' => $user->fresh()->load('researcher'),
-            ]);
+            return $this->successResponse('Profile updated', $user->fresh()->load('researcher'));
         } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Error: ' . $e->getMessage()
-            ], 500);
+            return $this->errorResponse('Error: ' . $e->getMessage(), 500);
         }
     }
+
     // ================== FORGOT PASSWORD - SEND OTP ==================
     public function sendForgotPasswordOtp(Request $request)
     {
         $validated = $request->validate(['email' => 'required|email']);
 
         $user = User::where('email', $validated['email'])->first();
-        if (!$user) return $this->error('User not found', 404);
+        if (!$user) return $this->errorResponse('User not found', 404);
 
         $otp = random_int(100000, 999999);
         $user->password_reset_otp = $otp;
@@ -273,7 +226,7 @@ class UserController extends Controller
             $message->to($user->email)->subject('Password Reset OTP');
         });
 
-        return $this->success('OTP sent', ['email' => $user->email]);
+        return $this->successResponse('OTP sent', ['email' => $user->email]);
     }
 
     // ================== RESET PASSWORD ==================
@@ -286,15 +239,15 @@ class UserController extends Controller
         ]);
 
         $user = User::where('email', $validated['email'])->first();
-        if (!$user) return $this->error('User not found', 404);
+        if (!$user) return $this->errorResponse('User not found', 404);
 
         if ($user->password_reset_otp != $validated['otp'])
-            return $this->error('Invalid OTP');
+            return $this->errorResponse('Invalid OTP', 400);
 
         $user->password = Hash::make($validated['password']);
         $user->password_reset_otp = null;
         $user->save();
 
-        return $this->success('Password reset successfully');
+        return $this->successResponse('Password reset successfully');
     }
 }

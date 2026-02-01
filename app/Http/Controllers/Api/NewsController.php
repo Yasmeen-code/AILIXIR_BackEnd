@@ -41,7 +41,8 @@ class NewsController extends BaseController
             $articles = $this->newsService->fetchNews();
 
             return $this->successResponse("Fetched {$articles->count()} new articles", [
-                'total_in_db' => \App\Models\News::count(),
+                'results' => $articles,
+                'pagination' => null
             ]);
         } catch (\Exception $e) {
             Log::error('Refresh error: ' . $e->getMessage());
@@ -89,7 +90,10 @@ class NewsController extends BaseController
         try {
             $categories = $this->newsService->getCategories();
 
-            return $this->successResponse('Categories retrieved successfully', $categories);
+            return $this->successResponse('Categories retrieved successfully', [
+                'results' => $categories,
+                'pagination' => null
+            ]);
         } catch (\Exception $e) {
             Log::error('Categories error: ' . $e->getMessage());
             return $this->errorResponse($e->getMessage(), 500);
@@ -122,20 +126,23 @@ class NewsController extends BaseController
                 ->orderBy('created_at', 'desc')
                 ->get();
 
-            return $this->successResponse('Saved articles retrieved successfully', $saved->map(function ($item) {
-                return [
-                    'saved_id' => $item->id,
-                    'saved_at' => $item->created_at,
-                    'article' => [
-                        'id' => $item->news->id,
-                        'title' => $item->news->title,
-                        'summary' => $item->news->summary,
-                        'source' => $item->news->source,
-                        'url' => $item->news->url,
-                        'published_at' => $item->news->published_at,
-                    ],
-                ];
-            }));
+            return $this->successResponse('Saved articles retrieved successfully', [
+                'results' => $saved->map(function ($item) {
+                    return [
+                        'saved_id' => $item->id,
+                        'saved_at' => $item->created_at,
+                        'article' => [
+                            'id' => $item->news->id,
+                            'title' => $item->news->title,
+                            'summary' => $item->news->summary,
+                            'source' => $item->news->source,
+                            'url' => $item->news->url,
+                            'published_at' => $item->news->published_at,
+                        ],
+                    ];
+                }),
+                'pagination' => null
+            ]);
         } catch (\Exception $e) {
             Log::error('GetSaved error: ' . $e->getMessage());
             return $this->errorResponse($e->getMessage(), 500);

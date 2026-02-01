@@ -1,36 +1,53 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\Api;
 
+use App\Http\Controllers\Api\BaseController;
 use App\Models\Scientist;
+use Illuminate\Http\Request;
 
-class ScientistController extends Controller
+class ScientistController extends BaseController
 {
-    public function index()
+    public function index(Request $request)
     {
-        return Scientist::with(['awards' => function ($query) {
+        $perPage = min(100, max(1, (int) $request->get('per_page', 10)));
+
+        $scientists = Scientist::with(['awards' => function ($query) {
             $query->select('awards.id', 'awards.name', 'awards.images');
         }])
             ->select('id', 'name', 'images', 'bio', 'field')
-            ->get()
-            ->map(function ($scientist) {
-                return [
-                    'id' => $scientist->id,
-                    'name' => $scientist->name,
-                    'images' => $scientist->images,
-                    'field' => $scientist->field,
-                    'short_bio' => substr($scientist->bio, 0, 150) . '...',
-                    'awards_count' => $scientist->awards->count(),
-                    'awards' => $scientist->awards->map(function ($award) {
-                        return [
-                            'id' => $award->id,
-                            'name' => $award->name,
-                            'image' => $award->images[0] ?? null,
-                            'year_won' => $award->pivot->year_won,
-                        ];
-                    }),
-                ];
-            });
+            ->paginate($perPage);
+
+        $results = $scientists->getCollection()->map(function ($scientist) {
+            return [
+                'id' => $scientist->id,
+                'name' => $scientist->name,
+                'images' => $scientist->images,
+                'field' => $scientist->field,
+                'short_bio' => substr($scientist->bio, 0, 150) . '...',
+                'awards_count' => $scientist->awards->count(),
+                'awards' => $scientist->awards->map(function ($award) {
+                    return [
+                        'id' => $award->id,
+                        'name' => $award->name,
+                        'image' => $award->images[0] ?? null,
+                        'year_won' => $award->pivot->year_won,
+                    ];
+                }),
+            ];
+        });
+
+        return $this->successResponse('Scientists retrieved successfully', [
+            'results' => $results,
+            'pagination' => [
+                'currentPage' => $scientists->currentPage(),
+                'totalPages' => $scientists->lastPage(),
+                'totalResults' => $scientists->total(),
+                'perPage' => $scientists->perPage(),
+                'hasNextPage' => $scientists->hasMorePages(),
+                'hasPrevPage' => !$scientists->onFirstPage()
+            ]
+        ]);
     }
 
     public function show($id)
@@ -38,9 +55,13 @@ class ScientistController extends Controller
         $scientist = Scientist::with(['awards' => function ($query) {
             $query->select('awards.*');
         }])
-            ->findOrFail($id);
+            ->find($id);
 
-        return [
+        if (!$scientist) {
+            return $this->errorResponse('Scientist not found', 404);
+        }
+
+        return $this->successResponse('Scientist retrieved successfully', [
             'id' => $scientist->id,
             'name' => $scientist->name,
             'nationality' => $scientist->nationality,
@@ -60,8 +81,9 @@ class ScientistController extends Controller
                     'contribution' => $award->pivot->contribution,
                 ];
             }),
-        ];
+        ]);
     }
+
     public function getAwardsByScientist($id)
     {
         $scientist = Scientist::with(['awards' => function ($query) {
@@ -70,13 +92,13 @@ class ScientistController extends Controller
             ->find($id);
 
         if (!$scientist) {
-            return response()->json(['message' => 'Scientist not found'], 404);
+            return $this->errorResponse('Scientist not found', 404);
         }
 
-        return response()->json([
+        return $this->successResponse('Awards retrieved successfully', [
             'scientist_id' => $scientist->id,
             'scientist_name' => $scientist->name,
-            'awards' => $scientist->awards->map(function ($award) {
+            'results' => $scientist->awards->map(function ($award) {
                 return [
                     'id' => $award->id,
                     'name' => $award->name,
@@ -86,6 +108,7 @@ class ScientistController extends Controller
                     'contribution' => $award->pivot->contribution,
                 ];
             }),
+            'pagination' => null
         ]);
     }
 }
