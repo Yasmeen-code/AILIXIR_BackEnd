@@ -111,6 +111,7 @@ class NewsController extends BaseController
             return $this->errorResponse($e->getMessage(), 500);
         }
     }
+
     public function getSavedArticles(Request $request)
     {
         try {
@@ -142,9 +143,17 @@ class NewsController extends BaseController
                 ];
             });
 
-            $saved->setCollection($transformed);
-
-            return $this->paginatedResponse('Saved articles retrieved successfully', $saved);
+            return $this->successResponse('Saved articles retrieved successfully', [
+                'results' => $transformed,
+                'pagination' => [
+                    'currentPage' => $saved->currentPage(),
+                    'totalPages' => $saved->lastPage(),
+                    'totalResults' => $saved->total(),
+                    'perPage' => $saved->perPage(),
+                    'hasNextPage' => $saved->hasMorePages(),
+                    'hasPrevPage' => !$saved->onFirstPage()
+                ]
+            ]);
         } catch (\Exception $e) {
             Log::error('GetSaved error: ' . $e->getMessage());
             return $this->errorResponse($e->getMessage(), 500);

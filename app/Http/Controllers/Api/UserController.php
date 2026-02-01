@@ -105,8 +105,14 @@ class UserController extends BaseController
     // ================== PROFILE ==================
     public function profile(Request $request)
     {
+        $user = $request->user()->load('researcher');
         return $this->successResponse('Profile retrieved', [
-            'user' => $request->user()->load('researcher')
+            'id' => $user->id,
+            'name' => $user->name,
+            'email' => $user->email,
+            'role' => $user->role,
+            'researcher' => $user->researcher,
+            'photo' => $user->photo,
         ]);
     }
 
