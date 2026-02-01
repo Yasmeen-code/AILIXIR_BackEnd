@@ -21,10 +21,9 @@ class Scientist extends Model
     protected $casts = [
         'images' => 'array',
     ];
-
-    public function awards(): BelongsToMany
+    public function awards()
     {
-        return $this->belongsToMany(Award::class)
+        return $this->belongsToMany(Award::class, 'award_scientist')
             ->withPivot('year_won', 'contribution')
             ->withTimestamps();
     }
