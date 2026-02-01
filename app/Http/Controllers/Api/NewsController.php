@@ -25,15 +25,19 @@ class NewsController extends BaseController
 
             $result = $this->newsService->getArticles($page, $perPage, $category);
 
+            $currentPage = $result['meta']['current_page'] ?? $page;
+            $lastPage = $result['meta']['last_page'] ?? $page;
+            $total = $result['meta']['total'] ?? 0;
+
             return $this->successResponse('Articles retrieved successfully', [
                 'results' => $result['articles']->map->toArray(),
                 'pagination' => [
-                    'currentPage' => $result['meta']['current_page'] ?? $page,
-                    'totalPages' => $result['meta']['last_page'] ?? 1,
-                    'totalResults' => $result['meta']['total'] ?? 0,
+                    'currentPage' => $currentPage,
+                    'totalPages' => $lastPage,
+                    'totalResults' => $total,
                     'perPage' => $result['meta']['per_page'] ?? $perPage,
-                    'hasNextPage' => ($result['meta']['current_page'] ?? $page) < ($result['meta']['last_page'] ?? 1),
-                    'hasPrevPage' => ($result['meta']['current_page'] ?? $page) > 1
+                    'hasNextPage' => $currentPage < $lastPage,
+                    'hasPrevPage' => $currentPage > 1
                 ]
             ]);
         } catch (\Exception $e) {
