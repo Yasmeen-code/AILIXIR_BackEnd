@@ -2,10 +2,12 @@
 
 namespace App\Http\Controllers\Api;
 
-use App\Http\Controllers\Controller;
+use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
+use Illuminate\Foundation\Validation\ValidatesRequests;
+use Illuminate\Routing\Controller;
 use App\Traits\ApiResponseTrait;
 
 class BaseController extends Controller
 {
-    use ApiResponseTrait;
+    use AuthorizesRequests, ValidatesRequests, ApiResponseTrait;
 }
