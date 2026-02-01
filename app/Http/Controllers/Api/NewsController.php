@@ -111,7 +111,6 @@ class NewsController extends BaseController
             return $this->errorResponse($e->getMessage(), 500);
         }
     }
-
     public function getSavedArticles(Request $request)
     {
         try {
@@ -121,28 +120,31 @@ class NewsController extends BaseController
                 return $this->errorResponse('Unauthorized. Please login first.', 401);
             }
 
+            $perPage = min(100, max(1, (int) $request->get('per_page', 10)));
+
             $saved = \App\Models\SavedArticle::with('news')
                 ->where('user_id', $user->id)
                 ->orderBy('created_at', 'desc')
-                ->get();
+                ->paginate($perPage);
 
-            return $this->successResponse('Saved articles retrieved successfully', [
-                'results' => $saved->map(function ($item) {
-                    return [
-                        'saved_id' => $item->id,
-                        'saved_at' => $item->created_at,
-                        'article' => [
-                            'id' => $item->news->id,
-                            'title' => $item->news->title,
-                            'summary' => $item->news->summary,
-                            'source' => $item->news->source,
-                            'url' => $item->news->url,
-                            'published_at' => $item->news->published_at,
-                        ],
-                    ];
-                }),
-                'pagination' => null
-            ]);
+            $transformed = $saved->getCollection()->map(function ($item) {
+                return [
+                    'saved_id' => $item->id,
+                    'saved_at' => $item->created_at,
+                    'article' => [
+                        'id' => $item->news->id,
+                        'title' => $item->news->title,
+                        'summary' => $item->news->summary,
+                        'source' => $item->news->source,
+                        'url' => $item->news->url,
+                        'published_at' => $item->news->published_at,
+                    ],
+                ];
+            });
+
+            $saved->setCollection($transformed);
+
+            return $this->paginatedResponse('Saved articles retrieved successfully', $saved);
         } catch (\Exception $e) {
             Log::error('GetSaved error: ' . $e->getMessage());
             return $this->errorResponse($e->getMessage(), 500);

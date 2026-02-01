@@ -4,35 +4,41 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Api\BaseController;
 use App\Models\Award;
+use Illuminate\Http\Request;
 
 class AwardController extends BaseController
 {
-    public function index()
+    public function index(Request $request)
     {
+        $perPage = min(100, max(1, (int) $request->get('per_page', 10)));
+
         $awards = Award::with(['scientists' => function ($query) {
             $query->select('scientists.id', 'scientists.name', 'scientists.images');
         }])
-            ->get()
-            ->map(function ($award) {
-                return [
-                    'id' => $award->id,
-                    'name' => $award->name,
-                    'images' => $award->images,
-                    'category' => $award->category,
-                    'short_description' => substr($award->description, 0, 100) . '...',
-                    'scientists_count' => $award->scientists->count(),
-                    'scientists' => $award->scientists->map(function ($scientist) {
-                        return [
-                            'id' => $scientist->id,
-                            'name' => $scientist->name,
-                            'image' => $scientist->images[0] ?? null,
-                            'year_won' => $scientist->pivot->year_won,
-                        ];
-                    }),
-                ];
-            });
+            ->paginate($perPage);
 
-        return $this->listResponse('Awards retrieved successfully', $awards);
+        $transformed = $awards->getCollection()->map(function ($award) {
+            return [
+                'id' => $award->id,
+                'name' => $award->name,
+                'images' => $award->images,
+                'category' => $award->category,
+                'short_description' => substr($award->description, 0, 100) . '...',
+                'scientists_count' => $award->scientists->count(),
+                'scientists' => $award->scientists->map(function ($scientist) {
+                    return [
+                        'id' => $scientist->id,
+                        'name' => $scientist->name,
+                        'image' => $scientist->images[0] ?? null,
+                        'year_won' => $scientist->pivot->year_won,
+                    ];
+                }),
+            ];
+        });
+
+        $awards->setCollection($transformed);
+
+        return $this->paginatedResponse('Awards retrieved successfully', $awards);
     }
 
     public function show($id)
@@ -83,7 +89,7 @@ class AwardController extends BaseController
         return $this->successResponse('Scientists retrieved successfully', [
             'award_id' => $award->id,
             'award_name' => $award->name,
-            'scientists' => $award->scientists->map(function ($scientist) {
+            'results' => $award->scientists->map(function ($scientist) {
                 return [
                     'id' => $scientist->id,
                     'name' => $scientist->name,
@@ -93,6 +99,7 @@ class AwardController extends BaseController
                     'contribution' => $scientist->pivot->contribution,
                 ];
             }),
+            'pagination' => null
         ]);
     }
 }
