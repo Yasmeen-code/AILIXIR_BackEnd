@@ -1,11 +1,11 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\Api;
 
+use App\Http\Controllers\Api\BaseController;
 use App\Models\Award;
-use Illuminate\Http\Request;
 
-class AwardController extends Controller
+class AwardController extends BaseController
 {
     public function index()
     {
@@ -32,7 +32,8 @@ class AwardController extends Controller
                 ];
             });
 
-        return response()->json($awards);
+        // استخدم listResponse بدل successResponse عشان الشكل يبقى موحد
+        return $this->listResponse('Awards retrieved successfully', $awards);
     }
 
     public function show($id)
@@ -43,10 +44,10 @@ class AwardController extends Controller
             ->find($id);
 
         if (!$award) {
-            return response()->json(['message' => 'Award not found'], 404);
+            return $this->errorResponse('Award not found', 404);
         }
 
-        return response()->json([
+        return $this->successResponse('Award retrieved successfully', [
             'id' => $award->id,
             'name' => $award->name,
             'category' => $award->category,
@@ -68,6 +69,7 @@ class AwardController extends Controller
             }),
         ]);
     }
+
     public function getScientistsByAward($id)
     {
         $award = Award::with(['scientists' => function ($query) {
@@ -76,10 +78,11 @@ class AwardController extends Controller
             ->find($id);
 
         if (!$award) {
-            return response()->json(['message' => 'Award not found'], 404);
+            return $this->errorResponse('Award not found', 404);
         }
 
-        return response()->json([
+        // هنا ممكن تستخدم listResponse لو scientists كتيرة، أو successResponse عادي
+        return $this->successResponse('Scientists retrieved successfully', [
             'award_id' => $award->id,
             'award_name' => $award->name,
             'scientists' => $award->scientists->map(function ($scientist) {
