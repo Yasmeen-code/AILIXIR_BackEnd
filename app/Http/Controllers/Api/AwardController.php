@@ -32,7 +32,6 @@ class AwardController extends BaseController
                 ];
             });
 
-        // استخدم listResponse بدل successResponse عشان الشكل يبقى موحد
         return $this->listResponse('Awards retrieved successfully', $awards);
     }
 
@@ -81,7 +80,6 @@ class AwardController extends BaseController
             return $this->errorResponse('Award not found', 404);
         }
 
-        // هنا ممكن تستخدم listResponse لو scientists كتيرة، أو successResponse عادي
         return $this->successResponse('Scientists retrieved successfully', [
             'award_id' => $award->id,
             'award_name' => $award->name,
