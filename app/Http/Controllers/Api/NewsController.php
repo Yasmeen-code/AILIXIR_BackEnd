@@ -15,7 +15,6 @@ class NewsController extends BaseController
     {
         $this->newsService = $newsService;
     }
-
     public function index(Request $request)
     {
         try {
@@ -26,16 +25,18 @@ class NewsController extends BaseController
             $result = $this->newsService->getArticles($page, $perPage, $category);
 
             $currentPage = $result['meta']['current_page'] ?? $page;
-            $lastPage = $result['meta']['last_page'] ?? $page;
-            $total = $result['meta']['total'] ?? 0;
+            $totalResults = $result['meta']['total'] ?? 0;
+
+            $lastPage = (int) ceil($totalResults / $perPage);
+            $lastPage = $lastPage > 0 ? $lastPage : 1;
 
             return $this->successResponse('Articles retrieved successfully', [
                 'results' => $result['articles']->map->toArray(),
                 'pagination' => [
                     'currentPage' => $currentPage,
                     'totalPages' => $lastPage,
-                    'totalResults' => $total,
-                    'perPage' => $result['meta']['per_page'] ?? $perPage,
+                    'totalResults' => $totalResults,
+                    'perPage' => $perPage,
                     'hasNextPage' => $currentPage < $lastPage,
                     'hasPrevPage' => $currentPage > 1
                 ]
