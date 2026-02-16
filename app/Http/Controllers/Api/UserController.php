@@ -14,6 +14,29 @@ use Illuminate\Support\Arr;
 
 class UserController extends BaseController
 {
+    // ================== GENERATE & SEND OTP ==================
+    private function generateAndSendOtp(User $user, string $type)
+    {
+        $otp = random_int(100000, 999999);
+
+        if ($type === 'email_verification') {
+            $user->email_verification_otp = $otp;
+            $subject = 'Email Verification OTP';
+            $message = "Your email verification OTP is: $otp";
+        }
+
+        if ($type === 'password_reset') {
+            $user->password_reset_otp = $otp;
+            $subject = 'Password Reset OTP';
+            $message = "Your password reset OTP is: $otp";
+        }
+
+        $user->save();
+
+        Mail::raw($message, function ($mail) use ($user, $subject) {
+            $mail->to($user->email)->subject($subject);
+        });
+    }
     // ================== REGISTER ==================
     public function register(Request $request)
     {
@@ -32,14 +55,7 @@ class UserController extends BaseController
                 'is_verified' => false,
             ]);
 
-            // OTP
-            $otp = random_int(100000, 999999);
-            $user->email_verification_otp = $otp;
-            $user->save();
-
-            Mail::raw("Your verification OTP is: $otp", function ($message) use ($user) {
-                $message->to($user->email)->subject('Email Verification OTP');
-            });
+            $this->generateAndSendOtp($user, 'email_verification');
 
             return $this->successResponse(
                 'Registered successfully. Please verify your email.',
@@ -101,7 +117,6 @@ class UserController extends BaseController
             'user' => $user
         ]);
     }
-
     // ================== PROFILE ==================
     public function profile(Request $request)
     {
