@@ -4,8 +4,6 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\AwardController;
 use App\Http\Controllers\Api\ScientistController;
-use App\Http\Controllers\AuthController;
-use App\Http\Controllers\FileController;
 use App\Http\Controllers\Api\UserController;
 use App\Http\Controllers\Api\NewsController;
 use Cloudinary\Cloudinary;
@@ -47,8 +45,6 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/news/saved', [NewsController::class, 'getSavedArticles']);
     Route::delete('/news/saved/{savedArticleId}', [NewsController::class, 'unsaveArticle']);
 });
-
-
 
 
 
