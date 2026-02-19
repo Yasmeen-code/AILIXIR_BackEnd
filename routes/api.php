@@ -24,6 +24,7 @@ Route::prefix('user')->group(function () {
     Route::post('login', [UserController::class, 'login']);
     Route::post('forgot-password', [UserController::class, 'sendForgotPasswordOtp']);
     Route::post('reset-password', [UserController::class, 'resetPassword']);
+    Route::post('/resend-reset-password-otp', [UserController::class, 'resendResetPasswordOtp']);
 
     Route::middleware('auth:sanctum')->group(function () {
         Route::get('profile', [UserController::class, 'profile']);

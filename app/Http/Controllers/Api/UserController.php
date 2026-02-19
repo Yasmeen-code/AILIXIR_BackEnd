@@ -110,7 +110,7 @@ class UserController extends BaseController
                 return $this->errorResponse('Email already verified.', 400);
             }
 
-            if ($user->email_verification_otp_expires_at && now()->lt($user->email_verification_otp_expires_at->subMinutes(14))) {
+            if ($user->email_verification_otp_expires_at && now()->lt($user->email_verification_otp_expires_at)) {
                 return $this->errorResponse(
                     'Please wait before requesting another OTP.',
                     429
@@ -127,7 +127,32 @@ class UserController extends BaseController
             return $this->errorResponse('Failed to resend OTP.', 500);
         }
     }
+    public function resendResetPasswordOtp(Request $request)
+    {
+        try {
+            $request->validate([
+                'email' => 'required|email|exists:users,email',
+            ]);
 
+            $user = User::where('email', $request->email)->first();
+
+            if ($user->password_reset_otp_expires_at && now()->lt($user->password_reset_otp_expires_at)) {
+                return $this->errorResponse(
+                    'Please wait before requesting another OTP.',
+                    429
+                );
+            }
+
+            $this->generateAndSendOtp($user, 'password_reset');
+
+            return $this->successResponse(
+                'OTP resent successfully.',
+                ['email' => $user->email]
+            );
+        } catch (\Throwable $e) {
+            return $this->errorResponse('Failed to resend OTP.', 500);
+        }
+    }
     public function login(Request $request)
     {
         $validated = $request->validate([
