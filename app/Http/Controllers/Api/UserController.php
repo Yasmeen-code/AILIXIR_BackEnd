@@ -54,10 +54,13 @@ class UserController extends BaseController
             $otp = $this->generateAndSendOtp($user, 'email_verification');
 
             try {
-                Mail::raw("Your AILIXIR OTP is: $otp\nExpires in 15 minutes.", function ($message) use ($user) {
-                    $message->to($user->email)
-                        ->subject('Email Verification OTP');
-                });
+                Mail::raw(
+                    "Your AILIXIR OTP is: $otp\nExpires in 15 minutes.",
+                    function ($message) use ($user) {
+                        $message->to($user->email)
+                            ->subject('Email Verification OTP');
+                    }
+                )->onQueue('emails');
             } catch (\Exception $mailException) {
                 return $this->successResponse(
                     'Registered but email failed: ' . $mailException->getMessage(),
