@@ -32,8 +32,8 @@ class UserController extends BaseController
 
         $user->save();
 
-        // إرسال البريد
-        Mail::raw("Your OTP is: $otp\nExpires in 15 minutes.", function ($mail) use ($user, $subject) {
+        // إرسال البريد النصي (بدون View)
+        Mail::raw("Your AILIXIR OTP is: $otp\n\nThis code expires in 15 minutes.\n\nIf you didn't request this, please ignore this email.", function ($mail) use ($user, $subject) {
             $mail->to($user->email)->subject($subject);
         });
 
@@ -58,11 +58,16 @@ class UserController extends BaseController
                 'is_verified' => false,
             ]);
 
-            $this->generateAndSendOtp($user, 'email_verification');
+            $otp = $this->generateAndSendOtp($user, 'email_verification');
 
+            // ⚠️ للتجربة في Postman: إرجاع الـ OTP
+            // في Production: شيلي 'otp' من الـ Response
             return $this->successResponse(
                 'Registered successfully. Please verify your email.',
-                ['email' => $user->email]
+                [
+                    'email' => $user->email,
+                    'otp' => $otp // ← شيلي هذا السطر في Production
+                ]
             );
         } catch (\Exception $e) {
             return $this->errorResponse('Registration failed: ' . $e->getMessage(), 500);
@@ -79,21 +84,24 @@ class UserController extends BaseController
 
         $user = User::where('email', $request->email)->first();
 
-        // استخدام الدالة المساعدة من الموديل
-        if (!$user->isEmailOtpValid($request->otp)) {
-            return $this->sendError('Invalid or expired OTP', [], 400);
+        // التحقق من صلاحية الـ OTP (بدون دوال الموديل)
+        if (
+            $user->email_verification_otp !== $request->otp ||
+            !$user->email_verification_otp_expires_at ||
+            $user->email_verification_otp_expires_at->isPast()
+        ) {
+            return $this->errorResponse('Invalid or expired OTP', 400);
         }
 
         // تحديث المستخدم
         $user->update([
             'email_verified_at' => now(),
             'is_verified' => true,
+            'email_verification_otp' => null,
+            'email_verification_otp_expires_at' => null,
         ]);
 
-        // مسح الـ OTP
-        $user->clearEmailOtp();
-
-        return $this->sendResponse([], 'Email verified successfully');
+        return $this->successResponse('Email verified successfully');
     }
 
     // ================== LOGIN ==================
@@ -122,6 +130,7 @@ class UserController extends BaseController
             'user' => $user
         ]);
     }
+
     // ================== PROFILE ==================
     public function profile(Request $request)
     {
@@ -143,6 +152,7 @@ class UserController extends BaseController
         return $this->successResponse('Logged out successfully');
     }
 
+    // ================== UPDATE PROFILE ==================
     public function updateProfile(Request $request)
     {
         $user = $request->user();
@@ -244,15 +254,14 @@ class UserController extends BaseController
         $user = User::where('email', $validated['email'])->first();
         if (!$user) return $this->errorResponse('User not found', 404);
 
-        $otp = random_int(100000, 999999);
-        $user->password_reset_otp = $otp;
-        $user->save();
+        $otp = $this->generateAndSendOtp($user, 'password_reset');
 
-        Mail::raw("Your password reset OTP is: $otp", function ($message) use ($user) {
-            $message->to($user->email)->subject('Password Reset OTP');
-        });
-
-        return $this->successResponse('OTP sent', ['email' => $user->email]);
+        // ⚠️ للتجربة في Postman: إرجاع الـ OTP
+        // في Production: شيلي 'otp' من الـ Response
+        return $this->successResponse('OTP sent', [
+            'email' => $user->email,
+            'otp' => $otp // ← شيلي هذا السطر في Production
+        ]);
     }
 
     // ================== RESET PASSWORD ==================
@@ -267,11 +276,18 @@ class UserController extends BaseController
         $user = User::where('email', $validated['email'])->first();
         if (!$user) return $this->errorResponse('User not found', 404);
 
-        if ($user->password_reset_otp != $validated['otp'])
-            return $this->errorResponse('Invalid OTP', 400);
+        // التحقق من صلاحية الـ OTP
+        if (
+            $user->password_reset_otp !== $validated['otp'] ||
+            !$user->password_reset_otp_expires_at ||
+            $user->password_reset_otp_expires_at->isPast()
+        ) {
+            return $this->errorResponse('Invalid or expired OTP', 400);
+        }
 
         $user->password = Hash::make($validated['password']);
         $user->password_reset_otp = null;
+        $user->password_reset_otp_expires_at = null;
         $user->save();
 
         return $this->successResponse('Password reset successfully');
