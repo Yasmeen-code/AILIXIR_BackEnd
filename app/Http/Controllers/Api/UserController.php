@@ -18,25 +18,28 @@ class UserController extends BaseController
     private function generateAndSendOtp(User $user, string $type)
     {
         $otp = random_int(100000, 999999);
+        $expiresAt = now()->addMinutes(15);
 
         if ($type === 'email_verification') {
             $user->email_verification_otp = $otp;
+            $user->email_verification_otp_expires_at = $expiresAt;
             $subject = 'Email Verification OTP';
-            $message = "Your email verification OTP is: $otp";
-        }
-
-        if ($type === 'password_reset') {
+        } elseif ($type === 'password_reset') {
             $user->password_reset_otp = $otp;
+            $user->password_reset_otp_expires_at = $expiresAt;
             $subject = 'Password Reset OTP';
-            $message = "Your password reset OTP is: $otp";
         }
 
         $user->save();
 
-        Mail::raw($message, function ($mail) use ($user, $subject) {
+        // إرسال البريد
+        Mail::raw("Your OTP is: $otp\nExpires in 15 minutes.", function ($mail) use ($user, $subject) {
             $mail->to($user->email)->subject($subject);
         });
+
+        return $otp;
     }
+
     // ================== REGISTER ==================
     public function register(Request $request)
     {
@@ -69,26 +72,28 @@ class UserController extends BaseController
     // ================== VERIFY EMAIL ==================
     public function verifyEmail(Request $request)
     {
-        $validated = $request->validate([
-            'email' => 'required|email',
-            'otp' => 'required|digits:6',
+        $request->validate([
+            'email' => 'required|email|exists:users,email',
+            'otp' => 'required|digits:6'
         ]);
 
-        $user = User::where('email', $validated['email'])->first();
-        if (!$user) return $this->errorResponse('User not found', 404);
+        $user = User::where('email', $request->email)->first();
 
-        if ($user->is_verified)
-            return $this->errorResponse('Email already verified', 400);
+        // استخدام الدالة المساعدة من الموديل
+        if (!$user->isEmailOtpValid($request->otp)) {
+            return $this->sendError('Invalid or expired OTP', [], 400);
+        }
 
-        if ($user->email_verification_otp != $validated['otp'])
-            return $this->errorResponse('Invalid OTP', 400);
+        // تحديث المستخدم
+        $user->update([
+            'email_verified_at' => now(),
+            'is_verified' => true,
+        ]);
 
-        $user->is_verified = true;
-        $user->email_verification_otp = null;
-        $user->email_verified_at = now();
-        $user->save();
+        // مسح الـ OTP
+        $user->clearEmailOtp();
 
-        return $this->successResponse('Email verified successfully');
+        return $this->sendResponse([], 'Email verified successfully');
     }
 
     // ================== LOGIN ==================
