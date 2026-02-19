@@ -14,7 +14,6 @@ use Illuminate\Support\Arr;
 
 class UserController extends BaseController
 {
-    // ================== GENERATE & SEND OTP ==================
     private function generateAndSendOtp(User $user, string $type)
     {
         $otp = random_int(100000, 999999);
@@ -30,10 +29,19 @@ class UserController extends BaseController
 
         $user->save();
 
+        $subject = $type === 'email_verification' ? 'Email Verification OTP' : 'Password Reset OTP';
+
+        Mail::raw(
+            "Your AILIXIR OTP is: $otp\nExpires in 15 minutes.",
+            function ($message) use ($user, $subject) {
+                $message->to($user->email)
+                    ->subject($subject);
+            }
+        );
+
         return $otp;
     }
 
-    // ================== REGISTER ==================
     public function register(Request $request)
     {
         try {
@@ -51,25 +59,10 @@ class UserController extends BaseController
                 'is_verified' => false,
             ]);
 
-            $otp = $this->generateAndSendOtp($user, 'email_verification');
-
-            try {
-                Mail::raw(
-                    "Your AILIXIR OTP is: $otp\nExpires in 15 minutes.",
-                    function ($message) use ($user) {
-                        $message->to($user->email)
-                            ->subject('Email Verification OTP');
-                    }
-                )->onQueue('emails');
-            } catch (\Exception $mailException) {
-                return $this->successResponse(
-                    'Registered but email failed: ' . $mailException->getMessage(),
-                    ['email' => $user->email, 'otp' => $otp]
-                );
-            }
+            $this->generateAndSendOtp($user, 'email_verification');
 
             return $this->successResponse(
-                'Registered successfully. Check your email.',
+                'Registered successfully. Check your email for OTP.',
                 ['email' => $user->email]
             );
         } catch (\Exception $e) {
@@ -77,7 +70,6 @@ class UserController extends BaseController
         }
     }
 
-    // ================== VERIFY EMAIL ==================
     public function verifyEmail(Request $request)
     {
         $request->validate([
@@ -105,7 +97,37 @@ class UserController extends BaseController
         return $this->successResponse('Email verified successfully');
     }
 
-    // ================== LOGIN ==================
+    public function resendOtp(Request $request)
+    {
+        try {
+            $request->validate([
+                'email' => 'required|email|exists:users,email',
+            ]);
+
+            $user = User::where('email', $request->email)->first();
+
+            if ($user->is_verified) {
+                return $this->errorResponse('Email already verified.', 400);
+            }
+
+            if ($user->email_verification_otp_expires_at && now()->lt($user->email_verification_otp_expires_at->subMinutes(14))) {
+                return $this->errorResponse(
+                    'Please wait before requesting another OTP.',
+                    429
+                );
+            }
+
+            $this->generateAndSendOtp($user, 'email_verification');
+
+            return $this->successResponse(
+                'OTP resent successfully.',
+                ['email' => $user->email]
+            );
+        } catch (\Throwable $e) {
+            return $this->errorResponse('Failed to resend OTP.', 500);
+        }
+    }
+
     public function login(Request $request)
     {
         $validated = $request->validate([
@@ -132,7 +154,6 @@ class UserController extends BaseController
         ]);
     }
 
-    // ================== FORGOT PASSWORD ==================
     public function sendForgotPasswordOtp(Request $request)
     {
         $validated = $request->validate(['email' => 'required|email']);
@@ -140,24 +161,11 @@ class UserController extends BaseController
         $user = User::where('email', $validated['email'])->first();
         if (!$user) return $this->errorResponse('User not found', 404);
 
-        $otp = $this->generateAndSendOtp($user, 'password_reset');
-
-        try {
-            Mail::raw("Your password reset OTP is: $otp\nExpires in 15 minutes.", function ($message) use ($user) {
-                $message->to($user->email)
-                    ->subject('Password Reset OTP');
-            });
-        } catch (\Exception $e) {
-            return $this->successResponse(
-                'OTP generated but email failed: ' . $e->getMessage(),
-                ['email' => $user->email, 'otp' => $otp]
-            );
-        }
+        $this->generateAndSendOtp($user, 'password_reset');
 
         return $this->successResponse('OTP sent', ['email' => $user->email]);
     }
 
-    // ================== RESET PASSWORD ==================
     public function resetPassword(Request $request)
     {
         $validated = $request->validate([
@@ -186,7 +194,6 @@ class UserController extends BaseController
         return $this->successResponse('Password reset successfully');
     }
 
-    // ================== PROFILE ==================
     public function profile(Request $request)
     {
         $user = $request->user()->load('researcher');
@@ -200,14 +207,12 @@ class UserController extends BaseController
         ]);
     }
 
-    // ================== LOGOUT ==================
     public function logout(Request $request)
     {
         $request->user()->currentAccessToken()->delete();
         return $this->successResponse('Logged out successfully');
     }
 
-    // ================== UPDATE PROFILE ==================
     public function updateProfile(Request $request)
     {
         $user = $request->user();

@@ -20,6 +20,7 @@ Route::get('/scientists/{id}/awards', [ScientistController::class, 'getAwardsByS
 Route::prefix('user')->group(function () {
     Route::post('register', [UserController::class, 'register']);
     Route::post('verify-email', [UserController::class, 'verifyEmail']);
+    Route::post('/resend-otp', [UserController::class, 'resendOtp']);
     Route::post('login', [UserController::class, 'login']);
     Route::post('forgot-password', [UserController::class, 'sendForgotPasswordOtp']);
     Route::post('reset-password', [UserController::class, 'resetPassword']);
