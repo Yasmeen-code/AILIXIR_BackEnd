@@ -53,14 +53,12 @@ class UserController extends BaseController
 
             $otp = $this->generateAndSendOtp($user, 'email_verification');
 
-            // ✅ محاولة إرسال الإيميل (لو فشل، نرجع OTP برضه)
             try {
                 Mail::raw("Your AILIXIR OTP is: $otp\nExpires in 15 minutes.", function ($message) use ($user) {
                     $message->to($user->email)
                         ->subject('Email Verification OTP');
                 });
             } catch (\Exception $mailException) {
-                // لو الإيميل فشل، نرجع OTP عشان نجربه
                 return $this->successResponse(
                     'Registered but email failed: ' . $mailException->getMessage(),
                     ['email' => $user->email, 'otp' => $otp]
@@ -69,7 +67,7 @@ class UserController extends BaseController
 
             return $this->successResponse(
                 'Registered successfully. Check your email.',
-                ['email' => $user->email, 'otp' => $otp]
+                ['email' => $user->email]
             );
         } catch (\Exception $e) {
             return $this->errorResponse('Registration failed: ' . $e->getMessage(), 500);
@@ -141,7 +139,6 @@ class UserController extends BaseController
 
         $otp = $this->generateAndSendOtp($user, 'password_reset');
 
-        // ✅ محاولة إرسال الإيميل
         try {
             Mail::raw("Your password reset OTP is: $otp\nExpires in 15 minutes.", function ($message) use ($user) {
                 $message->to($user->email)
@@ -154,7 +151,7 @@ class UserController extends BaseController
             );
         }
 
-        return $this->successResponse('OTP sent', ['email' => $user->email, 'otp' => $otp]);
+        return $this->successResponse('OTP sent', ['email' => $user->email]);
     }
 
     // ================== RESET PASSWORD ==================
