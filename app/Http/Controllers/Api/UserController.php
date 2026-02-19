@@ -23,19 +23,12 @@ class UserController extends BaseController
         if ($type === 'email_verification') {
             $user->email_verification_otp = $otp;
             $user->email_verification_otp_expires_at = $expiresAt;
-            $subject = 'Email Verification OTP';
         } elseif ($type === 'password_reset') {
             $user->password_reset_otp = $otp;
             $user->password_reset_otp_expires_at = $expiresAt;
-            $subject = 'Password Reset OTP';
         }
 
         $user->save();
-
-        // إرسال البريد النصي (بدون View)
-        Mail::raw("Your AILIXIR OTP is: $otp\n\nThis code expires in 15 minutes.\n\nIf you didn't request this, please ignore this email.", function ($mail) use ($user, $subject) {
-            $mail->to($user->email)->subject($subject);
-        });
 
         return $otp;
     }
@@ -60,14 +53,23 @@ class UserController extends BaseController
 
             $otp = $this->generateAndSendOtp($user, 'email_verification');
 
-            // ⚠️ للتجربة في Postman: إرجاع الـ OTP
-            // في Production: شيلي 'otp' من الـ Response
+            // ✅ محاولة إرسال الإيميل (لو فشل، نرجع OTP برضه)
+            try {
+                Mail::raw("Your AILIXIR OTP is: $otp\nExpires in 15 minutes.", function ($message) use ($user) {
+                    $message->to($user->email)
+                        ->subject('Email Verification OTP');
+                });
+            } catch (\Exception $mailException) {
+                // لو الإيميل فشل، نرجع OTP عشان نجربه
+                return $this->successResponse(
+                    'Registered but email failed: ' . $mailException->getMessage(),
+                    ['email' => $user->email, 'otp' => $otp]
+                );
+            }
+
             return $this->successResponse(
-                'Registered successfully. Please verify your email.',
-                [
-                    'email' => $user->email,
-                    'otp' => $otp // ← شيلي هذا السطر في Production
-                ]
+                'Registered successfully. Check your email.',
+                ['email' => $user->email, 'otp' => $otp]
             );
         } catch (\Exception $e) {
             return $this->errorResponse('Registration failed: ' . $e->getMessage(), 500);
@@ -84,16 +86,14 @@ class UserController extends BaseController
 
         $user = User::where('email', $request->email)->first();
 
-        // التحقق من صلاحية الـ OTP (بدون دوال الموديل)
-        if (
-            $user->email_verification_otp !== $request->otp ||
-            !$user->email_verification_otp_expires_at ||
-            $user->email_verification_otp_expires_at->isPast()
-        ) {
-            return $this->errorResponse('Invalid or expired OTP', 400);
+        if ($user->email_verification_otp != $request->otp) {
+            return $this->errorResponse('Invalid OTP', 400);
         }
 
-        // تحديث المستخدم
+        if (!$user->email_verification_otp_expires_at || now()->gt($user->email_verification_otp_expires_at)) {
+            return $this->errorResponse('Expired OTP', 400);
+        }
+
         $user->update([
             'email_verified_at' => now(),
             'is_verified' => true,
@@ -129,6 +129,61 @@ class UserController extends BaseController
             'token' => $token,
             'user' => $user
         ]);
+    }
+
+    // ================== FORGOT PASSWORD ==================
+    public function sendForgotPasswordOtp(Request $request)
+    {
+        $validated = $request->validate(['email' => 'required|email']);
+
+        $user = User::where('email', $validated['email'])->first();
+        if (!$user) return $this->errorResponse('User not found', 404);
+
+        $otp = $this->generateAndSendOtp($user, 'password_reset');
+
+        // ✅ محاولة إرسال الإيميل
+        try {
+            Mail::raw("Your password reset OTP is: $otp\nExpires in 15 minutes.", function ($message) use ($user) {
+                $message->to($user->email)
+                    ->subject('Password Reset OTP');
+            });
+        } catch (\Exception $e) {
+            return $this->successResponse(
+                'OTP generated but email failed: ' . $e->getMessage(),
+                ['email' => $user->email, 'otp' => $otp]
+            );
+        }
+
+        return $this->successResponse('OTP sent', ['email' => $user->email, 'otp' => $otp]);
+    }
+
+    // ================== RESET PASSWORD ==================
+    public function resetPassword(Request $request)
+    {
+        $validated = $request->validate([
+            'email' => 'required|email',
+            'otp' => 'required|digits:6',
+            'password' => 'required|string|min:6|confirmed',
+        ]);
+
+        $user = User::where('email', $validated['email'])->first();
+        if (!$user) return $this->errorResponse('User not found', 404);
+
+        if ($user->password_reset_otp != $validated['otp']) {
+            return $this->errorResponse('Invalid OTP', 400);
+        }
+
+        if (!$user->password_reset_otp_expires_at || now()->gt($user->password_reset_otp_expires_at)) {
+            return $this->errorResponse('Expired OTP', 400);
+        }
+
+        $user->update([
+            'password' => Hash::make($validated['password']),
+            'password_reset_otp' => null,
+            'password_reset_otp_expires_at' => null,
+        ]);
+
+        return $this->successResponse('Password reset successfully');
     }
 
     // ================== PROFILE ==================
@@ -172,10 +227,6 @@ class UserController extends BaseController
             $photoUrl = null;
 
             if ($request->hasFile('photo')) {
-                if (!env('CLOUDINARY_API_SECRET')) {
-                    return $this->errorResponse('Cloudinary API Secret missing in Railway', 500);
-                }
-
                 $cloudinary = new Cloudinary([
                     'cloud' => [
                         'cloud_name' => env('CLOUDINARY_CLOUD_NAME'),
@@ -244,52 +295,5 @@ class UserController extends BaseController
         } catch (\Exception $e) {
             return $this->errorResponse('Error: ' . $e->getMessage(), 500);
         }
-    }
-
-    // ================== FORGOT PASSWORD - SEND OTP ==================
-    public function sendForgotPasswordOtp(Request $request)
-    {
-        $validated = $request->validate(['email' => 'required|email']);
-
-        $user = User::where('email', $validated['email'])->first();
-        if (!$user) return $this->errorResponse('User not found', 404);
-
-        $otp = $this->generateAndSendOtp($user, 'password_reset');
-
-        // ⚠️ للتجربة في Postman: إرجاع الـ OTP
-        // في Production: شيلي 'otp' من الـ Response
-        return $this->successResponse('OTP sent', [
-            'email' => $user->email,
-            'otp' => $otp // ← شيلي هذا السطر في Production
-        ]);
-    }
-
-    // ================== RESET PASSWORD ==================
-    public function resetPassword(Request $request)
-    {
-        $validated = $request->validate([
-            'email' => 'required|email',
-            'otp' => 'required|digits:6',
-            'password' => 'required|string|min:6|confirmed',
-        ]);
-
-        $user = User::where('email', $validated['email'])->first();
-        if (!$user) return $this->errorResponse('User not found', 404);
-
-        // التحقق من صلاحية الـ OTP
-        if (
-            $user->password_reset_otp !== $validated['otp'] ||
-            !$user->password_reset_otp_expires_at ||
-            $user->password_reset_otp_expires_at->isPast()
-        ) {
-            return $this->errorResponse('Invalid or expired OTP', 400);
-        }
-
-        $user->password = Hash::make($validated['password']);
-        $user->password_reset_otp = null;
-        $user->password_reset_otp_expires_at = null;
-        $user->save();
-
-        return $this->successResponse('Password reset successfully');
     }
 }
