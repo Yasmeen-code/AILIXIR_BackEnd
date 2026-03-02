@@ -12,6 +12,7 @@ use Illuminate\Validation\Rule;
 use Cloudinary\Cloudinary;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Http;
 use Laravel\Socialite\Facades\Socialite;
 
 class UserController extends BaseController
@@ -344,14 +345,30 @@ class UserController extends BaseController
     public function handleGoogleCallback(Request $request)
     {
         try {
-
             $request->validate([
                 'code' => 'required|string'
             ]);
 
-            $googleUser = Socialite::driver('google')
-                ->stateless()
-                ->userFromCode($request->code);
+            $code = $request->input('code');
+
+            $tokenResponse = Http::asForm()->post('https://oauth2.googleapis.com/token', [
+                'client_id'     => config('services.google.client_id'),
+                'client_secret' => config('services.google.client_secret'),
+                'redirect_uri'  => config('services.google.redirect'),
+                'grant_type'    => 'authorization_code',
+                'code'          => $code,
+            ]);
+
+            if (!isset($tokenResponse['access_token'])) {
+                return response()->json([
+                    'message' => 'Failed to get access token from Google',
+                    'error'   => $tokenResponse
+                ], 400);
+            }
+
+            $accessToken = $tokenResponse['access_token'];
+
+            $googleUser = Socialite::driver('google')->stateless()->userFromToken($accessToken);
 
             $user = User::where('email', $googleUser->getEmail())->first();
 
@@ -374,7 +391,6 @@ class UserController extends BaseController
                 'user'    => $user
             ]);
         } catch (\Exception $e) {
-
             return response()->json([
                 'message' => 'Google login failed',
                 'error'   => $e->getMessage()
