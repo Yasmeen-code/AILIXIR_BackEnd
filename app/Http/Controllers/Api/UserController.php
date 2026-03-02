@@ -329,6 +329,7 @@ class UserController extends BaseController
         }
     }
 
+    // Google OAuth routes
     public function getGoogleAuthUrl()
     {
         $url = Socialite::driver('google')
