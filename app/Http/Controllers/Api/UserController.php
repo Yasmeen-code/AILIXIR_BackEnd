@@ -11,6 +11,8 @@ use App\Models\Researcher;
 use Illuminate\Validation\Rule;
 use Cloudinary\Cloudinary;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Str;
+use Laravel\Socialite\Facades\Socialite;
 
 class UserController extends BaseController
 {
@@ -324,6 +326,58 @@ class UserController extends BaseController
             return $this->successResponse('Profile updated', $user->fresh()->load('researcher'));
         } catch (\Exception $e) {
             return $this->errorResponse('Error: ' . $e->getMessage(), 500);
+        }
+    }
+
+    public function getGoogleAuthUrl()
+    {
+        $url = Socialite::driver('google')
+            ->stateless()
+            ->redirect()
+            ->getTargetUrl();
+
+        return response()->json([
+            'auth_url' => $url
+        ]);
+    }
+    public function handleGoogleCallback(Request $request)
+    {
+        try {
+
+            $request->validate([
+                'code' => 'required|string'
+            ]);
+
+            $googleUser = Socialite::driver('google')
+                ->stateless()
+                ->userFromCode($request->code);
+
+            $user = User::where('email', $googleUser->getEmail())->first();
+
+            if (!$user) {
+                $user = User::create([
+                    'name'        => $googleUser->getName(),
+                    'email'       => $googleUser->getEmail(),
+                    'password'    => Hash::make(Str::random(32)),
+                    'role'        => 'normal',
+                    'is_verified' => true,
+                    'photo'       => $googleUser->getAvatar(),
+                ]);
+            }
+
+            $token = $user->createToken('desktop_token')->plainTextToken;
+
+            return response()->json([
+                'message' => 'Login successful',
+                'token'   => $token,
+                'user'    => $user
+            ]);
+        } catch (\Exception $e) {
+
+            return response()->json([
+                'message' => 'Google login failed',
+                'error'   => $e->getMessage()
+            ], 500);
         }
     }
 }

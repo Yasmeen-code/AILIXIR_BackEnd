@@ -7,15 +7,19 @@ use App\Http\Controllers\Api\ScientistController;
 use App\Http\Controllers\Api\UserController;
 use App\Http\Controllers\Api\NewsController;
 use Cloudinary\Cloudinary;
+
 // ==================== AWARDS ====================
 Route::get('/awards', [AwardController::class, 'index']);
 Route::get('/awards/{id}', [AwardController::class, 'show']);
 Route::get('/awards/{id}/scientists', [AwardController::class, 'getScientistsByAward']);
 
+
 // ==================== SCIENTISTS ====================
 Route::get('/scientists', [ScientistController::class, 'index']);
 Route::get('/scientists/{id}', [ScientistController::class, 'show']);
 Route::get('/scientists/{id}/awards', [ScientistController::class, 'getAwardsByScientist']);
+
+
 //user
 Route::prefix('user')->group(function () {
     Route::post('register', [UserController::class, 'register']);
@@ -25,6 +29,9 @@ Route::prefix('user')->group(function () {
     Route::post('forgot-password', [UserController::class, 'sendForgotPasswordOtp']);
     Route::post('reset-password', [UserController::class, 'resetPassword']);
     Route::post('/resend-reset-password-otp', [UserController::class, 'resendResetPasswordOtp']);
+    // login google
+    Route::get('auth/google/url', [UserController::class, 'getGoogleAuthUrl']);
+    Route::post('auth/google/callback', [UserController::class, 'handleGoogleCallback']);
 
     Route::middleware('auth:sanctum')->group(function () {
         Route::get('profile', [UserController::class, 'profile']);
@@ -33,6 +40,7 @@ Route::prefix('user')->group(function () {
     });
 });
 
+
 // ====================NEWS====================
 // Public routes
 Route::get('/news', [NewsController::class, 'index']);
@@ -40,6 +48,7 @@ Route::get('/news/refresh', [NewsController::class, 'refresh']);
 Route::get('/news/clear', [NewsController::class, 'clear']);
 Route::get('/news/categories', [NewsController::class, 'getCategories']);
 Route::post('/news/{articleId}/share', [NewsController::class, 'shareArticle']);
+
 
 // Protected routes
 Route::middleware('auth:sanctum')->group(function () {
