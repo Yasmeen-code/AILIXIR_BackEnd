@@ -3,67 +3,35 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Api\BaseController;
+use App\Http\Requests\User\LoginGoogleRequest;
+use App\Http\Requests\User\LoginRequest;
+use App\Http\Requests\User\ProfileRequest;
+use App\Http\Requests\User\RegisterRequest;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Mail;
 use App\Models\User;
-use App\Models\Researcher;
-use Illuminate\Validation\Rule;
-use Cloudinary\Cloudinary;
-use Illuminate\Support\Arr;
-use Illuminate\Support\Str;
-use Illuminate\Support\Facades\Http;
-use Laravel\Socialite\Facades\Socialite;
+use App\Services\UserService;
+use App\Services\ProfileService;
+use App\Traits\HandlesOtp;
 
 class UserController extends BaseController
 {
-    private function generateAndSendOtp(User $user, string $type)
+    use HandlesOtp;
+
+    protected UserService $userService;
+    protected ProfileService $profileService;
+
+    public function __construct(UserService $userService, ProfileService $profileService)
     {
-        $otp = random_int(100000, 999999);
-        $expiresAt = now()->addMinutes(15);
-
-        if ($type === 'email_verification') {
-            $user->email_verification_otp = $otp;
-            $user->email_verification_otp_expires_at = $expiresAt;
-        } elseif ($type === 'password_reset') {
-            $user->password_reset_otp = $otp;
-            $user->password_reset_otp_expires_at = $expiresAt;
-        }
-
-        $user->save();
-
-        $subject = $type === 'email_verification' ? 'Email Verification OTP' : 'Password Reset OTP';
-
-        Mail::raw(
-            "Your AILIXIR OTP is: $otp\nExpires in 15 minutes.",
-            function ($message) use ($user, $subject) {
-                $message->to($user->email)
-                    ->subject($subject);
-            }
-        );
-
-        return $otp;
+        $this->userService = $userService;
+        $this->profileService = $profileService;
     }
 
-    public function register(Request $request)
+    /** ---------------- Auth ----------------------- */
+
+    public function register(RegisterRequest $request)
     {
         try {
-            $validated = $request->validate([
-                'name' => 'required|string|max:255',
-                'email' => 'required|email|unique:users,email',
-                'password' => 'required|string|min:6|confirmed',
-            ]);
-
-            $user = User::create([
-                'name' => $validated['name'],
-                'email' => $validated['email'],
-                'password' => Hash::make($validated['password']),
-                'role' => 'normal',
-                'is_verified' => false,
-            ]);
-
-            $this->generateAndSendOtp($user, 'email_verification');
-
+            $user = $this->userService->registerUser($request->validated());
             return $this->successResponse(
                 'Registered successfully. Check your email for OTP.',
                 ['email' => $user->email]
@@ -73,154 +41,54 @@ class UserController extends BaseController
         }
     }
 
-    public function verifyEmail(Request $request)
+    public function login(LoginRequest $request)
     {
-        $request->validate([
-            'email' => 'required|email|exists:users,email',
-            'otp' => 'required|digits:6'
-        ]);
+        $user = $this->userService->loginUser($request->validated());
 
-        $user = User::where('email', $request->email)->first();
-
-        if ($user->email_verification_otp != $request->otp) {
-            return $this->errorResponse('Invalid OTP', 400);
+        if (isset($user['error'])) {
+            return $this->errorResponse($user['error'], $user['code'] ?? 400);
         }
-
-        if (!$user->email_verification_otp_expires_at || now()->gt($user->email_verification_otp_expires_at)) {
-            return $this->errorResponse('Expired OTP', 400);
-        }
-
-        $user->update([
-            'email_verified_at' => now(),
-            'is_verified' => true,
-            'email_verification_otp' => null,
-            'email_verification_otp_expires_at' => null,
-        ]);
-
-        return $this->successResponse('Email verified successfully');
-    }
-
-    public function resendOtp(Request $request)
-    {
-        try {
-            $request->validate([
-                'email' => 'required|email|exists:users,email',
-            ]);
-
-            $user = User::where('email', $request->email)->first();
-
-            if ($user->is_verified) {
-                return $this->errorResponse('Email already verified.', 400);
-            }
-
-            if ($user->email_verification_otp_expires_at && now()->lt($user->email_verification_otp_expires_at)) {
-                return $this->errorResponse(
-                    'Please wait before requesting another OTP.',
-                    429
-                );
-            }
-
-            $this->generateAndSendOtp($user, 'email_verification');
-
-            return $this->successResponse(
-                'OTP resent successfully.',
-                ['email' => $user->email]
-            );
-        } catch (\Throwable $e) {
-            return $this->errorResponse('Failed to resend OTP.', 500);
-        }
-    }
-    public function resendResetPasswordOtp(Request $request)
-    {
-        try {
-            $request->validate([
-                'email' => 'required|email|exists:users,email',
-            ]);
-
-            $user = User::where('email', $request->email)->first();
-
-            if ($user->password_reset_otp_expires_at && now()->lt($user->password_reset_otp_expires_at)) {
-                return $this->errorResponse(
-                    'Please wait before requesting another OTP.',
-                    429
-                );
-            }
-
-            $this->generateAndSendOtp($user, 'password_reset');
-
-            return $this->successResponse(
-                'OTP resent successfully.',
-                ['email' => $user->email]
-            );
-        } catch (\Throwable $e) {
-            return $this->errorResponse('Failed to resend OTP.', 500);
-        }
-    }
-    public function login(Request $request)
-    {
-        $validated = $request->validate([
-            'email' => 'required|email',
-            'password' => 'required|string',
-        ]);
-
-        $user = User::where('email', $validated['email'])->first();
-
-        if (!$user)
-            return $this->errorResponse('Email not found', 404);
-
-        if (!Hash::check($validated['password'], $user->password))
-            return $this->errorResponse('Incorrect password', 401);
-
-        if (!$user->is_verified)
-            return $this->errorResponse('Please verify your email first', 403);
-
-        $token = $user->createToken('auth_token')->plainTextToken;
 
         return $this->successResponse('Login successful', [
-            'token' => $token,
-            'user' => $user
+            'token' => $user['token'],
+            'user' => $user['user']
         ]);
     }
 
-    public function sendForgotPasswordOtp(Request $request)
+    public function logout(Request $request)
     {
-        $validated = $request->validate(['email' => 'required|email']);
-
-        $user = User::where('email', $validated['email'])->first();
-        if (!$user) return $this->errorResponse('User not found', 404);
-
-        $this->generateAndSendOtp($user, 'password_reset');
-
-        return $this->successResponse('OTP sent', ['email' => $user->email]);
+        $request->user()->currentAccessToken()->delete();
+        return $this->successResponse('Logged out successfully');
     }
 
-    public function resetPassword(Request $request)
+    /** ---------------- Google OAuth ---------------- */
+
+    public function getGoogleAuthUrl()
     {
-        $validated = $request->validate([
-            'email' => 'required|email',
-            'otp' => 'required|digits:6',
-            'password' => 'required|string|min:6|confirmed',
+        return response()->json([
+            'auth_url' => $this->userService->getGoogleAuthUrl()
         ]);
-
-        $user = User::where('email', $validated['email'])->first();
-        if (!$user) return $this->errorResponse('User not found', 404);
-
-        if ($user->password_reset_otp != $validated['otp']) {
-            return $this->errorResponse('Invalid OTP', 400);
-        }
-
-        if (!$user->password_reset_otp_expires_at || now()->gt($user->password_reset_otp_expires_at)) {
-            return $this->errorResponse('Expired OTP', 400);
-        }
-
-        $user->update([
-            'password' => Hash::make($validated['password']),
-            'password_reset_otp' => null,
-            'password_reset_otp_expires_at' => null,
-        ]);
-
-        return $this->successResponse('Password reset successfully');
     }
+
+    public function handleGoogleCallback(LoginGoogleRequest $request)
+    {
+        try {
+            $result = $this->userService->loginGoogleUser($request->validated()['code']);
+
+            if (isset($result['error'])) {
+                return $this->errorResponse($result['error'], $result['code'] ?? 400);
+            }
+
+            return $this->successResponse('Login successful', [
+                'token' => $result['token'],
+                'user' => $result['user']
+            ]);
+        } catch (\Exception $e) {
+            return $this->errorResponse('Google login failed: ' . $e->getMessage(), 500);
+        }
+    }
+
+    /** ---------------- Profile ---------------- */
 
     public function profile(Request $request)
     {
@@ -235,166 +103,81 @@ class UserController extends BaseController
         ]);
     }
 
-    public function logout(Request $request)
+    public function updateProfile(ProfileRequest $request)
     {
-        $request->user()->currentAccessToken()->delete();
-        return $this->successResponse('Logged out successfully');
-    }
-
-    public function updateProfile(Request $request)
-    {
-        $user = $request->user();
-
-        $validated = $request->validate([
-            'name' => 'sometimes|string|max:255',
-            'email' => ['sometimes', 'email', Rule::unique('users')->ignore($user->id)],
-            'password' => 'sometimes|string|min:6|confirmed',
-            'specialization' => 'sometimes|string|max:255',
-            'university' => 'sometimes|string|max:255',
-            'years_of_experience' => 'sometimes|integer|min:0',
-            'bio' => 'sometimes|string',
-            'photo' => 'sometimes|file|image|mimes:jpeg,png,jpg|max:2048',
-        ]);
-
         try {
-            $photoUrl = null;
-
-            if ($request->hasFile('photo')) {
-                $cloudinary = new Cloudinary([
-                    'cloud' => [
-                        'cloud_name' => env('CLOUDINARY_CLOUD_NAME'),
-                        'api_key'    => env('CLOUDINARY_API_KEY'),
-                        'api_secret' => env('CLOUDINARY_API_SECRET'),
-                    ],
-                    'url' => ['secure' => true]
-                ]);
-
-                $file = $request->file('photo');
-                $result = $cloudinary->uploadApi()->upload(
-                    $file->getRealPath(),
-                    [
-                        'resource_type' => 'auto',
-                        'public_id' => 'users/' . $user->id . '_' . time(),
-                        'overwrite' => true,
-                    ]
-                );
-                $photoUrl = $result['secure_url'];
-            }
-
-            $userData = Arr::except($validated, ['photo', 'password', 'specialization', 'university', 'years_of_experience', 'bio']);
-
-            if (isset($validated['password'])) {
-                $userData['password'] = Hash::make($validated['password']);
-            }
-
-            if ($photoUrl) {
-                $userData['photo'] = $photoUrl;
-            }
-
-            $user->fill($userData);
-
-            if ($user->role === 'normal' && ($request->filled('specialization') || $request->filled('university'))) {
-                $user->role = 'researcher';
-                $user->save();
-
-                Researcher::create([
-                    'user_id' => $user->id,
-                    'specialization' => $request->specialization,
-                    'university' => $request->university,
-                    'years_of_experience' => $request->years_of_experience ?? 0,
-                    'bio' => $request->bio,
-                    'photo' => $photoUrl,
-                ]);
-            } else {
-                $user->save();
-
-                if ($user->researcher) {
-                    $researcherData = [
-                        'specialization' => $request->specialization ?? $user->researcher->specialization,
-                        'university' => $request->university ?? $user->researcher->university,
-                        'years_of_experience' => $request->years_of_experience ?? $user->researcher->years_of_experience,
-                        'bio' => $request->bio ?? $user->researcher->bio,
-                    ];
-
-                    if ($photoUrl) {
-                        $researcherData['photo'] = $photoUrl;
-                    }
-
-                    $user->researcher->update($researcherData);
-                }
-            }
-
-            return $this->successResponse('Profile updated', $user->fresh()->load('researcher'));
+            $result = $this->profileService->updateProfile($request->user(), $request->validated(), $request);
+            return $this->successResponse('Profile updated successfully', $result);
         } catch (\Exception $e) {
             return $this->errorResponse('Error: ' . $e->getMessage(), 500);
         }
     }
 
-    // Google OAuth routes
-    public function getGoogleAuthUrl()
-    {
-        $url = Socialite::driver('google')
-            ->stateless()
-            ->redirect()
-            ->getTargetUrl();
+    /** ---------------- OTP / Email Verification ---------------- */
 
-        return response()->json([
-            'auth_url' => $url
+    public function verifyEmail(Request $request)
+    {
+        $request->validate([
+            'email' => 'required|email|exists:users,email',
+            'otp' => 'required|digits:6',
         ]);
+
+        $user = User::where('email', $request->email)->firstOrFail();
+
+        $this->validateOtp($user, 'email_verification_otp', 'email_verification_otp_expires_at', $request->otp);
+
+        $user->update([
+            'email_verified_at' => now(),
+            'is_verified' => true,
+            'email_verification_otp' => null,
+            'email_verification_otp_expires_at' => null,
+        ]);
+
+        return $this->successResponse('Email verified successfully');
     }
-    public function handleGoogleCallback(Request $request)
+
+    public function resendOtp(Request $request)
     {
-        try {
-            $request->validate([
-                'code' => 'required|string'
-            ]);
+        $request->validate(['email' => 'required|email|exists:users,email']);
+        $user = User::where('email', $request->email)->firstOrFail();
 
-            $code = $request->input('code');
+        $email = $this->resendOtp($user, 'email_verification');
 
-            $tokenResponse = Http::asForm()->post('https://oauth2.googleapis.com/token', [
-                'client_id'     => config('services.google.client_id'),
-                'client_secret' => config('services.google.client_secret'),
-                'redirect_uri'  => config('services.google.redirect'),
-                'grant_type'    => 'authorization_code',
-                'code'          => $code,
-            ]);
+        return $this->successResponse('OTP resent successfully', ['email' => $email]);
+    }
 
-            if (!isset($tokenResponse['access_token'])) {
-                return response()->json([
-                    'message' => 'Failed to get access token from Google',
-                    'error'   => $tokenResponse
-                ], 400);
-            }
+    public function resendResetPasswordOtp(Request $request)
+    {
+        $request->validate(['email' => 'required|email|exists:users,email']);
+        $user = User::where('email', $request->email)->firstOrFail();
 
-            $accessToken = $tokenResponse['access_token'];
+        $email = $this->resendOtp($user, 'password_reset');
 
-            $googleUser = Socialite::driver('google')->stateless()->userFromToken($accessToken);
+        return $this->successResponse('OTP resent successfully', ['email' => $email]);
+    }
 
-            $user = User::where('email', $googleUser->getEmail())->first();
+    public function sendForgotPasswordOtp(Request $request)
+    {
+        $request->validate(['email' => 'required|email|exists:users,email']);
+        $user = User::where('email', $request->email)->firstOrFail();
 
-            if (!$user) {
-                $user = User::create([
-                    'name'        => $googleUser->getName(),
-                    'email'       => $googleUser->getEmail(),
-                    'password'    => Hash::make(Str::random(32)),
-                    'role'        => 'normal',
-                    'is_verified' => true,
-                    'photo'       => $googleUser->getAvatar(),
-                ]);
-            }
+        $this->userService->sendOtp($user, 'password_reset');
 
-            $token = $user->createToken('desktop_token')->plainTextToken;
+        return $this->successResponse('OTP sent', ['email' => $user->email]);
+    }
 
-            return response()->json([
-                'message' => 'Login successful',
-                'token'   => $token,
-                'user'    => $user
-            ]);
-        } catch (\Exception $e) {
-            return response()->json([
-                'message' => 'Google login failed',
-                'error'   => $e->getMessage()
-            ], 500);
-        }
+    public function resetPassword(Request $request)
+    {
+        $validated = $request->validate([
+            'email' => 'required|email|exists:users,email',
+            'otp' => 'required|digits:6',
+            'password' => 'required|string|min:6|confirmed',
+        ]);
+
+        $user = User::where('email', $validated['email'])->firstOrFail();
+
+        $this->resetPasswordWithOtp($user, $validated['otp'], $validated['password']);
+
+        return $this->successResponse('Password reset successfully');
     }
 }
