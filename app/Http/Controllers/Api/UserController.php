@@ -12,6 +12,8 @@ use App\Models\User;
 use App\Services\UserService;
 use App\Services\ProfileService;
 use App\Traits\HandlesOtp;
+use App\Http\Requests\User\EmailVerificationRequest;
+use App\Http\Requests\User\ResetPasswordRequest;
 
 class UserController extends BaseController
 {
@@ -115,16 +117,12 @@ class UserController extends BaseController
 
     /** ---------------- OTP / Email Verification ---------------- */
 
-    public function verifyEmail(Request $request)
+    public function verifyEmail(EmailVerificationRequest $request)
     {
-        $request->validate([
-            'email' => 'required|email|exists:users,email',
-            'otp' => 'required|digits:6',
-        ]);
+        $request = $request->validated();
+        $user = User::where('email', $request['email'])->firstOrFail();
 
-        $user = User::where('email', $request->email)->firstOrFail();
-
-        $this->validateOtp($user, 'email_verification_otp', 'email_verification_otp_expires_at', $request->otp);
+        $this->validateOtp($user, 'email_verification_otp', 'email_verification_otp_expires_at', $request['otp']);
 
         $user->update([
             'email_verified_at' => now(),
@@ -166,13 +164,9 @@ class UserController extends BaseController
         return $this->successResponse('OTP sent', ['email' => $user->email]);
     }
 
-    public function resetPassword(Request $request)
+    public function resetPassword(ResetPasswordRequest $request)
     {
-        $validated = $request->validate([
-            'email' => 'required|email|exists:users,email',
-            'otp' => 'required|digits:6',
-            'password' => 'required|string|min:6|confirmed',
-        ]);
+        $validated = $request->validated();
 
         $user = User::where('email', $validated['email'])->firstOrFail();
 

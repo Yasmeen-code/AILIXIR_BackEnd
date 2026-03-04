@@ -30,8 +30,6 @@ class UserService
             'is_verified' => false,
         ]);
 
-        $this->sendOtp($user, 'email_verification');
-
         return $user;
     }
 

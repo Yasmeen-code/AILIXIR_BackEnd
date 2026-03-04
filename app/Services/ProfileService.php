@@ -32,7 +32,7 @@ class ProfileService
         $photoUrl = $this->handlePhotoUpload($request, $user);
 
         $userData = Arr::only($validated, ['name', 'email']);
-        if (!empty($validated['password'])) {
+        if (isset($validated['password'])) {
             $userData['password'] = Hash::make($validated['password']);
         }
         if ($photoUrl) {
@@ -43,9 +43,7 @@ class ProfileService
 
         $researcher = $this->repo->getUserResearcher($user);
 
-        $needsResearcher = ($user->role === 'normal' && ($request->filled('specialization') || $request->filled('university')));
-
-        if ($needsResearcher) {
+        if ($user->role === 'normal' && ($request->filled('specialization') || $request->filled('university'))) {
             $user->role = 'researcher';
             $this->repo->saveUser($user);
             $this->createResearcher($user, $request, $photoUrl);

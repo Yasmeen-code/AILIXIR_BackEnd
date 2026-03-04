@@ -5,6 +5,7 @@ namespace App\Traits;
 use App\Models\User;
 use Illuminate\Validation\ValidationException;
 use App\Services\UserService;
+use Illuminate\Support\Facades\Hash;
 
 trait HandlesOtp
 {
@@ -51,7 +52,7 @@ trait HandlesOtp
         $this->validateOtp($user, 'password_reset_otp', 'password_reset_otp_expires_at', $inputOtp);
 
         $user->update([
-            'password' => bcrypt($newPassword),
+            'password' => Hash::make($newPassword),
             'password_reset_otp' => null,
             'password_reset_otp_expires_at' => null,
         ]);
