@@ -12,8 +12,6 @@ use Cloudinary\Cloudinary;
 Route::get('/awards', [AwardController::class, 'index']);
 Route::get('/awards/{id}', [AwardController::class, 'show']);
 Route::get('/awards/{id}/scientists', [AwardController::class, 'getScientistsByAward']);
-
-
 // ==================== SCIENTISTS ====================
 Route::get('/scientists', [ScientistController::class, 'index']);
 Route::get('/scientists/{id}', [ScientistController::class, 'show']);
@@ -41,8 +39,8 @@ Route::prefix('user')->group(function () {
 });
 
 
+
 // ====================NEWS====================
-// Public routes
 Route::get('/news', [NewsController::class, 'index']);
 Route::get('/news/refresh', [NewsController::class, 'refresh']);
 Route::get('/news/clear', [NewsController::class, 'clear']);
