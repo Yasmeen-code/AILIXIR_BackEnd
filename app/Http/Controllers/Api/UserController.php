@@ -26,7 +26,6 @@ class UserController extends BaseController
     {
         $this->userService = $userService;
         $this->profileService = $profileService;
-        $this->middleware('auth:sanctum')->only(['logout', 'profile', 'updateProfile']);
     }
 
     /** ---------------- Auth ----------------------- */
