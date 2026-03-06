@@ -3,7 +3,6 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Api\BaseController;
-use App\Http\Requests\User\LoginGoogleRequest;
 use App\Http\Requests\User\LoginRequest;
 use App\Http\Requests\User\ProfileRequest;
 use App\Http\Requests\User\RegisterRequest;
@@ -72,10 +71,13 @@ class UserController extends BaseController
         ]);
     }
 
-    public function handleGoogleCallback(LoginGoogleRequest $request)
+    public function handleGoogleCallback(Request $request)
     {
         try {
-            $result = $this->userService->loginGoogleUser($request->validated()['code']);
+
+            $code = $request->query('code');
+
+            $result = $this->userService->loginGoogleUser($code);
 
             if (isset($result['error'])) {
                 return $this->errorResponse($result['error'], $result['code'] ?? 400);
