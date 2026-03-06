@@ -29,7 +29,7 @@ Route::prefix('user')->group(function () {
     Route::post('/resend-reset-password-otp', [UserController::class, 'resendResetPasswordOtp']);
     // login google
     Route::get('auth/google/url', [UserController::class, 'getGoogleAuthUrl']);
-    Route::get('auth/google/callback', [UserController::class, 'handleGoogleCallback']);
+    Route::post('auth/google/callback', [UserController::class, 'handleGoogleCallback']);
 
     Route::middleware('auth:sanctum')->group(function () {
         Route::get('profile', [UserController::class, 'profile']);

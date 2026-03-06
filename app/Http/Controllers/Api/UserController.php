@@ -13,6 +13,7 @@ use App\Services\ProfileService;
 use App\Traits\HandlesOtp;
 use App\Http\Requests\User\EmailVerificationRequest;
 use App\Http\Requests\User\ResetPasswordRequest;
+use Illuminate\Support\Facades\Http;
 
 class UserController extends BaseController
 {
@@ -71,25 +72,63 @@ class UserController extends BaseController
         ]);
     }
 
+    // public function handleGoogleCallback(Request $request)
+    // {
+    //     try {
+
+    //         $code = $request->query('code');
+
+    //         $result = $this->userService->loginGoogleUser($code);
+
+    //         if (isset($result['error'])) {
+    //             return $this->errorResponse($result['error'], $result['code'] ?? 400);
+    //         }
+
+    //         return $this->successResponse('Login successful', [
+    //             'token' => $result['token'],
+    //             'user' => $result['user']
+    //         ]);
+
+    //         // return response()->view('google.callback', [
+    //         //     'token' => $result['token'],
+    //         //     'user' => $result['user']
+    //         // ]);
+    //     } catch (\Exception $e) {
+    //         return $this->errorResponse('Google login failed: ' . $e->getMessage(), 500);
+    //     }
+    // }
+
     public function handleGoogleCallback(Request $request)
     {
-        try {
+        $accessToken = $request->access_token;
 
-            $code = $request->query('code');
+        $response = Http::get(
+            'https://www.googleapis.com/oauth2/v3/userinfo',
+            ['access_token' => $accessToken]
+        );
 
-            $result = $this->userService->loginGoogleUser($code);
-
-            if (isset($result['error'])) {
-                return $this->errorResponse($result['error'], $result['code'] ?? 400);
-            }
-
-            return $this->successResponse('Login successful', [
-                'token' => $result['token'],
-                'user' => $result['user']
-            ]);
-        } catch (\Exception $e) {
-            return $this->errorResponse('Google login failed: ' . $e->getMessage(), 500);
+        if (!$response->ok()) {
+            return response()->json(['error' => 'Invalid token'], 401);
         }
+
+        $googleUser = $response->json();
+
+        $user = User::updateOrCreate(
+            ['google_id' => $googleUser['sub']],
+            [
+                'name' => $googleUser['name'] ?? '',
+                'email' => $googleUser['email'] ?? '',
+                'avatar' => $googleUser['picture'] ?? null,
+            ]
+        );
+
+        // create your app token (Sanctum / JWT)
+        $token = $user->createToken('auth_token')->plainTextToken;
+
+        return response()->json([
+            'user' => $user,
+            'token' => $token
+        ]);
     }
 
     /** ---------------- Profile ---------------- */
