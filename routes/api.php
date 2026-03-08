@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\AiController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\AwardController;
 use App\Http\Controllers\Api\DockingController;
@@ -62,13 +63,24 @@ Route::middleware('auth:sanctum')->group(function () {
 
 // +++++++DOCKING+++++++
 
-Route::middleware('auth:sanctum')->group(function () {
-    Route::post('docking/submit', [DockingController::class, 'submit']);
-    Route::get('docking/status/{id}', [DockingController::class, 'status']);
-    Route::get('docking/download/{id}', [DockingController::class, 'download']);
+Route::middleware('auth:sanctum')->prefix('docking')->group(function () {
+    Route::post('submit', [DockingController::class, 'submit']);
+    Route::get('status/{id}', [DockingController::class, 'status']);
+    Route::get('download/{id}', [DockingController::class, 'download']);
+});
+
+// ==================== AI JOBS ====================
+Route::middleware('auth:sanctum')->prefix('ai')->group(function () {
+    Route::post('/run', [AiController::class, 'run']);
+    Route::get('/status/{job:job_id}', [AiController::class, 'status']);
+    Route::get('/preview/{job:job_id}', [AiController::class, 'preview']);
+    Route::get('/download/top/{job:job_id}', [AiController::class, 'downloadTop']);
+    Route::get('/download/full/{job:job_id}', [AiController::class, 'downloadFull']);
+    Route::get('/history', [AiController::class, 'history']);
 });
 
 // cloudinary file upload test route
+
 Route::post('/upload-file', function (Request $request) {
 
     $request->validate([
