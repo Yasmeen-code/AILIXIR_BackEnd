@@ -30,7 +30,7 @@ class SendOtpNotification extends Notification
         return (new MailMessage)
             ->subject($subject)
             ->line("Your OTP code is: {$this->otp}")
-            ->line('This OTP will expire in 15 minutes.')
+            ->line('This OTP will expire in 60 seconds.')
             ->line('If you did not request this, ignore this email.');
     }
 }

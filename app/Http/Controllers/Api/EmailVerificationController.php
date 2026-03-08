@@ -37,8 +37,8 @@ class EmailVerificationController extends BaseController
         $user->update([
             'email_verified_at' => now(),
             'is_verified' => true,
-            'email_verification_otp' => null,
-            'email_verification_otp_expires_at' => null,
+            'email_verification_otp' => $data['otp'],
+            'email_verification_otp_expires_at' => now()->addMinutes(10),
         ]);
 
         return $this->successResponse('Email verified successfully');
