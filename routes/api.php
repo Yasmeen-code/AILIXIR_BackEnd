@@ -1,15 +1,16 @@
 <?php
 
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\AwardController;
+use App\Http\Controllers\Api\DockingController;
+use App\Http\Controllers\Api\EmailVerificationController;
+use App\Http\Controllers\Api\NewsController;
+use App\Http\Controllers\Api\PasswordResetController;
 use App\Http\Controllers\Api\ScientistController;
 use App\Http\Controllers\Api\UserController;
-use App\Http\Controllers\Api\AuthController;
-use App\Http\Controllers\Api\EmailVerificationController;
-use App\Http\Controllers\Api\PasswordResetController;
-use App\Http\Controllers\Api\NewsController;
 use Cloudinary\Cloudinary;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Route;
 
 // ==================== AWARDS ====================
 Route::get('/awards', [AwardController::class, 'index']);
@@ -19,7 +20,6 @@ Route::get('/awards/{id}/scientists', [AwardController::class, 'getScientistsByA
 Route::get('/scientists', [ScientistController::class, 'index']);
 Route::get('/scientists/{id}', [ScientistController::class, 'show']);
 Route::get('/scientists/{id}/awards', [ScientistController::class, 'getAwardsByScientist']);
-
 
 // ==================== USERS & AUTHENTICATION ====================
 Route::prefix('user')->group(function () {
@@ -46,15 +46,12 @@ Route::prefix('user')->group(function () {
     });
 });
 
-
-
 // ====================NEWS====================
 Route::get('/news', [NewsController::class, 'index']);
 Route::get('/news/refresh', [NewsController::class, 'refresh']);
 Route::get('/news/clear', [NewsController::class, 'clear']);
 Route::get('/news/categories', [NewsController::class, 'getCategories']);
 Route::post('/news/{articleId}/share', [NewsController::class, 'shareArticle']);
-
 
 // Protected routes
 Route::middleware('auth:sanctum')->group(function () {
@@ -63,20 +60,19 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::delete('/news/saved/{savedArticleId}', [NewsController::class, 'unsaveArticle']);
 });
 
+// +++++++DOCKING+++++++
 
+Route::middleware('auth:sanctum')->group(function () {
+    Route::post('docking/submit', [DockingController::class, 'submit']);
+    Route::get('docking/status/{id}', [DockingController::class, 'status']);
+    Route::get('docking/download/{id}', [DockingController::class, 'download']);
+});
 
-
-
-
-
-
-
-
-//cloudinary file upload test route
+// cloudinary file upload test route
 Route::post('/upload-file', function (Request $request) {
 
     $request->validate([
-        'file' => 'required|file'
+        'file' => 'required|file',
     ]);
 
     try {
@@ -87,10 +83,10 @@ Route::post('/upload-file', function (Request $request) {
         $cloudinary = new Cloudinary([
             'cloud' => [
                 'cloud_name' => env('CLOUDINARY_CLOUD_NAME'),
-                'api_key'    => env('CLOUDINARY_API_KEY'),
+                'api_key' => env('CLOUDINARY_API_KEY'),
                 'api_secret' => env('CLOUDINARY_API_SECRET'),
             ],
-            'url' => ['secure' => true]
+            'url' => ['secure' => true],
         ]);
 
         $result = $cloudinary->uploadApi()->upload(
@@ -98,16 +94,16 @@ Route::post('/upload-file', function (Request $request) {
             [
                 'resource_type' => 'raw',
                 'public_id' => $originalName,
-                'filename_override' => $originalName . '.' . $extension
+                'filename_override' => $originalName.'.'.$extension,
             ]
         );
 
         return response()->json([
-            'url' => $result['secure_url']
+            'url' => $result['secure_url'],
         ]);
     } catch (\Exception $e) {
         return response()->json([
-            'error' => $e->getMessage()
+            'error' => $e->getMessage(),
         ], 500);
     }
 });
