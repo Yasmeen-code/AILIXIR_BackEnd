@@ -37,8 +37,8 @@ class RunDockingJob implements ShouldQueue
         $this->dockingJob->update(['status' => 'processing']);
 
         try {
-            $scriptPath = base_path('scripts/vina_docking.py');
-            $pythonPath = base_path('vina_env/bin/python');
+            $scriptPath = env('DOCKING_SCRIPT_PATH', base_path('scripts/vina_docking.py'));
+            $pythonPath = env('DOCKING_PYTHON_PATH', base_path('vina_env/bin/python'));
 
             // Build command
             $cmd = sprintf(

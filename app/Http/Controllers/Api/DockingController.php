@@ -16,7 +16,7 @@ class DockingController
     public function submit(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'protein_file' => 'required|file',
+            'protein_file' => 'nullable|file',
             'ligand_file' => 'required|file',
             'center_x' => 'required|numeric',
             'center_y' => 'required|numeric',
@@ -34,14 +34,19 @@ class DockingController
 
         // Save files to local storage (storage/app/docking)
         // Note: Python needs direct local paths to execute
-        $proteinFilename = \Illuminate\Support\Str::random(40).'.pdbqt';
         $ligandFilename = \Illuminate\Support\Str::random(40).'.pdbqt';
-
-        $proteinPath = $request->file('protein_file')->storeAs('docking', $proteinFilename);
         $ligandPath = $request->file('ligand_file')->storeAs('docking', $ligandFilename);
-
-        $originalProteinName = $request->file('protein_file')->getClientOriginalName();
         $originalLigandName = $request->file('ligand_file')->getClientOriginalName();
+
+        // Use uploaded protein file or fall back to default
+        if ($request->hasFile('protein_file')) {
+            $proteinFilename = \Illuminate\Support\Str::random(40).'.pdbqt';
+            $proteinPath = $request->file('protein_file')->storeAs('docking', $proteinFilename);
+            $originalProteinName = $request->file('protein_file')->getClientOriginalName();
+        } else {
+            $proteinPath = env('DEFAULT_PROTEIN_PATH', 'docking/lfnhkSw4lD49wpnnFT1IrQvhRKmi4OBAFrkp7lyt.pdbqt');
+            $originalProteinName = 'default_protein.pdbqt';
+        }
 
         // Create Database Record
         $job = DockingJob::create([
