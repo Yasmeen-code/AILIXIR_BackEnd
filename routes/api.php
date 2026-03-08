@@ -9,6 +9,7 @@ use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\EmailVerificationController;
 use App\Http\Controllers\Api\PasswordResetController;
 use App\Http\Controllers\Api\NewsController;
+use App\Http\Controllers\Api\AiController;
 use Cloudinary\Cloudinary;
 
 // ==================== AWARDS ====================
@@ -64,7 +65,15 @@ Route::middleware('auth:sanctum')->group(function () {
 });
 
 
-
+// ==================== AI JOBS ====================
+Route::middleware('auth:sanctum')->prefix('ai')->group(function () {
+    Route::post('/run', [AiController::class, 'run']);
+    Route::get('/status/{job:job_id}', [AiController::class, 'status']);
+    Route::get('/preview/{job:job_id}', [AiController::class, 'preview']);
+    Route::get('/download/top/{job:job_id}', [AiController::class, 'downloadTop']);
+    Route::get('/download/full/{job:job_id}', [AiController::class, 'downloadFull']);
+    Route::get('/history', [AiController::class, 'history']);
+});
 
 
 
