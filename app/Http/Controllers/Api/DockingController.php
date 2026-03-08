@@ -44,7 +44,7 @@ class DockingController
             $proteinPath = $request->file('protein_file')->storeAs('docking', $proteinFilename);
             $originalProteinName = $request->file('protein_file')->getClientOriginalName();
         } else {
-            $proteinPath = env('DEFAULT_PROTEIN_PATH', 'docking/lfnhkSw4lD49wpnnFT1IrQvhRKmi4OBAFrkp7lyt.pdbqt');
+            $proteinPath = env('DEFAULT_PROTEIN_PATH', resource_path('docking/proteins/default_protein.pdbqt'));
             $originalProteinName = 'default_protein.pdbqt';
         }
 
