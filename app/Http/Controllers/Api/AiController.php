@@ -57,6 +57,7 @@ class AiController extends BaseController
 
     public function history()
     {
-        return AiJob::where('user_id', Auth::id())->latest()->paginate(10);
+        $jobs = AiJob::where('user_id', Auth::id())->orderBy('created_at', 'desc')->get();
+        return response()->json($jobs);
     }
 }
