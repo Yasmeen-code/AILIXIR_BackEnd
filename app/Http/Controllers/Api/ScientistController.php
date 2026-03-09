@@ -4,7 +4,6 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Api\BaseController;
 use App\Http\Resources\ScientistResource;
-use App\Http\Resources\AwardResource;
 use App\Services\ScientistService;
 use Illuminate\Http\Request;
 
@@ -19,7 +18,7 @@ class ScientistController extends BaseController
 
     public function index(Request $request)
     {
-        $perPage = min(100, max(1, (int) $request->get('per_page', 10)));
+        $perPage = min(100, max(1, (int)$request->get('per_page', 10)));
 
         $scientists = $this->service->getScientists($perPage);
 
@@ -55,12 +54,7 @@ class ScientistController extends BaseController
 
         return $this->successResponse(
             'Awards retrieved successfully',
-            [
-                'scientist_id' => $scientist->id,
-                'scientist_name' => $scientist->name,
-                'results' => AwardResource::collection($scientist->awards),
-                'pagination' => null
-            ]
+            $scientist->awards
         );
     }
 }

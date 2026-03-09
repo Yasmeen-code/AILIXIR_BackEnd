@@ -18,10 +18,10 @@ class ScientistResource extends JsonResource
             'field' => $this->field,
             'images' => $this->images,
             'bio' => $this->bio,
-            'short_bio' => Str::limit($this->bio,150),
+            'short_bio' => Str::limit($this->bio, 150),
             'impact' => $this->impact,
             'awards_count' => $this->when(isset($this->awards_count), $this->awards_count),
-            'awards' => AwardResource::collection($this->whenLoaded('awards')),
+            'awards' => \App\Http\Resources\AwardResource::collection($this->whenLoaded('awards')),
         ];
     }
 }

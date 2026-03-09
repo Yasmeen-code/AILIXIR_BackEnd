@@ -3,6 +3,7 @@
 namespace App\Http\Resources;
 
 use Illuminate\Http\Resources\Json\JsonResource;
+use Illuminate\Support\Str;
 
 class AwardResource extends JsonResource
 {
@@ -13,9 +14,9 @@ class AwardResource extends JsonResource
             'name' => $this->name,
             'category' => $this->category,
             'images' => $this->images,
-            'image' => $this->images[0] ?? null,
-            'year_won' => $this->pivot->year_won ?? null,
-            'contribution' => $this->pivot->contribution ?? null,
+            'short_description' => Str::limit($this->description, 100),
+            'scientists_count' => $this->when(isset($this->scientists_count), $this->scientists_count),
+            'scientists' => \App\Http\Resources\ScientistResource::collection($this->whenLoaded('scientists')),
         ];
     }
 }
