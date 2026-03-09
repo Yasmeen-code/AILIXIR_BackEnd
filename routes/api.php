@@ -16,9 +16,7 @@ Route::get('/awards/{id}/scientists', [AwardController::class, 'getScientistsByA
 Route::get('/scientists', [ScientistController::class, 'index']);
 Route::get('/scientists/{id}', [ScientistController::class, 'show']);
 Route::get('/scientists/{id}/awards', [ScientistController::class, 'getAwardsByScientist']);
-
-
-//user
+// ==================== USER ====================
 Route::prefix('user')->group(function () {
     Route::post('register', [UserController::class, 'register']);
     Route::post('verify-email', [UserController::class, 'verifyEmail']);
@@ -37,18 +35,12 @@ Route::prefix('user')->group(function () {
         Route::post('logout', [UserController::class, 'logout']);
     });
 });
-
-
-
 // ====================NEWS====================
 Route::get('/news', [NewsController::class, 'index']);
 Route::get('/news/refresh', [NewsController::class, 'refresh']);
 Route::get('/news/clear', [NewsController::class, 'clear']);
 Route::get('/news/categories', [NewsController::class, 'getCategories']);
 Route::post('/news/{articleId}/share', [NewsController::class, 'shareArticle']);
-
-
-// Protected routes
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/news/{articleId}/save', [NewsController::class, 'saveArticle']);
     Route::get('/news/saved', [NewsController::class, 'getSavedArticles']);
