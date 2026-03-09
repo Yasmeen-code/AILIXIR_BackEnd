@@ -10,7 +10,7 @@ use Illuminate\Support\Facades\Hash;
 
 class OtpService
 {
-    const OTP_EXPIRATION_MINUTES = 1;
+    const OTP_EXPIRATION_MINUTES = 5;
 
     public function sendOtp(User $user, string $type): int
     {
