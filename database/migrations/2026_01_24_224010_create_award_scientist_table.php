@@ -16,7 +16,7 @@ return new class extends Migration
             $table->text('contribution')->nullable();
             $table->timestamps();
 
-            $table->unique(['award_id', 'scientist_id']);
+            $table->unique(['award_id', 'scientist_id', 'year_won']);
         });
     }
 

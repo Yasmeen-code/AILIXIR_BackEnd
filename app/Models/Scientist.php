@@ -3,7 +3,6 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class Scientist extends Model
 {
@@ -15,12 +14,13 @@ class Scientist extends Model
         'images',
         'bio',
         'impact',
-        'field',
+        'field'
     ];
 
     protected $casts = [
         'images' => 'array',
     ];
+
     public function awards()
     {
         return $this->belongsToMany(Award::class, 'award_scientist')
