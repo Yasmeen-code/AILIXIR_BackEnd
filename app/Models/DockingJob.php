@@ -11,6 +11,8 @@ class DockingJob extends Model
 
     protected $fillable = [
         'user_id',
+        'input_type',
+        'smiles',
         'protein_name',
         'ligand_name',
         'protein_path',
