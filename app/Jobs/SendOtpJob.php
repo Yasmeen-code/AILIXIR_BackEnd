@@ -4,7 +4,7 @@ namespace App\Jobs;
 
 use App\Models\User;
 use App\Notifications\SendOtpNotification;
-use Illuminate\Bus\Queueable;
+use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 

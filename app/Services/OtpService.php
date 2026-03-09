@@ -11,7 +11,7 @@ use InvalidArgumentException;
 
 class OtpService
 {
-    const OTP_EXPIRATION_MINUTES = 15;
+    const OTP_EXPIRATION_MINUTES = 1;
 
     public function sendOtp(User $user, string $type): int
     {
@@ -83,7 +83,8 @@ class OtpService
         }
 
         if ($user->$otpExpiresField && now()->lt($user->$otpExpiresField)) {
-            throw ValidationException::withMessages(['otp' => 'Please wait before requesting another OTP.']);
+            $secondsRemaining = round(now()->diffInSeconds($user->$otpExpiresField));
+            throw ValidationException::withMessages(['otp' => "Please wait {$secondsRemaining} seconds before requesting a new OTP."]);
         }
 
         $this->sendOtp($user, $type);
