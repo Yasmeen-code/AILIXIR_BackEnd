@@ -2,11 +2,12 @@
 
 namespace App\Services;
 
-use App\Jobs\SendOtpJob;
-use InvalidArgumentException;
+use App\Jobs\SendOtpEmailJob;
 use App\Models\User;
-use Illuminate\Validation\ValidationException;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Validation\ValidationException;
+use InvalidArgumentException;
 
 class OtpService
 {
@@ -21,7 +22,9 @@ class OtpService
         $user->{$columns['expires']} = now()->addMinutes(self::OTP_EXPIRATION_MINUTES);
         $user->save();
 
-        SendOtpJob::dispatch($user, $otp, $type);
+        SendOtpEmailJob::dispatch($user, $otp, $type);
+
+        Log::info("OTP for {$user->email} IS : {$otp} ");
 
         return $otp;
     }
@@ -30,12 +33,12 @@ class OtpService
     {
         $columns = $this->getOtpColumns($type);
 
-        if ((int)$user->{$columns['otp']} !== (int)$otp) {
-            throw new \Exception("Invalid OTP");
+        if ((int) $user->{$columns['otp']} !== (int) $otp) {
+            throw new \Exception('Invalid OTP');
         }
 
         if ($user->{$columns['expires']} < now()) {
-            throw new \Exception("OTP expired");
+            throw new \Exception('OTP expired');
         }
 
         $user->{$columns['otp']} = null;
@@ -62,11 +65,11 @@ class OtpService
 
     public function validateOtp(User $user, string $otpField, string $expiresField, string $inputOtp)
     {
-        if ($user->$otpField != $inputOtp) {
+        if ($inputOtp != $user->$otpField) {
             throw ValidationException::withMessages(['otp' => 'Invalid OTP']);
         }
 
-        if (!$user->$expiresField || now()->gt($user->$expiresField)) {
+        if (! $user->$expiresField || now()->gt($user->$expiresField)) {
             throw ValidationException::withMessages(['otp' => 'Expired OTP']);
         }
     }
