@@ -10,12 +10,17 @@ use Illuminate\Support\Facades\Auth;
 
 class AiController extends BaseController
 {
-    public function run(RunAiRequest $request, AiService $aiService)
+    protected $aiService;
+
+    public function __construct(AiService $aiService)
+    {
+        $this->aiService = $aiService;
+    }
+    public function run(RunAiRequest $request)
     {
         $data = $request->validated();
 
-        $response = $aiService->run($data);
-
+        $response = $this->aiService->run($data);
         $job = AiJob::create([
             'user_id' => Auth::id(),
             'job_id' => $response['job_id'],
@@ -39,17 +44,17 @@ class AiController extends BaseController
         return response()->json($job->preview);
     }
 
-    public function downloadTop(AiJob $job, AiService $aiService)
+    public function downloadTop(AiJob $job)
     {
-        $response = $aiService->downloadTop($job->job_id);
+        $response = $this->aiService->downloadTop($job->job_id);
         return response($response->body(), 200)
             ->header('Content-Type', 'text/csv')
             ->header('Content-Disposition', 'attachment; filename="top_results.csv"');
     }
 
-    public function downloadFull(AiJob $job, AiService $aiService)
+    public function downloadFull(AiJob $job)
     {
-        $response = $aiService->downloadFull($job->job_id);
+        $response = $this->aiService->downloadFull($job->job_id);
         return response($response->body(), 200)
             ->header('Content-Type', 'text/csv')
             ->header('Content-Disposition', 'attachment; filename="full_results.csv"');

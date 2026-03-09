@@ -12,9 +12,9 @@ class SendOtpEmailJob implements ShouldQueue
 {
     use Dispatchable, Queueable;
 
-    protected User $user;
-    protected int $otp;
-    protected string $type;
+    protected $user;
+    protected $otp;
+    protected $type;
 
     public function __construct(User $user, int $otp, string $type)
     {

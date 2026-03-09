@@ -10,8 +10,8 @@ use Illuminate\Support\Facades\Hash;
 
 class ProfileService
 {
-    protected Cloudinary $cloudinary;
-    protected ProfileRepository $repo;
+    protected $cloudinary;
+    protected $repo;
 
     public function __construct(ProfileRepository $repo)
     {

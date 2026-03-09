@@ -14,7 +14,7 @@ class UpdateAiJobStatus implements ShouldQueue
 {
     use InteractsWithQueue, Queueable, SerializesModels;
 
-    protected AiJob $aiJob;
+    protected $aiJob;
 
     public function __construct(AiJob $aiJob)
     {

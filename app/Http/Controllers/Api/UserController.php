@@ -10,7 +10,7 @@ use App\Services\ProfileService;
 class UserController extends BaseController
 {
 
-    protected ProfileService $profileService;
+    protected $profileService;
 
     public function __construct(ProfileService $profileService)
     {
