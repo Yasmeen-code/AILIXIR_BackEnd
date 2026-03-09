@@ -12,7 +12,7 @@ use App\Helpers\OtpHelper;
 class EmailVerificationController extends BaseController
 {
 
-    protected OtpService $otpService;
+    protected $otpService;
 
     public function __construct(OtpService $otpService)
     {

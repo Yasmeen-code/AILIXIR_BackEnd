@@ -8,7 +8,7 @@ use Illuminate\Support\Str;
 
 class UserService
 {
-    protected OtpService $otpService;
+    protected $otpService;
 
     public function __construct(OtpService $otpService)
     {

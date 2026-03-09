@@ -12,7 +12,7 @@ use App\Helpers\OtpHelper;
 class PasswordResetController extends BaseController
 {
 
-    protected OtpService $otpService;
+    protected $otpService;
 
     public function __construct(OtpService $otpService)
     {

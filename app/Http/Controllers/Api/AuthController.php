@@ -12,7 +12,7 @@ use App\Services\UserService;
 class AuthController extends BaseController
 {
 
-    protected UserService $userService;
+    protected $userService;
 
     public function __construct(UserService $userService)
     {
