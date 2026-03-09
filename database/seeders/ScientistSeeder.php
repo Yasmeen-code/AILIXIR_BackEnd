@@ -6,12 +6,12 @@ use Illuminate\Database\Seeder;
 use App\Models\Scientist;
 use App\Models\Award;
 use Cloudinary\Cloudinary;
+use Illuminate\Support\Facades\DB;
 
 class ScientistSeeder extends Seeder
 {
     public function run(): void
     {
-
         Scientist::query()->delete();
         $this->command->info('Deleted all existing scientists data.');
 
@@ -193,63 +193,58 @@ class ScientistSeeder extends Seeder
         ]);
 
         foreach ($scientistsData as $data) {
-            $scientistInfo = $data['info'];
+            DB::transaction(function () use ($data, $cloudinary) {
 
-            // رفع الصور على Cloudinary
-            $baseName = strtolower($scientistInfo['name']);
-            $baseName = preg_replace('/[^a-z0-9]+/', '_', $baseName);
+                $scientistInfo = $data['info'];
 
-            $uploadedUrls = [];
-            $index = 1;
+                $baseName = strtolower($scientistInfo['name']);
+                $baseName = preg_replace('/[^a-z0-9]+/', '_', $baseName);
 
-            while (true) {
-                $fileName = $index === 1
-                    ? "{$baseName}.jpg"
-                    : "{$baseName}_{$index}.jpg";
+                $uploadedUrls = [];
+                $index = 1;
 
-                $fullPath = public_path("imgs/scientists/{$fileName}");
+                while (true) {
+                    $fileName = $index === 1 ? "{$baseName}.jpg" : "{$baseName}_{$index}.jpg";
+                    $fullPath = public_path("imgs/scientists/{$fileName}");
 
-                if (!file_exists($fullPath)) {
-                    break;
+                    if (!file_exists($fullPath)) break;
+
+                    try {
+                        $result = $cloudinary->uploadApi()->upload(
+                            $fullPath,
+                            [
+                                'resource_type' => 'auto',
+                                'public_id' => 'scientists/' . pathinfo($fileName, PATHINFO_FILENAME),
+                                'overwrite' => true
+                            ]
+                        );
+                        $uploadedUrls[] = $result['secure_url'];
+                        $this->command->info("Uploaded: {$fileName}");
+                    } catch (\Exception $e) {
+                        $this->command->error("Failed to upload {$fileName}: " . $e->getMessage());
+                    }
+                    $index++;
                 }
 
-                try {
-                    $result = $cloudinary->uploadApi()->upload(
-                        $fullPath,
-                        [
-                            'resource_type' => 'auto',
-                            'public_id' => 'scientists/' . pathinfo($fileName, PATHINFO_FILENAME),
-                            'overwrite' => true
-                        ]
+                $scientistInfo['images'] = $uploadedUrls;
+
+                $scientist = Scientist::create($scientistInfo);
+                $this->command->info("Created scientist: {$scientistInfo['name']}");
+
+                foreach ($data['awards'] as $awardData) {
+                    $award = Award::firstOrCreate(
+                        ['name' => $awardData['name']],
+                        ['description' => '', 'category' => null]
                     );
 
-                    $uploadedUrls[] = $result['secure_url'];
-                    $this->command->info("Uploaded: {$fileName}");
-                } catch (\Exception $e) {
-                    $this->command->error("Failed to upload {$fileName}: " . $e->getMessage());
-                }
-
-                $index++;
-            }
-
-            $scientistInfo['images'] = $uploadedUrls;
-
-            $scientist = Scientist::create($scientistInfo);
-            $this->command->info("Created scientist: {$scientistInfo['name']}");
-
-            foreach ($data['awards'] as $awardData) {
-                $award = Award::where('name', $awardData['name'])->first();
-
-                if ($award) {
                     $scientist->awards()->attach($award->id, [
-                        'year_won' => $awardData['year'],
-                        'contribution' => $awardData['contribution'],
+                        'year_won' => $awardData['year'] ?? null,
+                        'contribution' => $awardData['contribution'] ?? null,
                     ]);
+
                     $this->command->info("  -> Linked with {$awardData['name']} ({$awardData['year']})");
-                } else {
-                    $this->command->warn("  -> Award not found: {$awardData['name']}");
                 }
-            }
+            });
         }
 
         $this->command->info('All scientists seeded successfully with awards!');

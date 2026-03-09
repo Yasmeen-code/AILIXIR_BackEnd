@@ -3,103 +3,50 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Api\BaseController;
-use App\Models\Award;
+use App\Http\Resources\ScientistResource;
+use App\Http\Resources\AwardResource;
+use App\Services\AwardService;
 use Illuminate\Http\Request;
 
 class AwardController extends BaseController
 {
+    protected $service;
+
+    public function __construct(AwardService $service)
+    {
+        $this->service = $service;
+    }
+
     public function index(Request $request)
     {
-        $perPage = min(100, max(1, (int) $request->get('per_page', 10)));
+        $perPage = min(100, max(1, (int)$request->get('per_page', 10)));
 
-        $awards = Award::with(['scientists' => function ($query) {
-            $query->select('scientists.id', 'scientists.name', 'scientists.images');
-        }])
-            ->paginate($perPage);
+        $awards = $this->service->getAwards($perPage);
 
-        $transformed = $awards->getCollection()->map(function ($award) {
-            return [
-                'id' => $award->id,
-                'name' => $award->name,
-                'images' => $award->images,
-                'category' => $award->category,
-                'short_description' => substr($award->description, 0, 100) . '...',
-                'scientists_count' => $award->scientists->count(),
-                'scientists' => $award->scientists->map(function ($scientist) {
-                    return [
-                        'id' => $scientist->id,
-                        'name' => $scientist->name,
-                        'image' => $scientist->images[0] ?? null,
-                        'year_won' => $scientist->pivot->year_won,
-                    ];
-                }),
-            ];
-        });
-
-        $awards->setCollection($transformed);
-
-        return $this->paginatedResponse('Awards retrieved successfully', $awards);
+        return $this->paginatedResponse(
+            'Awards retrieved successfully',
+            $awards->through(fn($award) => new AwardResource($award)),
+            $awards
+        );
     }
 
     public function show($id)
     {
-        $award = Award::with(['scientists' => function ($query) {
-            $query->select('scientists.*');
-        }])
-            ->find($id);
+        $award = $this->service->getAward($id);
 
-        if (!$award) {
-            return $this->errorResponse('Award not found', 404);
-        }
-
-        return $this->successResponse('Award retrieved successfully', [
-            'id' => $award->id,
-            'name' => $award->name,
-            'category' => $award->category,
-            'images' => $award->images,
-            'description' => $award->description,
-            'country' => $award->country,
-            'year_started' => $award->year_started,
-            'website' => $award->website,
-            'scientists' => $award->scientists->map(function ($scientist) {
-                return [
-                    'id' => $scientist->id,
-                    'name' => $scientist->name,
-                    'nationality' => $scientist->nationality,
-                    'images' => $scientist->images,
-                    'field' => $scientist->field,
-                    'year_won' => $scientist->pivot->year_won,
-                    'contribution' => $scientist->pivot->contribution,
-                ];
-            }),
-        ]);
+        return $this->successResponse(
+            'Award retrieved successfully',
+            new AwardResource($award)
+        );
     }
 
     public function getScientistsByAward($id)
     {
-        $award = Award::with(['scientists' => function ($query) {
-            $query->select('scientists.id', 'scientists.name', 'scientists.images', 'scientists.field');
-        }])
-            ->find($id);
+        $award = $this->service->getAward($id);
 
-        if (!$award) {
-            return $this->errorResponse('Award not found', 404);
-        }
-
-        return $this->successResponse('Scientists retrieved successfully', [
-            'award_id' => $award->id,
-            'award_name' => $award->name,
-            'results' => $award->scientists->map(function ($scientist) {
-                return [
-                    'id' => $scientist->id,
-                    'name' => $scientist->name,
-                    'field' => $scientist->field,
-                    'image' => $scientist->images[0] ?? null,
-                    'year_won' => $scientist->pivot->year_won,
-                    'contribution' => $scientist->pivot->contribution,
-                ];
-            }),
-            'pagination' => null
-        ]);
+        return $this->successResponse(
+            'Scientists retrieved successfully',
+            ScientistResource::collection($award->scientists)
+        );
     }
 }
