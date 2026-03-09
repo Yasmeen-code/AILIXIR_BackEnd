@@ -5,7 +5,11 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\AwardController;
 use App\Http\Controllers\Api\ScientistController;
 use App\Http\Controllers\Api\UserController;
+use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\EmailVerificationController;
+use App\Http\Controllers\Api\PasswordResetController;
 use App\Http\Controllers\Api\NewsController;
+use App\Http\Controllers\Api\AiController;
 use Cloudinary\Cloudinary;
 
 // ==================== AWARDS ====================
@@ -17,22 +21,29 @@ Route::get('/scientists', [ScientistController::class, 'index']);
 Route::get('/scientists/{id}', [ScientistController::class, 'show']);
 Route::get('/scientists/{id}/awards', [ScientistController::class, 'getAwardsByScientist']);
 // ==================== USER ====================
-Route::prefix('user')->group(function () {
-    Route::post('register', [UserController::class, 'register']);
-    Route::post('verify-email', [UserController::class, 'verifyEmail']);
-    Route::post('/resend-otp', [UserController::class, 'resendOtp']);
-    Route::post('login', [UserController::class, 'login']);
-    Route::post('forgot-password', [UserController::class, 'sendForgotPasswordOtp']);
-    Route::post('reset-password', [UserController::class, 'resetPassword']);
-    Route::post('/resend-reset-password-otp', [UserController::class, 'resendResetPasswordOtp']);
-    // login google
-    Route::get('auth/google/url', [UserController::class, 'getGoogleAuthUrl']);
-    Route::get('auth/google/callback', [UserController::class, 'handleGoogleCallback']);
 
+// ==================== USERS & AUTHENTICATION ====================
+Route::prefix('user')->group(function () {
+    Route::post('register', [AuthController::class, 'register']);
+    Route::post('login', [AuthController::class, 'login']);
+
+    // email verification
+    Route::post('verify-email', [EmailVerificationController::class, 'verifyEmail']);
+    Route::post('/resend-otp', [EmailVerificationController::class, 'resendOtp']);
+
+    // password reset
+    Route::post('forgot-password', [PasswordResetController::class, 'sendForgotPasswordOtp']);
+    Route::post('reset-password', [PasswordResetController::class, 'resetPassword']);
+    Route::post('/resend-reset-password-otp', [PasswordResetController::class, 'resendResetPasswordOtp']);
+
+    // login google
+    Route::post('auth/google', [AuthController::class, 'handleGoogleCallback']);
+
+    // profile and logout routes
     Route::middleware('auth:sanctum')->group(function () {
         Route::get('profile', [UserController::class, 'profile']);
         Route::post('update-profile', [UserController::class, 'updateProfile']);
-        Route::post('logout', [UserController::class, 'logout']);
+        Route::post('logout', [AuthController::class, 'logout']);
     });
 });
 // ====================NEWS====================
@@ -48,7 +59,15 @@ Route::middleware('auth:sanctum')->group(function () {
 });
 
 
-
+// ==================== AI JOBS ====================
+Route::middleware('auth:sanctum')->prefix('ai')->group(function () {
+    Route::post('/run', [AiController::class, 'run']);
+    Route::get('/status/{job:job_id}', [AiController::class, 'status']);
+    Route::get('/preview/{job:job_id}', [AiController::class, 'preview']);
+    Route::get('/download/top/{job:job_id}', [AiController::class, 'downloadTop']);
+    Route::get('/download/full/{job:job_id}', [AiController::class, 'downloadFull']);
+    Route::get('/history', [AiController::class, 'history']);
+});
 
 
 
