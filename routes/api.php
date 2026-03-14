@@ -48,12 +48,12 @@ Route::prefix('user')->group(function () {
     });
 });
 // ====================NEWS====================
-Route::get('/news', [NewsController::class, 'index']);
-Route::get('/news/refresh', [NewsController::class, 'refresh']);
-Route::get('/news/clear', [NewsController::class, 'clear']);
-Route::get('/news/categories', [NewsController::class, 'getCategories']);
-Route::post('/news/{articleId}/share', [NewsController::class, 'shareArticle']);
+
 Route::middleware('auth:sanctum')->group(function () {
+    Route::get('/news', [NewsController::class, 'index']);
+    Route::get('/news/refresh', [NewsController::class, 'refresh']);
+    Route::get('/news/categories', [NewsController::class, 'getCategories']);
+    Route::post('/news/{articleId}/share', [NewsController::class, 'shareArticle']);
     Route::post('/news/{articleId}/save', [NewsController::class, 'saveArticle']);
     Route::get('/news/saved', [NewsController::class, 'getSavedArticles']);
     Route::delete('/news/saved/{savedArticleId}', [NewsController::class, 'unsaveArticle']);
@@ -105,7 +105,7 @@ Route::post('/upload-file', function (Request $request) {
             [
                 'resource_type' => 'raw',
                 'public_id' => $originalName,
-                'filename_override' => $originalName.'.'.$extension,
+                'filename_override' => $originalName . '.' . $extension,
             ]
         );
 
