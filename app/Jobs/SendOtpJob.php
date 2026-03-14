@@ -8,7 +8,7 @@ use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 
-class SendOtpEmailJob implements ShouldQueue
+class SendOtpJob implements ShouldQueue
 {
     use Dispatchable, Queueable;
 

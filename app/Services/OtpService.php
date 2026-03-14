@@ -2,7 +2,7 @@
 
 namespace App\Services;
 
-use App\Jobs\SendOtpEmailJob;
+use App\Jobs\SendOtpJob;
 use App\Models\User;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
@@ -22,7 +22,7 @@ class OtpService
         $user->{$columns['expires']} = now()->addMinutes(self::OTP_EXPIRATION_MINUTES);
         $user->save();
 
-        SendOtpEmailJob::dispatch($user, $otp, $type);
+        SendOtpJob::dispatch($user, $otp, $type);
 
         Log::info("OTP for {$user->email} IS : {$otp} ");
 

@@ -14,7 +14,7 @@
         "cloudinary/cloudinary_php": "^3.1",
         "knuckleswtf/scribe": "*",
         "laravel/framework": "^12.0",
-        "laravel/sanctum": "^4.2",
+        "laravel/sanctum": "^4.3",
         "laravel/socialite": "^5.24",
         "laravel/tinker": "^2.10.1",
         "railsware/mailtrap-php": "^3.10",
