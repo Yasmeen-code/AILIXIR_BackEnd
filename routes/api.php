@@ -10,6 +10,7 @@ use App\Http\Controllers\Api\EmailVerificationController;
 use App\Http\Controllers\Api\PasswordResetController;
 use App\Http\Controllers\Api\NewsController;
 use App\Http\Controllers\Api\AiController;
+use App\Http\Controllers\Api\SimulationController;
 use Cloudinary\Cloudinary;
 
 // ==================== AWARDS ====================
@@ -77,6 +78,14 @@ Route::middleware('auth:sanctum')->prefix('ai')->group(function () {
     Route::get('/history', [AiController::class, 'history']);
 });
 
+
+// ==================== SIMULATIONS ====================
+Route::middleware('auth:sanctum')->group(function(){
+    Route::post('/simulation/run',[SimulationController::class,'run']);
+    Route::get('/simulation/my',[SimulationController::class,'mySimulations']);
+    Route::get('/simulation/{id}',[SimulationController::class,'result']);
+    Route::get('/simulation/{id}/status',[SimulationController::class,'status']);
+});
 
 
 

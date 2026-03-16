@@ -2,7 +2,6 @@
 
 namespace App\Models;
 
-use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
@@ -25,7 +24,7 @@ class User extends Authenticatable
         'password',
         'role',
         'email_verification_otp',
-        'email_verification_otp_expires_at', 
+        'email_verification_otp_expires_at',
         'is_verified',
         'password_reset_otp',
         'password_reset_otp_expires_at',
@@ -40,7 +39,7 @@ class User extends Authenticatable
         'password',
         'remember_token',
         'email_verification_otp',
-        'password_reset_otp', 
+        'password_reset_otp',
     ];
 
     /**
@@ -53,8 +52,8 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
-            'email_verification_otp_expires_at' => 'datetime', 
-            'password_reset_otp_expires_at' => 'datetime', 
+            'email_verification_otp_expires_at' => 'datetime',
+            'password_reset_otp_expires_at' => 'datetime',
             'is_verified' => 'boolean',
         ];
     }
@@ -62,23 +61,23 @@ class User extends Authenticatable
     public function researcher()
     {
         return $this->hasOne(Researcher::class);
-    }    
-  
+    }
+
     public function isEmailOtpValid(string $otp): bool
     {
-        return $this->email_verification_otp === $otp 
-            && $this->email_verification_otp_expires_at 
+        return $this->email_verification_otp === $otp
+            && $this->email_verification_otp_expires_at
             && $this->email_verification_otp_expires_at->isFuture();
     }
 
     public function isPasswordResetOtpValid(string $otp): bool
     {
-        return $this->password_reset_otp === $otp 
-            && $this->password_reset_otp_expires_at 
+        return $this->password_reset_otp === $otp
+            && $this->password_reset_otp_expires_at
             && $this->password_reset_otp_expires_at->isFuture();
     }
 
- 
+
     public function clearEmailOtp(): void
     {
         $this->update([
@@ -87,12 +86,22 @@ class User extends Authenticatable
         ]);
     }
 
-   
+
     public function clearPasswordResetOtp(): void
     {
         $this->update([
             'password_reset_otp' => null,
             'password_reset_otp_expires_at' => null,
         ]);
+    }
+
+    public function simulations()
+    {
+        return $this->hasMany(Simulation::class);
+    }
+
+    public function aiJobs()
+    {
+        return $this->hasMany(AiJob::class);
     }
 }
