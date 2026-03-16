@@ -43,7 +43,7 @@ namespace App\Models{
  * @property string $name
  * @property string|null $category
  * @property array<array-key, mixed>|null $images
- * @property string $description
+ * @property string|null $description
  * @property string|null $notable_winners
  * @property string|null $country
  * @property int|null $year_started
@@ -177,6 +177,16 @@ namespace App\Models{
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Scientist whereUpdatedAt($value)
  */
 	class Scientist extends \Eloquent {}
+}
+
+namespace App\Models{
+/**
+ * @property-read \App\Models\User|null $user
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Simulation newModelQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Simulation newQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Simulation query()
+ */
+	class Simulation extends \Eloquent {}
 }
 
 namespace App\Models{
