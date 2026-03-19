@@ -6,6 +6,7 @@ use App\Models\Simulation;
 use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
+use Symfony\Component\Process\Process;
 
 class RunPipelineJob implements ShouldQueue
 {
@@ -23,41 +24,49 @@ class RunPipelineJob implements ShouldQueue
         $id = $this->simulation->id;
         $workDir = storage_path("app/simulations/$id");
 
-        if (!file_exists($workDir)) mkdir($workDir, 0777, true);
-
-        $protein = storage_path("app/" . $this->simulation->protein);
-        $ligand  = storage_path("app/" . $this->simulation->ligand);
+        if (!file_exists($workDir)) {
+            mkdir($workDir, 0777, true);
+        }
 
         try {
+            $proteinPath = storage_path("app/" . $this->simulation->protein);
+            $ligandPath  = storage_path("app/" . $this->simulation->ligand);
 
-            // Docking
-            exec("python scripts/docking_openmm.py $workDir $protein $ligand");
-            $this->simulation->update(['progress' => 30]);
+            copy($proteinPath, "$workDir/protein.pdb");
+            copy($ligandPath, "$workDir/ligand.mol2");
 
-            // MD Simulation
-            exec("python scripts/md_openmm.py $workDir $protein $ligand");
-            $this->simulation->update(['progress' => 60]);
+            // 1. MD
+            $this->runProcess(["python", "scripts/md.py", $workDir, "$workDir/protein.pdb", "$workDir/ligand.mol2"]);
+            $this->simulation->update(['progress' => 50]);
 
-            // Analysis
-            exec("python scripts/analysis_openmm.py $workDir");
+            // 2. Analysis
+            $this->runProcess(["python", "scripts/analysis.py", $workDir]);
             $this->simulation->update(['progress' => 90]);
 
-            // Rendering video
-            exec("python scripts/render_video.py $workDir");
-            $this->simulation->update(['progress' => 100, 'status' => 'completed']);
+            $analysis = json_decode(file_get_contents("$workDir/analysis.json"), true);
 
-            $analysisData = json_decode(file_get_contents("$workDir/analysis.json"), true);
-
-            // Finish
             $this->simulation->update([
                 'status' => 'completed',
                 'progress' => 100,
-                'trajectory' => "simulations/$id/trajectory.dcd",
-                'video' => "simulations/$id/video.mp4",
-                'analysis' => $analysisData
+                'analysis' => $analysis,
+                'trajectory' => "simulations/$id/trajectory.dcd"
             ]);
         } catch (\Exception $e) {
-            $this->simulation->update(['status' => 'failed']);
+            $this->simulation->update([
+                'status' => 'failed',
+                'error_message' => $e->getMessage()
+            ]);
+        }
+    }
+
+    private function runProcess(array $command)
+    {
+        $process = new Process($command);
+        $process->setTimeout(3600);
+        $process->run();
+
+        if (!$process->isSuccessful()) {
+            throw new \Exception($process->getErrorOutput());
         }
     }
 }

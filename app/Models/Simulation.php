@@ -2,15 +2,27 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class Simulation extends Model
 {
+    use HasFactory;
+
     protected $fillable = [
-        'user_id','protein','ligand','trajectory','video','analysis','status','progress'
+        'user_id',
+        'protein',
+        'ligand',
+        'status',
+        'progress',
+        'analysis',
+        'trajectory',
+        'error_message'
     ];
 
-    protected $casts = ['analysis'=>'array'];
+    protected $casts = [
+        'analysis' => 'array'
+    ];
 
     public function user()
     {

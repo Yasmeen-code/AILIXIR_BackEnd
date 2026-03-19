@@ -1,6 +1,5 @@
 <?php
 
-
 namespace App\Http\Controllers\Api;
 
 use Illuminate\Http\Request;
@@ -12,10 +11,14 @@ class SimulationController extends BaseController
 {
     public function run(Request $request)
     {
-        $request->validate(['protein' => 'required|file', 'ligand' => 'required|file']);
+        $request->validate([
+            'protein' => 'required|file',
+            'ligand'  => 'required|file'
+        ]);
 
-        $protein = $request->file('protein')->store('simulations');
-        $ligand  = $request->file('ligand')->store('simulations');
+        $simulationDir = "simulations/" . uniqid();
+        $protein = $request->file('protein')->store($simulationDir);
+        $ligand  = $request->file('ligand')->store($simulationDir);
 
         $simulation = Simulation::create([
             'user_id' => Auth::id(),
@@ -30,24 +33,16 @@ class SimulationController extends BaseController
         return response()->json(["simulation_id" => $simulation->id]);
     }
 
-    public function mySimulations()
-    {
-        return Simulation::where('user_id', Auth::id())->latest()->get();
-    }
-
-    public function result($id)
-    {
-        return Simulation::where('user_id', Auth::id())->findOrFail($id);
-    }
-
     public function status($id)
     {
-        $simulation = Simulation::findOrFail($id);
+        $simulation = Simulation::where('user_id', Auth::id())->findOrFail($id);
+
         return response()->json([
             "status" => $simulation->status,
             "progress" => $simulation->progress,
             "analysis" => $simulation->analysis,
-            "video" => $simulation->video
+            "trajectory" => $simulation->trajectory,
+            "error_message" => $simulation->error_message
         ]);
     }
 }

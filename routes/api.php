@@ -80,11 +80,9 @@ Route::middleware('auth:sanctum')->prefix('ai')->group(function () {
 
 
 // ==================== SIMULATIONS ====================
-Route::middleware('auth:sanctum')->group(function(){
-    Route::post('/simulation/run',[SimulationController::class,'run']);
-    Route::get('/simulation/my',[SimulationController::class,'mySimulations']);
-    Route::get('/simulation/{id}',[SimulationController::class,'result']);
-    Route::get('/simulation/{id}/status',[SimulationController::class,'status']);
+Route::middleware('auth:sanctum')->group(function () {
+    Route::post('/simulation/run', [SimulationController::class, 'run']);
+    Route::get('/simulation/{id}/status', [SimulationController::class, 'status']);
 });
 
 
