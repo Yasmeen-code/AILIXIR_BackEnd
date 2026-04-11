@@ -13,6 +13,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\OtpController;
 use App\Http\Controllers\Api\EmailVerificationController;
+use App\Http\Controllers\Api\MdFileController;
 
 // ==================== AWARDS ====================
 Route::get('/awards', [AwardController::class, 'index']);
@@ -79,6 +80,11 @@ Route::middleware('auth:sanctum')->prefix('ai')->group(function () {
     Route::get('/history', [AiController::class, 'history']);
 });
 
+// ==================== MD ====================
+
+Route::get('/md-files', [MdFileController::class, 'index']);
+Route::get('/md-files/type/{type}', [MdFileController::class, 'byType']);
+Route::get('/md-files/{filename}', [MdFileController::class, 'show']);
 // cloudinary file upload test route
 
 Route::post('/upload-file', function (Request $request) {
