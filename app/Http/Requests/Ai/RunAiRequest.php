@@ -15,7 +15,6 @@ class RunAiRequest extends FormRequest
     {
         return [
             'num_smiles' => 'required|integer',
-            'top_k' => 'required|integer',
             'Docking' => 'required|numeric',
             'DeepPurpose_Affinity' => 'required|numeric',
             'SA' => 'required|numeric',
