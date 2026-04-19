@@ -73,6 +73,40 @@ namespace App\Models{
 namespace App\Models{
 /**
  * @property int $id
+ * @property int $user_id
+ * @property string $input_type
+ * @property string|null $smiles
+ * @property string|null $protein_name
+ * @property string|null $ligand_name
+ * @property string $protein_path
+ * @property string $ligand_path
+ * @property string $status
+ * @property array<array-key, mixed>|null $result_data
+ * @property \Illuminate\Support\Carbon|null $created_at
+ * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property-read \App\Models\User $user
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|DockingJob newModelQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|DockingJob newQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|DockingJob query()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|DockingJob whereCreatedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|DockingJob whereId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|DockingJob whereInputType($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|DockingJob whereLigandName($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|DockingJob whereLigandPath($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|DockingJob whereProteinName($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|DockingJob whereProteinPath($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|DockingJob whereResultData($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|DockingJob whereSmiles($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|DockingJob whereStatus($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|DockingJob whereUpdatedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|DockingJob whereUserId($value)
+ */
+	class DockingJob extends \Eloquent {}
+}
+
+namespace App\Models{
+/**
+ * @property int $id
  * @property string $title
  * @property string|null $summary
  * @property string $source
@@ -181,10 +215,50 @@ namespace App\Models{
 
 namespace App\Models{
 /**
- * @property-read \App\Models\User|null $user
+ * @property int $id
+ * @property int $user_id
+ * @property string $protein
+ * @property string|null $ligand
+ * @property string $status
+ * @property int $progress
+ * @property string|null $error_message
+ * @property string|null $trajectory
+ * @property string|null $log_file
+ * @property array<array-key, mixed>|null $analysis
+ * @property string $force_field
+ * @property float $temperature
+ * @property float $simulation_time_ns
+ * @property int $box_size
+ * @property string $water_model
+ * @property float $ion_concentration
+ * @property string|null $started_at
+ * @property string|null $completed_at
+ * @property \Illuminate\Support\Carbon|null $created_at
+ * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property-read \App\Models\User $user
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Simulation newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Simulation newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Simulation query()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Simulation whereAnalysis($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Simulation whereBoxSize($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Simulation whereCompletedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Simulation whereCreatedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Simulation whereErrorMessage($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Simulation whereForceField($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Simulation whereId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Simulation whereIonConcentration($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Simulation whereLigand($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Simulation whereLogFile($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Simulation whereProgress($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Simulation whereProtein($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Simulation whereSimulationTimeNs($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Simulation whereStartedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Simulation whereStatus($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Simulation whereTemperature($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Simulation whereTrajectory($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Simulation whereUpdatedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Simulation whereUserId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Simulation whereWaterModel($value)
  */
 	class Simulation extends \Eloquent {}
 }
@@ -205,9 +279,13 @@ namespace App\Models{
  * @property bool $is_verified
  * @property string|null $password_reset_otp
  * @property \Illuminate\Support\Carbon|null $password_reset_otp_expires_at
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\AiJob> $aiJobs
+ * @property-read int|null $ai_jobs_count
  * @property-read \Illuminate\Notifications\DatabaseNotificationCollection<int, \Illuminate\Notifications\DatabaseNotification> $notifications
  * @property-read int|null $notifications_count
  * @property-read \App\Models\Researcher|null $researcher
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Simulation> $simulations
+ * @property-read int|null $simulations_count
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \Laravel\Sanctum\PersonalAccessToken> $tokens
  * @property-read int|null $tokens_count
  * @method static \Database\Factories\UserFactory factory($count = null, $state = [])
