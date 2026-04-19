@@ -2,12 +2,12 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Simulation extends Model
 {
-    use HasFactory;
+    protected $table = 'simulations';
 
     protected $fillable = [
         'user_id',
@@ -15,17 +15,28 @@ class Simulation extends Model
         'ligand',
         'status',
         'progress',
-        'analysis',
+        'error_message',
         'trajectory',
-        'error_message'
+        'log_file',
+        'analysis',
+        'force_field',
+        'temperature',
+        'simulation_time_ns',
+        'box_size'
     ];
 
     protected $casts = [
-        'analysis' => 'array'
+        'analysis' => 'array',
+        'progress' => 'integer',
     ];
 
-    public function user()
+    public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function isCompleted(): bool
+    {
+        return $this->status === 'completed';
     }
 }
