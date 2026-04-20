@@ -2,7 +2,6 @@
 
 namespace App\Models;
 
-use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
@@ -77,5 +76,15 @@ class User extends Authenticatable
             'password_reset_otp' => null,
             'password_reset_otp_expires_at' => null,
         ]);
+    }
+  
+    public function simulations()
+    {
+        return $this->hasMany(Simulation::class);
+    }
+
+    public function aiJobs()
+    {
+        return $this->hasMany(AiJob::class);
     }
 }

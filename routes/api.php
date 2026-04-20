@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\AwardController;
 use App\Http\Controllers\Api\DockingController;
 use App\Http\Controllers\Api\NewsController;
 use App\Http\Controllers\Api\PasswordResetController;
+use App\Http\Controllers\Api\SimulationController;
 use App\Http\Controllers\Api\ScientistController;
 use App\Http\Controllers\Api\UserController;
 use Cloudinary\Cloudinary;
@@ -82,22 +83,8 @@ Route::middleware('auth:sanctum')->prefix('ai')->group(function () {
     Route::get('/history', [AiController::class, 'history']);
 });
 
-// ==================== MD ====================
-
-Route::get('/md-files', [MdFileController::class, 'index']);
-Route::get('/md-files/type/{type}', [MdFileController::class, 'byType']);
-Route::get('/md-files/{filename}', [MdFileController::class, 'show']);
-
-// ==================== ChemicalSearch ====================
-
-Route::middleware('auth:sanctum')->group(function () {
-    Route::post('/chemical-search', [ChemicalSearchController::class, 'store']);
-    Route::get('/chemical-search/{id}/status', [ChemicalSearchController::class, 'status']);
-    Route::post('/chemical-search/full-rag', [ChemicalSearchController::class, 'fullRag']);
-});
-
-
 // cloudinary file upload test route
+
 Route::post('/upload-file', function (Request $request) {
 
     $request->validate([
