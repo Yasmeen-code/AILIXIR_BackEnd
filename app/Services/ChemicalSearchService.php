@@ -3,87 +3,74 @@
 namespace App\Services;
 
 use App\Models\ChemicalSearchJob;
+use App\Models\ChemicalCompound;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
 class ChemicalSearchService
 {
     public function search(ChemicalSearchJob $job): array
     {
-        $url = config('services.chemical_ai.url') . '/search';
-        $startTime = microtime(true);
+        return $this->callAiService($job, '/search/retrieval-only');
+    }
 
-        Log::info('Starting chemical search', [
-            'job_id' => $job->id,
-            'url' => $url,
-        ]);
+    public function fullRag(ChemicalSearchJob $job): array
+    {
+        return $this->callAiService($job, '/search/full-rag', true);
+    }
+
+    private function callAiService(ChemicalSearchJob $job, string $endpoint, bool $includeReason = false): array
+    {
+        $url = config('services.chemical_ai.url') . $endpoint;
+        $startTime = microtime(true);
 
         try {
             $job->update(['status' => 'processing', 'started_at' => now()]);
 
-            $smiles = escapeshellarg($job->query_smiles);
-            $command = "curl -s -X POST " . escapeshellarg($url) .
-                " -H \"Content-Type: application/json\"" .
-                " -d '{\"smiles\":$smiles,\"top_k\":{$job->top_k}}'" .
-                " -k --max-time 120 --connect-timeout 60";
+            $response = Http::withOptions([
+                'verify' => false,
+            ])->timeout(120)->post($url, [
+                'smiles' => $job->query_smiles,
+                'top_k' => $job->top_k,
+            ]);
 
-            Log::info('Executing command', ['command' => $command]);
-
-            $output = shell_exec($command);
-
-            if ($output === null || empty($output)) {
-                throw new \Exception('Empty response from AI service');
+            if (!$response->successful()) {
+                throw new \Exception("AI Service error: " . $response->status());
             }
 
-            Log::info('Raw response', ['output' => substr($output, 0, 500)]);
-
-            $data = json_decode($output, true);
-
-            if (json_last_error() !== JSON_ERROR_NONE) {
-                throw new \Exception('Invalid JSON response: ' . json_last_error_msg());
-            }
-
+            $data = $response->json();
             $searchTimeMs = round((microtime(true) - $startTime) * 1000, 2);
-
-            $results = [];
-            $imageUrls = [];
-
-            $rawResults = $data['results'] ?? [];
-
-            foreach ($rawResults as $index => $result) {
-                $imageUrl = $this->resolveImageUrl($result['image'] ?? null);
-
-                $results[] = [
-                    'rank' => $index + 1,
-                    'smiles' => $result['smiles'],
-                    'similarity' => round($result['similarity_score'], 2),
-                    'image_url' => $imageUrl,
-                ];
-
-                if ($imageUrl) {
-                    $imageUrls[] = $imageUrl;
-                }
-            }
-
-            $metadata = [
-                'total_results' => count($rawResults),
-                'filtered_results' => count($rawResults),
-                'search_time_ms' => $searchTimeMs,
-                'similarity_metric' => 'Tanimoto',
-                'fingerprint' => 'Morgan (2048, radius=2)',
-            ];
 
             $job->update([
                 'status' => 'completed',
-                'results' => $results,
-                'image_urls' => $imageUrls,
-                'metadata' => $metadata,
+                'results' => $data['results'] ?? [],
+                'image_urls' => array_column($data['results'] ?? [], 'image'),
+                'metadata' => [
+                    'total_results' => count($data['results'] ?? []),
+                    'search_time_ms' => $searchTimeMs,
+                    'similarity_metric' => 'Tanimoto',
+                    'fingerprint' => 'Morgan (2048, radius=2)',
+                    'source' => $includeReason ? 'full_rag' : 'retrieval',
+                ],
                 'completed_at' => now(),
             ]);
 
-            return [
-                'success' => true,
-                'job_id' => $job->id,
-            ];
+            foreach ($data['results'] ?? [] as $index => $result) {
+                ChemicalCompound::create([
+                    'job_id' => $job->id,
+                    'rank' => $index + 1,
+                    'smiles' => $result['smiles'],
+                    'name' => $result['name'] ?? null,
+                    'cid' => $result['cid'] ?? null,
+                    'similarity' => isset($result['similarity_score'])
+                        ? round((float)$result['similarity_score'], 4)
+                        : null,
+                    'explanation' => $includeReason ? ($result['explanation'] ?? null) : null,
+                    'image_url' => $result['image'] ?? null,
+                ]);
+            }
+
+            return ['success' => true, 'job_id' => $job->id];
         } catch (\Exception $e) {
             Log::error('Chemical Search Failed', [
                 'job_id' => $job->id,
@@ -98,12 +85,5 @@ class ChemicalSearchService
 
             return ['success' => false, 'error' => $e->getMessage()];
         }
-    }
-
-    private function resolveImageUrl(?string $imagePath): ?string
-    {
-        if (!$imagePath) return null;
-        if (str_starts_with($imagePath, 'http')) return $imagePath;
-        return config('services.chemical_ai.url') . $imagePath;
     }
 }

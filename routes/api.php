@@ -93,6 +93,7 @@ Route::get('/md-files/{filename}', [MdFileController::class, 'show']);
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/chemical-search', [ChemicalSearchController::class, 'store']);
     Route::get('/chemical-search/{id}/status', [ChemicalSearchController::class, 'status']);
+    Route::post('/chemical-search/full-rag', [ChemicalSearchController::class, 'fullRag']);
 });
 
 
