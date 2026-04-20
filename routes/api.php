@@ -7,6 +7,7 @@ use App\Http\Controllers\Api\DockingController;
 use App\Http\Controllers\Api\EmailVerificationController;
 use App\Http\Controllers\Api\NewsController;
 use App\Http\Controllers\Api\PasswordResetController;
+use App\Http\Controllers\Api\ScreeningController;
 use App\Http\Controllers\Api\SimulationController;
 use App\Http\Controllers\Api\ScientistController;
 use App\Http\Controllers\Api\UserController;
@@ -67,6 +68,7 @@ Route::middleware('auth:sanctum')->prefix('docking')->group(function () {
     Route::post('convert-smiles', [DockingController::class, 'convertSmiles']);
     Route::get('status/{id}', [DockingController::class, 'status']);
     Route::get('download/{id}', [DockingController::class, 'download']);
+    Route::get('history', [DockingController::class, 'history']);
 });
 
 // ==================== AI JOBS ====================
@@ -85,6 +87,16 @@ Route::prefix('simulations')->middleware('auth:sanctum')->group(function () {
     Route::get('/index', [SimulationController::class, 'index']);
     Route::get('/{id}/status', [SimulationController::class, 'status']);
     Route::delete('/{id}/delete', [SimulationController::class, 'destroy']);
+});
+
+// ==================== DRUG REPURPOSING / SCREENING ====================
+
+Route::prefix('screen')->middleware('auth:sanctum')->group(function () {
+    // History routes first to avoid {disease_name} wildcard conflict
+    Route::get('history/targets',   [ScreeningController::class, 'historyTargets']);
+    Route::get('history/screening', [ScreeningController::class, 'historyScreening']);
+    Route::get('targets/{disease_name}', [ScreeningController::class, 'targets']);
+    Route::post('screen', [ScreeningController::class, 'screen']);
 });
 
 
