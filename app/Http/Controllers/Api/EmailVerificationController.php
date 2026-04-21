@@ -2,16 +2,14 @@
 
 namespace App\Http\Controllers\Api;
 
-use App\Http\Controllers\Api\BaseController;
-use App\Http\Requests\User\EmailVerificationRequest;
-use App\Models\User;
-use App\Http\Requests\User\CheckEmailRequest;
+use App\Http\Controllers\Controller;
+use App\Http\Requests\VerifyOtpRequest;
 use App\Services\OtpService;
-use App\Helpers\OtpHelper;
+use App\Models\User;
+use Illuminate\Http\Request;
 
 class EmailVerificationController extends BaseController
 {
-
     protected $otpService;
 
     public function __construct(OtpService $otpService)
@@ -19,34 +17,72 @@ class EmailVerificationController extends BaseController
         $this->otpService = $otpService;
     }
 
-    /** ---------------- Email Verification ---------------- */
-
-    public function verifyEmail(EmailVerificationRequest $request)
+    /**
+     * Verify Email OTP
+     */
+    public function verify(Request $request)
     {
-        $data = $request->validated();
-
-        $user = User::where('email', $data['email'])->firstOrFail();
-
-        $this->otpService->validateOtp(
-            $user,
-            'email_verification_otp',
-            'email_verification_otp_expires_at',
-            $data['otp']
-        );
-
-        $user->update([
-            'email_verified_at' => now(),
-            'is_verified' => true,
-            'email_verification_otp' => $data['otp'],
-            'email_verification_otp_expires_at' => now()->addMinutes(10),
+        $request->validate([
+            'email' => 'required|email|exists:users,email',
+            'otp' => 'required|digits:6',
         ]);
 
-        return $this->successResponse('Email verified successfully');
+        $user = User::where('email', $request->email)->first();
+
+        try {
+            // ✅ استخدمي verifyOtp بدلاً من validateOtp
+            $this->otpService->verifyOtp($user, 'email_verification', $request->otp);
+
+            // تحديث حالة التحقق ومسح OTP
+            $user->update([
+                'is_verified' => true,
+                'email_verification_otp' => null,
+                'email_verification_otp_expires_at' => null,
+            ]);
+
+            // إنشاء token
+            $token = $user->createToken('auth_token')->plainTextToken;
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Email verified successfully',
+                'data' => [
+                    'token' => $token,
+                    'user' => $user
+                ]
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage()
+            ], 400);
+        }
     }
 
-    public function resendOtp(CheckEmailRequest $request)
+    /**
+     * Resend OTP
+     */
+    public function resend(Request $request)
     {
-        $data = OtpHelper::sendOtpByType($request->validated()['email'], 'email_verification', $this->otpService);
-        return $this->successResponse('OTP resent successfully', $data);
+        $request->validate([
+            'email' => 'required|email|exists:users,email'
+        ]);
+
+        $user = User::where('email', $request->email)->first();
+
+        try {
+            $this->otpService->resendOtp($user, 'email_verification');
+
+            return response()->json([
+                'success' => true,
+                'message' => 'OTP resent successfully',
+                'data' => ['email' => $user->email]
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage()
+            ], 400);
+        }
     }
 }

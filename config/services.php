@@ -14,6 +14,10 @@ return [
     |
     */
 
+    'chemical_ai' => [
+        'url' => env('CHEMICAL_AI_URL', 'https://unsteady-chlorine-imaginary.ngrok-free.dev'),
+    ],
+
     'postmark' => [
         'key' => env('POSTMARK_API_KEY'),
     ],

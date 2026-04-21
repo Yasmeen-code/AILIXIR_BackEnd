@@ -4,7 +4,6 @@ use App\Http\Controllers\Api\AiController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\AwardController;
 use App\Http\Controllers\Api\DockingController;
-use App\Http\Controllers\Api\EmailVerificationController;
 use App\Http\Controllers\Api\NewsController;
 use App\Http\Controllers\Api\PasswordResetController;
 use App\Http\Controllers\Api\SimulationController;
@@ -14,6 +13,11 @@ use App\Http\Controllers\Api\AdmetController;
 use Cloudinary\Cloudinary;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\Api\OtpController;
+use App\Http\Controllers\Api\EmailVerificationController;
+use App\Http\Controllers\Api\MdFileController;
+use App\Http\Controllers\Api\ChemicalSearchController;
+
 
 // ==================== AWARDS ====================
 Route::get('/awards', [AwardController::class, 'index']);
@@ -31,8 +35,8 @@ Route::prefix('user')->group(function () {
     Route::post('login', [AuthController::class, 'login']);
 
     // email verification
-    Route::post('verify-email', [EmailVerificationController::class, 'verifyEmail']);
-    Route::post('/resend-otp', [EmailVerificationController::class, 'resendOtp']);
+    Route::post('/verify-email', [EmailVerificationController::class, 'verify']);
+    Route::post('/resend-verification', [EmailVerificationController::class, 'resend']);
 
     // password reset
     Route::post('forgot-password', [PasswordResetController::class, 'sendForgotPasswordOtp']);
@@ -79,6 +83,7 @@ Route::middleware('auth:sanctum')->prefix('ai')->group(function () {
     Route::get('/download/full/{job:job_id}', [AiController::class, 'downloadFull']);
     Route::get('/history', [AiController::class, 'history']);
 });
+
 // ==================== SIMULATIONS ====================
 
 Route::prefix('simulations')->middleware('auth:sanctum')->group(function () {
@@ -92,8 +97,8 @@ Route::prefix('simulations')->middleware('auth:sanctum')->group(function () {
 Route::middleware('auth:sanctum')->post('/admet/predict', [AdmetController::class, 'predict']);
 
 
+// cloudinary file upload test route
 
-//cloudinary file upload test route
 Route::post('/upload-file', function (Request $request) {
 
     $request->validate([
