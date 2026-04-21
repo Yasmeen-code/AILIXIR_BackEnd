@@ -42,6 +42,8 @@ return [
     ],
     'ai' => [
         'url' => env('AI_SERVICE_URL'),
+        'admet_url' => env('AI_ADEMT_SERVICE_URL'),
+        'jwt_secret' => env('JWT_SECRET'),
     ],
 
 ];

@@ -10,6 +10,7 @@ use App\Http\Controllers\Api\PasswordResetController;
 use App\Http\Controllers\Api\SimulationController;
 use App\Http\Controllers\Api\ScientistController;
 use App\Http\Controllers\Api\UserController;
+use App\Http\Controllers\Api\AdmetController;
 use Cloudinary\Cloudinary;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -86,6 +87,9 @@ Route::prefix('simulations')->middleware('auth:sanctum')->group(function () {
     Route::get('/{id}/status', [SimulationController::class, 'status']);
     Route::delete('/{id}/delete', [SimulationController::class, 'destroy']);
 });
+
+// ==================== ADMET PREDICTION ====================
+Route::middleware('auth:sanctum')->post('/admet/predict', [AdmetController::class, 'predict']);
 
 
 
