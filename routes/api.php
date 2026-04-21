@@ -81,10 +81,10 @@ Route::middleware('auth:sanctum')->prefix('convert-smiles')->group(function () {
 
 // ==================== DRUG REPURPOSING / SCREENING ====================
 
-Route::prefix('screen')->middleware('auth:sanctum')->group(function () {
+Route::prefix('drug-repurposing')->middleware('auth:sanctum')->group(function () {
     // History routes first to avoid {disease_name} wildcard conflict
-    Route::get('history/targets',   [ScreeningController::class, 'historyTargets']);
-    Route::get('history/screening', [ScreeningController::class, 'historyScreening']);
+    Route::get('targets/history',   [ScreeningController::class, 'historyTargets']);
+    Route::get('screen/history', [ScreeningController::class, 'historyScreening']);
     Route::get('targets/{disease_name}', [ScreeningController::class, 'targets']);
     Route::post('screen', [ScreeningController::class, 'screen']);
 });
