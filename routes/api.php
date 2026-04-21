@@ -3,6 +3,7 @@
 use App\Http\Controllers\Api\AiController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\AwardController;
+use App\Http\Controllers\Api\ConvertSmilesController;
 use App\Http\Controllers\Api\DockingController;
 use App\Http\Controllers\Api\EmailVerificationController;
 use App\Http\Controllers\Api\NewsController;
@@ -65,10 +66,27 @@ Route::middleware('auth:sanctum')->group(function () {
 
 Route::middleware('auth:sanctum')->prefix('docking')->group(function () {
     Route::post('submit', [DockingController::class, 'submit']);
-    Route::post('convert-smiles', [DockingController::class, 'convertSmiles']);
     Route::get('status/{id}', [DockingController::class, 'status']);
     Route::get('download/{id}', [DockingController::class, 'download']);
     Route::get('history', [DockingController::class, 'history']);
+});
+
+// ====================CONVERT SMILES====================
+
+Route::middleware('auth:sanctum')->prefix('convert-smiles')->group(function () {
+    Route::post('convert', [ConvertSmilesController::class, 'convert']);
+    Route::get('download/{id}', [ConvertSmilesController::class, 'download']);
+    Route::get('history', [ConvertSmilesController::class, 'history']);
+});
+
+// ==================== DRUG REPURPOSING / SCREENING ====================
+
+Route::prefix('screen')->middleware('auth:sanctum')->group(function () {
+    // History routes first to avoid {disease_name} wildcard conflict
+    Route::get('history/targets',   [ScreeningController::class, 'historyTargets']);
+    Route::get('history/screening', [ScreeningController::class, 'historyScreening']);
+    Route::get('targets/{disease_name}', [ScreeningController::class, 'targets']);
+    Route::post('screen', [ScreeningController::class, 'screen']);
 });
 
 // ==================== AI JOBS ====================
@@ -89,15 +107,7 @@ Route::prefix('simulations')->middleware('auth:sanctum')->group(function () {
     Route::delete('/{id}/delete', [SimulationController::class, 'destroy']);
 });
 
-// ==================== DRUG REPURPOSING / SCREENING ====================
 
-Route::prefix('screen')->middleware('auth:sanctum')->group(function () {
-    // History routes first to avoid {disease_name} wildcard conflict
-    Route::get('history/targets',   [ScreeningController::class, 'historyTargets']);
-    Route::get('history/screening', [ScreeningController::class, 'historyScreening']);
-    Route::get('targets/{disease_name}', [ScreeningController::class, 'targets']);
-    Route::post('screen', [ScreeningController::class, 'screen']);
-});
 
 
 
