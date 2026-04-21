@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class TargetLookup extends Model
 {
-    protected $fillable = ['user_id', 'input', 'output'];
+    protected $fillable = ['user_id', 'input', 'output', 'status'];
 
     protected $casts = [
         'input'  => 'array',

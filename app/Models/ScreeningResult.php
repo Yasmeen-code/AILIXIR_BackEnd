@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class ScreeningResult extends Model
 {
-    protected $fillable = ['user_id', 'input', 'output'];
+    protected $fillable = ['user_id', 'input', 'output', 'status'];
 
     protected $casts = [
         'input'  => 'array',

@@ -65,27 +65,29 @@ Route::middleware('auth:sanctum')->group(function () {
 // ====================DOCKING====================
 
 Route::middleware('auth:sanctum')->prefix('docking')->group(function () {
-    Route::post('submit', [DockingController::class, 'submit']);
-    Route::get('status/{id}', [DockingController::class, 'status']);
-    Route::get('download/{id}', [DockingController::class, 'download']);
     Route::get('history', [DockingController::class, 'history']);
+    Route::post('submit', [DockingController::class, 'submit']);
+    Route::get('{id}', [DockingController::class, 'status']);
+    Route::get('download/{id}', [DockingController::class, 'download']);
 });
 
 // ====================CONVERT SMILES====================
 
 Route::middleware('auth:sanctum')->prefix('convert-smiles')->group(function () {
+    Route::get('history', [ConvertSmilesController::class, 'history']);
     Route::post('convert', [ConvertSmilesController::class, 'convert']);
     Route::get('download/{id}', [ConvertSmilesController::class, 'download']);
-    Route::get('history', [ConvertSmilesController::class, 'history']);
 });
 
 // ==================== DRUG REPURPOSING / SCREENING ====================
 
 Route::prefix('drug-repurposing')->middleware('auth:sanctum')->group(function () {
-    // History routes first to avoid {disease_name} wildcard conflict
     Route::get('targets/history',   [ScreeningController::class, 'historyTargets']);
-    Route::get('screen/history', [ScreeningController::class, 'historyScreening']);
+    Route::get('targets/{id}', [ScreeningController::class, 'statusTargets'])->whereNumber('id');
     Route::get('targets/{disease_name}', [ScreeningController::class, 'targets']);
+
+    Route::get('screen/history', [ScreeningController::class, 'historyScreening']);
+    Route::get('screen/{id}', [ScreeningController::class, 'statusScreening'])->whereNumber('id');
     Route::post('screen', [ScreeningController::class, 'screen']);
 });
 
