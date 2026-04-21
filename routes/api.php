@@ -9,6 +9,7 @@ use App\Http\Controllers\Api\PasswordResetController;
 use App\Http\Controllers\Api\SimulationController;
 use App\Http\Controllers\Api\ScientistController;
 use App\Http\Controllers\Api\UserController;
+use App\Http\Controllers\Api\AdmetController;
 use Cloudinary\Cloudinary;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -82,6 +83,19 @@ Route::middleware('auth:sanctum')->prefix('ai')->group(function () {
     Route::get('/download/full/{job:job_id}', [AiController::class, 'downloadFull']);
     Route::get('/history', [AiController::class, 'history']);
 });
+
+// ==================== SIMULATIONS ====================
+
+Route::prefix('simulations')->middleware('auth:sanctum')->group(function () {
+    Route::post('/run', [SimulationController::class, 'run']);
+    Route::get('/index', [SimulationController::class, 'index']);
+    Route::get('/{id}/status', [SimulationController::class, 'status']);
+    Route::delete('/{id}/delete', [SimulationController::class, 'destroy']);
+});
+
+// ==================== ADMET PREDICTION ====================
+Route::middleware('auth:sanctum')->post('/admet/predict', [AdmetController::class, 'predict']);
+
 
 // cloudinary file upload test route
 

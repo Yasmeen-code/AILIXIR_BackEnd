@@ -1,0 +1,3 @@
+SMILES,Predicted_Absorption,Predicted_Distribution,Predicted_Metabolism,Predicted_Excretion,Predicted_Toxicity
+CC(=O)OC1=CC=CC=C1C(=O)O,-4.4311423,0.8109335,0.15778571,11.947205,0.17182195
+CN1C=NC2=C1C(=O)N(C(=O)N2C)C,-4.573839,0.8137921,0.003547773,22.779242,0.34915218
