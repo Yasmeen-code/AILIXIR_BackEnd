@@ -77,7 +77,7 @@ class User extends Authenticatable
             'password_reset_otp_expires_at' => null,
         ]);
     }
-  
+
     public function simulations()
     {
         return $this->hasMany(Simulation::class);
@@ -86,5 +86,10 @@ class User extends Authenticatable
     public function aiJobs()
     {
         return $this->hasMany(AiJob::class);
+    }
+
+    public function admets()
+    {
+        return $this->hasMany(Admet::class);
     }
 }
