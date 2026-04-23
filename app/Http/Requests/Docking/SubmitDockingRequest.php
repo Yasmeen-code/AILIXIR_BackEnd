@@ -17,7 +17,7 @@ class SubmitDockingRequest extends FormRequest
     {
         return [
             'protein_name' => 'required|string|max:255',
-            'ligand_name'  => 'required|string|max:255',
+            'ligand_name'  => 'nullable|string|max:255',
             'ligand_file'  => 'nullable|file|required_without:ligand_smiles',
             'ligand_smiles' => 'nullable|string|max:2000|required_without:ligand_file',
             'protein_file' => 'required|file',
