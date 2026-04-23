@@ -50,4 +50,8 @@ return [
         'jwt_secret' => env('JWT_SECRET'),
     ],
 
+    'screening' => [
+        'url' => env('SCREENING_SERVICE_URL', 'http://localhost:8000/api/v1'),
+    ],
+
 ];

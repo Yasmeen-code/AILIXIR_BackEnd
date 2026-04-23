@@ -9,7 +9,6 @@ use App\Traits\ApiResponseTrait;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Process;
-use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
 
 class DockingController
@@ -36,34 +35,25 @@ class DockingController
             }
 
             $ligandPath = $conversion['output_file'];
-            $originalLigandName = 'generated_from_smiles.pdbqt';
         } else {
             $ligandFilename = Str::random(40) . '.pdbqt';
             $ligandPath = storage_path('app/private/' . $request->file('ligand_file')->storeAs('docking', $ligandFilename));
-            $originalLigandName = $request->file('ligand_file')->getClientOriginalName();
         }
 
         // ---- Handle Protein ----
-        if ($request->hasFile('protein_file')) {
-            $proteinFilename = Str::random(40) . '.pdbqt';
-            $proteinPath = storage_path('app/private/' . $request->file('protein_file')->storeAs('docking', $proteinFilename));
-            $originalProteinName = $request->file('protein_file')->getClientOriginalName();
-        } else {
-            $relativeProteinPath = env('DEFAULT_PROTEIN_PATH', 'docking/proteins/default_protein.pdbqt');
-            $proteinPath = storage_path('app/private/' . $relativeProteinPath);
-            $originalProteinName = basename($relativeProteinPath);
-        }
+        $proteinFilename = Str::random(40) . '.pdbqt';
+        $proteinPath = storage_path('app/private/' . $request->file('protein_file')->storeAs('docking', $proteinFilename));
 
         // ---- Create Database Record ----
         $job = DockingJob::create([
-            'user_id' => $request->user()->id,
-            'input_type' => $isSmiles ? 'smiles' : 'file',
-            'smiles' => $isSmiles ? $request->ligand_smiles : null,
-            'protein_name' => $originalProteinName,
-            'ligand_name' => $originalLigandName,
+            'user_id'      => $request->user()->id,
+            'input_type'   => $isSmiles ? 'smiles' : 'file',
+            'smiles'       => $isSmiles ? $request->ligand_smiles : null,
+            'protein_name' => $request->protein_name,
+            'ligand_name'  => $request->ligand_name,
             'protein_path' => $proteinPath,
-            'ligand_path' => $ligandPath,
-            'status' => 'pending',
+            'ligand_path'  => $ligandPath,
+            'status'       => 'pending',
         ]);
 
         // ---- Dispatch background docking job ----
@@ -81,52 +71,55 @@ class DockingController
         return $this->successResponse('Docking Job Successfully Queued', [
             'job_id' => $job->id,
             'status' => $job->status,
-            'input_type' => $job->input_type,
         ]);
     }
 
     /**
-     * Standalone SMILES → PDBQT converter (no docking).
+     * List all docking jobs for the authenticated user (excludes SMILES-only conversion jobs).
      */
-    public function convertSmiles(Request $request)
+    public function history(Request $request)
     {
-        $validator = Validator::make($request->all(), [
-            'ligand_smiles' => 'required|string|max:2000',
-        ]);
+        $perPage = min((int) $request->query('per_page', 15), 100);
 
-        if ($validator->fails()) {
-            return $this->errorResponse('Validation Error', 422, $validator->errors());
-        }
+        $paginator = DockingJob::where('user_id', $request->user()->id)
+            ->where(function ($q) {
+                // Exclude SMILES-only conversion jobs (those belong to convert-smiles)
+                $q->where('input_type', '!=', 'smiles')
+                  ->orWhereNotNull('protein_name');
+            })
+            ->orderBy('created_at', 'desc')
+            ->paginate($perPage);
 
-        $conversion = $this->convertSmilesToPdbqt($request->ligand_smiles);
+        $items = collect($paginator->items())->map(function ($job) {
+            $data = [
+                'job_id'     => $job->id,
+                'status'     => $job->status,
+                'inputs'     => [
+                    'protein' => $job->protein_name,
+                    'ligand'  => $job->ligand_name,
+                ],
+                'created_at' => $job->created_at->toIso8601String(),
+            ];
 
-        if ($conversion['status'] === 'error') {
-            return $this->errorResponse(
-                'SMILES conversion failed: ' . $conversion['message'],
-                422
-            );
-        }
+            if ($job->status === 'completed' && $job->result_data) {
+                $data['results'] = [
+                    'vina_scores'  => $job->result_data['vina_score'] ?? [],
+                    'download_url' => url('/api/docking/download/' . $job->id),
+                ];
+            }
 
-        // Create a completed job record for download tracking
-        $job = DockingJob::create([
-            'user_id' => $request->user()->id,
-            'input_type' => 'smiles',
-            'smiles' => $request->ligand_smiles,
-            'protein_name' => null,
-            'ligand_name' => 'generated_from_smiles.pdbqt',
-            'protein_path' => '',
-            'ligand_path' => $conversion['output_file'],
-            'status' => 'completed',
-            'result_data' => [
-                'output_file' => $conversion['output_file'],
-                'smiles' => $request->ligand_smiles,
+            return $data;
+        });
+
+        return $this->successResponse('Docking history retrieved successfully', [
+            'data'       => $items,
+            'pagination' => [
+                'current_page' => $paginator->currentPage(),
+                'per_page'     => $paginator->perPage(),
+                'total'        => $paginator->total(),
+                'last_page'    => $paginator->lastPage(),
+                'has_more'     => $paginator->hasMorePages(),
             ],
-        ]);
-
-        return $this->successResponse('SMILES converted to PDBQT successfully', [
-            'job_id' => $job->id,
-            'download_url' => url('/api/docking/download/' . $job->id),
-            'smiles' => $request->ligand_smiles,
         ]);
     }
 
@@ -137,29 +130,40 @@ class DockingController
     {
         $job = DockingJob::where('id', $id)
             ->where('user_id', $request->user()->id)
+            ->where(function ($q) {
+                $q->where('input_type', '!=', 'smiles')
+                  ->orWhereNotNull('protein_name');
+            })
             ->first();
 
         if (! $job) {
-            return $this->errorResponse('Job not found or unauthorized', 404);
+            return $this->errorResponse('Docking job not found or unauthorized', 404);
         }
 
-        $resultData = $job->result_data;
-        if ($job->status === 'completed' && isset($resultData['output_file'])) {
-            $resultData['download_url'] = url('/api/docking/download/' . $job->id);
-            unset($resultData['output_file']);
+        // Build results block (only when job is completed)
+        $results = null;
+        if ($job->status === 'completed' && $job->result_data) {
+            $results = [
+                'vina_scores'  => $job->result_data['vina_score'] ?? [],
+                'download_url' => url('/api/docking/download/' . $job->id),
+            ];
         }
 
-        return $this->successResponse('Job Status Retrieved', [
-            'job_id' => $job->id,
-            'status' => $job->status,
-            'input_type' => $job->input_type,
-            'input_info' => [
+        $data = [
+            'job_id'     => $job->id,
+            'status'     => $job->status,
+            'inputs'     => [
                 'protein' => $job->protein_name,
-                'ligand' => $job->ligand_name,
-                'smiles' => $job->smiles,
+                'ligand'  => $job->ligand_name,
             ],
-            'result_data' => $resultData,
-        ]);
+            'created_at' => $job->created_at->toIso8601String(),
+        ];
+
+        if ($results !== null) {
+            $data['results'] = $results;
+        }
+
+        return $this->successResponse('Job details retrieved successfully', $data);
     }
 
     /**
@@ -169,28 +173,23 @@ class DockingController
     {
         $job = DockingJob::where('id', $id)
             ->where('user_id', $request->user()->id)
+            ->where(function ($q) {
+                $q->where('input_type', '!=', 'smiles')
+                  ->orWhereNotNull('protein_name');
+            })
             ->first();
 
         if (! $job || $job->status !== 'completed') {
-            return $this->errorResponse('File not available or unauthorized', 404);
+            return $this->errorResponse('Docking file not available or unauthorized', 404);
         }
 
-        // For SMILES converter-only jobs, download the generated ligand
-        if ($job->input_type === 'smiles' && empty($job->result_data['output_file'])) {
-            $filePath = $job->ligand_path;
-        } else {
-            $filePath = $job->result_data['output_file'] ?? null;
-        }
+        $filePath = $job->result_data['output_file'] ?? null;
 
         if (! $filePath || ! file_exists($filePath)) {
             return $this->errorResponse('File not found on server', 404);
         }
 
-        $downloadName = $job->input_type === 'smiles' && empty($job->protein_name)
-            ? 'converted_ligand_' . $job->id . '.pdbqt'
-            : 'docking_result_' . $job->id . '.pdbqt';
-
-        return response()->download($filePath, $downloadName);
+        return response()->download($filePath, 'docking_result_' . $job->id . '.pdbqt');
     }
 
     /**

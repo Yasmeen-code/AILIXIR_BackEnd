@@ -37,7 +37,7 @@ class RunDockingJob implements ShouldQueue
         $this->dockingJob->update(['status' => 'processing']);
 
         try {
-            $scriptPath = env('DOCKING_SCRIPT_PATH', base_path('scripts/vina_docking.py'));
+            $scriptPath = base_path('scripts/vina_docking.py');
             $pythonPath = env('DOCKING_PYTHON_PATH', base_path('vina_env/bin/python'));
 
             // Build command
@@ -83,6 +83,13 @@ class RunDockingJob implements ShouldQueue
 
             if (isset($outputData['status']) && $outputData['status'] === 'error') {
                 throw new \Exception('Python Error: '.($outputData['message'] ?? 'Unknown script error'));
+            }
+
+            if ($outputData && isset($outputData['energies'])) {
+                $outputData['vina_score'] = array_map(function($pose) {
+                    return $pose[0] ?? null;
+                }, $outputData['energies']);
+                unset($outputData['energies']);
             }
 
             $this->dockingJob->update([
