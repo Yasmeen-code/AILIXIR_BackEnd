@@ -97,6 +97,21 @@ Route::middleware('auth:sanctum')->group(function () {
 });
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 // cloudinary file upload test route
 Route::post('/upload-file', function (Request $request) {
 

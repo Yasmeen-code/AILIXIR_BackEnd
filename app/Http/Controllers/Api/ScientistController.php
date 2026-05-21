@@ -44,7 +44,17 @@ class ScientistController extends BaseController
 
         return $this->successResponse(
             'Scientist retrieved successfully',
-            new ScientistResource($scientist)
+            [
+                'results' => [new ScientistResource($scientist)],
+                'pagination' => [
+                    'currentPage' => 1,
+                    'totalPages' => 1,
+                    'totalResults' => 1,
+                    'perPage' => 1,
+                    'hasNextPage' => false,
+                    'hasPrevPage' => false
+                ]
+            ]
         );
     }
 
@@ -52,9 +62,21 @@ class ScientistController extends BaseController
     {
         $scientist = $this->service->getScientist($id);
 
+        $awards = $scientist->awards;
+
         return $this->successResponse(
             'Awards retrieved successfully',
-            $scientist->awards
+            [
+                'results' => $awards,
+                'pagination' => [
+                    'currentPage' => 1,
+                    'totalPages' => 1,
+                    'totalResults' => $awards->count(),
+                    'perPage' => $awards->count(),
+                    'hasNextPage' => false,
+                    'hasPrevPage' => false
+                ]
+            ]
         );
     }
 }
