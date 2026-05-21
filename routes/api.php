@@ -3,11 +3,15 @@
 use App\Http\Controllers\Api\AiController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\AwardController;
+use App\Http\Controllers\Api\ConvertSmilesController;
 use App\Http\Controllers\Api\DockingController;
 use App\Http\Controllers\Api\NewsController;
 use App\Http\Controllers\Api\PasswordResetController;
+use App\Http\Controllers\Api\ScreeningController;
+use App\Http\Controllers\Api\SimulationController;
 use App\Http\Controllers\Api\ScientistController;
 use App\Http\Controllers\Api\UserController;
+use App\Http\Controllers\Api\AdmetController;
 use Cloudinary\Cloudinary;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -66,10 +70,30 @@ Route::middleware('auth:sanctum')->group(function () {
 // ====================DOCKING====================
 
 Route::middleware('auth:sanctum')->prefix('docking')->group(function () {
+    Route::get('history', [DockingController::class, 'history']);
     Route::post('submit', [DockingController::class, 'submit']);
-    Route::post('convert-smiles', [DockingController::class, 'convertSmiles']);
-    Route::get('status/{id}', [DockingController::class, 'status']);
+    Route::get('{id}', [DockingController::class, 'status']);
     Route::get('download/{id}', [DockingController::class, 'download']);
+});
+
+// ====================CONVERT SMILES====================
+
+Route::middleware('auth:sanctum')->prefix('convert-smiles')->group(function () {
+    Route::get('history', [ConvertSmilesController::class, 'history']);
+    Route::post('convert', [ConvertSmilesController::class, 'convert']);
+    Route::get('download/{id}', [ConvertSmilesController::class, 'download']);
+});
+
+// ==================== DRUG REPURPOSING / SCREENING ====================
+
+Route::prefix('drug-repurposing')->middleware('auth:sanctum')->group(function () {
+    Route::get('targets/history',   [ScreeningController::class, 'historyTargets']);
+    Route::get('targets/{id}', [ScreeningController::class, 'statusTargets'])->whereNumber('id');
+    Route::get('targets/{disease_name}', [ScreeningController::class, 'targets']);
+
+    Route::get('screen/history', [ScreeningController::class, 'historyScreening']);
+    Route::get('screen/{id}', [ScreeningController::class, 'statusScreening'])->whereNumber('id');
+    Route::post('screen', [ScreeningController::class, 'screen']);
 });
 
 // ==================== AI JOBS ====================
@@ -82,21 +106,17 @@ Route::middleware('auth:sanctum')->prefix('ai')->group(function () {
     Route::get('/history', [AiController::class, 'history']);
 });
 
-// ==================== MD ====================
+// ==================== SIMULATIONS ====================
 
-Route::get('/md-files', [MdFileController::class, 'index']);
-Route::get('/md-files/type/{type}', [MdFileController::class, 'byType']);
-Route::get('/md-files/{filename}', [MdFileController::class, 'show']);
-
-// ==================== ChemicalSearch ====================
-
-Route::middleware('auth:sanctum')->group(function () {
-    Route::post('/chemical-search', [ChemicalSearchController::class, 'store']);
-    Route::get('/chemical-search/{id}/status', [ChemicalSearchController::class, 'status']);
-    Route::post('/chemical-search/full-rag', [ChemicalSearchController::class, 'fullRag']);
+Route::prefix('simulations')->middleware('auth:sanctum')->group(function () {
+    Route::post('/run', [SimulationController::class, 'run']);
+    Route::get('/index', [SimulationController::class, 'index']);
+    Route::get('/{id}/status', [SimulationController::class, 'status']);
+    Route::delete('/{id}/delete', [SimulationController::class, 'destroy']);
 });
 
 
+<<<<<<< HEAD
 
 
 
@@ -110,9 +130,15 @@ Route::middleware('auth:sanctum')->group(function () {
 
 
 
+=======
+
+// ==================== ADMET PREDICTION ====================
+Route::middleware('auth:sanctum')->post('/admet/predict', [AdmetController::class, 'predict']);
+>>>>>>> 228d3d8df6ad01dfa46fca2cd2f9dbdc1eac0c4b
 
 
 // cloudinary file upload test route
+
 Route::post('/upload-file', function (Request $request) {
 
     $request->validate([

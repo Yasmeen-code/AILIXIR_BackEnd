@@ -16,9 +16,11 @@ class SubmitDockingRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'ligand_file' => 'nullable|file|required_without:ligand_smiles',
+            'protein_name' => 'required|string|max:255',
+            'ligand_name'  => 'nullable|string|max:255',
+            'ligand_file'  => 'nullable|file|required_without:ligand_smiles',
             'ligand_smiles' => 'nullable|string|max:2000|required_without:ligand_file',
-            'protein_file' => 'nullable|file',
+            'protein_file' => 'required|file',
             'center_x' => 'required|numeric',
             'center_y' => 'required|numeric',
             'center_z' => 'required|numeric',
