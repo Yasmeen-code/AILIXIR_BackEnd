@@ -14,9 +14,6 @@ class ConvertSmilesController
 {
     use ApiResponseTrait;
 
-    /**
-     * Convert a SMILES string to PDBQT (standalone, no docking).
-     */
     public function convert(Request $request)
     {
         $validator = Validator::make($request->all(), [
@@ -175,7 +172,6 @@ class ConvertSmilesController
             }
 
             return ['status' => 'error', 'message' => 'Unexpected output from conversion script'];
-
         } catch (\Exception $e) {
             Log::error('SMILES conversion exception', ['smiles' => $smiles, 'error' => $e->getMessage()]);
             return ['status' => 'error', 'message' => $e->getMessage()];

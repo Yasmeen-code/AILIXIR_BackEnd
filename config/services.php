@@ -13,6 +13,7 @@ return [
     | a conventional file to locate the various service credentials.
     |
     */
+    #AI agent
     'chemistry' => [
         'base_url' => env('CHEMISTRY_API_BASE_URL', 'https://bronchial-carpentry-football.ngrok-free.dev'),
         'timeout' => env('CHEMISTRY_API_TIMEOUT', 30),

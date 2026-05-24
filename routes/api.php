@@ -116,10 +116,8 @@ Route::prefix('simulations')->middleware('auth:sanctum')->group(function () {
 });
 
 // ==================== AI Agent ====================
-// Public
 Route::get('chemistry/health', [ChemistryController::class, 'health']);
 
-// Protected (require auth)
 Route::middleware('auth:sanctum')->group(function () {
 
     Route::prefix('chemistry')->group(function () {

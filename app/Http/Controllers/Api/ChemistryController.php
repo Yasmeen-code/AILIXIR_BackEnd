@@ -35,14 +35,12 @@ class ChemistryController extends BaseController
     {
         $user = Auth::user();
 
-        // Create thread in AI API
         $result = $this->chemistryService->createThread();
 
         if (!$result['success']) {
             return response()->json(new ChemistryResponseResource($result), 500);
         }
 
-        // Save to database
         $thread = ChemistryThread::create([
             'user_id' => $user->id,
             'thread_id' => $result['data']['thread_id'],
@@ -80,7 +78,6 @@ class ChemistryController extends BaseController
         $user = Auth::user();
         $threadId = $request->input('thread_id');
 
-        // If thread_id provided, verify it belongs to user
         if ($threadId) {
             $thread = ChemistryThread::where('user_id', $user->id)
                 ->where('thread_id', $threadId)
@@ -96,7 +93,6 @@ class ChemistryController extends BaseController
             $thread->update(['last_used_at' => now()]);
         }
 
-        // Call AI API
         $result = $this->chemistryService->chat(
             $request->input('message'),
             $threadId
@@ -106,7 +102,6 @@ class ChemistryController extends BaseController
             return response()->json(new ChemistryResponseResource($result), $result['status']);
         }
 
-        // Save analysis
         ChemistryAnalysis::create([
             'user_id' => $user->id,
             'chemistry_thread_id' => $thread?->id,
@@ -185,7 +180,6 @@ class ChemistryController extends BaseController
         $file = $request->file('file');
         $analysisType = $request->input('analysis_type', 'full');
 
-        // Upload to AI API
         $result = $this->chemistryService->uploadCsv($file, $analysisType);
 
         if (!$result['success']) {
@@ -202,7 +196,6 @@ class ChemistryController extends BaseController
             ], 500);
         }
 
-        // Save to database
         $job = ChemistryCsvJob::create([
             'user_id' => $user->id,
             'job_id' => $apiJobId,
@@ -238,13 +231,11 @@ class ChemistryController extends BaseController
             ], 404);
         }
 
-        // Get fresh status from API
         $result = $this->chemistryService->getCsvStatus($jobId);
 
         if ($result['success'] && isset($result['data'])) {
             $apiData = $result['data'];
 
-            // Update local record
             $job->update([
                 'status' => $apiData['status'] ?? $job->status,
                 'completed_rows' => $apiData['completed'] ?? $job->completed_rows,
@@ -292,16 +283,13 @@ class ChemistryController extends BaseController
             ], 400);
         }
 
-        // If we already have it stored, return it
         if ($job->result_file_path && Storage::exists($job->result_file_path)) {
             return Storage::download($job->result_file_path);
         }
 
-        // Otherwise fetch from API
         $result = $this->chemistryService->getCsvResults($jobId);
 
         if (is_string($result)) {
-            // Save to storage
             $path = "chemistry_results/{$jobId}.csv";
             Storage::put($path, $result);
             $job->update(['result_file_path' => $path]);
@@ -352,10 +340,8 @@ class ChemistryController extends BaseController
             ], 404);
         }
 
-        // Delete from AI API
         $result = $this->chemistryService->deleteCsvJob($jobId);
 
-        // Delete file if exists
         if ($job->result_file_path && Storage::exists($job->result_file_path)) {
             Storage::delete($job->result_file_path);
         }
@@ -372,7 +358,7 @@ class ChemistryController extends BaseController
     public function userHistory(Request $request): JsonResponse
     {
         $user = Auth::user();
-        $type = $request->input('type'); // smiles, compare, docking, chat
+        $type = $request->input('type');
 
         $query = $user->chemistryAnalyses()
             ->with('thread:id,thread_id,title')
@@ -403,7 +389,6 @@ class ChemistryController extends BaseController
     private function saveAndRespond(array $result, int $userId, string $type, string $input, ?int $threadId = null): JsonResponse
     {
         if (!$result['success']) {
-            // Save failed attempt
             ChemistryAnalysis::create([
                 'user_id' => $userId,
                 'chemistry_thread_id' => $threadId,
@@ -416,7 +401,6 @@ class ChemistryController extends BaseController
             return response()->json(new ChemistryResponseResource($result), $result['status']);
         }
 
-        // Save successful analysis
         ChemistryAnalysis::create([
             'user_id' => $userId,
             'chemistry_thread_id' => $threadId,
