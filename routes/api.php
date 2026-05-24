@@ -19,7 +19,7 @@ use App\Http\Controllers\Api\OtpController;
 use App\Http\Controllers\Api\EmailVerificationController;
 use App\Http\Controllers\Api\MdFileController;
 use App\Http\Controllers\Api\ChemicalSearchController;
-
+use App\Http\Controllers\Api\ChemistryController;
 
 // ==================== AWARDS ====================
 Route::get('/awards', [AwardController::class, 'index']);
@@ -115,26 +115,46 @@ Route::prefix('simulations')->middleware('auth:sanctum')->group(function () {
     Route::delete('/{id}/delete', [SimulationController::class, 'destroy']);
 });
 
+// ==================== AI Agent ====================
+// Public
+Route::get('chemistry/health', [ChemistryController::class, 'health']);
 
-<<<<<<< HEAD
+// Protected (require auth)
+Route::middleware('auth:sanctum')->group(function () {
+
+    Route::prefix('chemistry')->group(function () {
+        // Threads
+        Route::post('thread', [ChemistryController::class, 'createThread']);
+        Route::get('threads', [ChemistryController::class, 'listThreads']);
+
+        // Chat
+        Route::post('chat', [ChemistryController::class, 'chat']);
+
+        // Analysis
+        Route::post('analyze/smiles', [ChemistryController::class, 'analyzeSmiles']);
+        Route::post('analyze/compare', [ChemistryController::class, 'compare']);
+        Route::post('analyze/docking', [ChemistryController::class, 'docking']);
+
+        // CSV Batch
+        Route::post('csv/upload', [ChemistryController::class, 'uploadCsv']);
+        Route::get('csv/status/{job_id}', [ChemistryController::class, 'csvStatus']);
+        Route::get('csv/results/{job_id}', [ChemistryController::class, 'csvResults']);
+        Route::get('csv/jobs', [ChemistryController::class, 'listJobs']);
+        Route::delete('csv/jobs/{job_id}', [ChemistryController::class, 'deleteJob']);
+
+        // User History
+        Route::get('history', [ChemistryController::class, 'userHistory']);
+    });
+});
 
 
 
 
 
 
-
-
-
-
-
-
-
-=======
 
 // ==================== ADMET PREDICTION ====================
 Route::middleware('auth:sanctum')->post('/admet/predict', [AdmetController::class, 'predict']);
->>>>>>> 228d3d8df6ad01dfa46fca2cd2f9dbdc1eac0c4b
 
 
 // cloudinary file upload test route

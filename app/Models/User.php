@@ -7,6 +7,7 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
 use App\Models\Researcher;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class User extends Authenticatable
 {
@@ -91,5 +92,19 @@ class User extends Authenticatable
     public function admets()
     {
         return $this->hasMany(Admet::class);
+    }
+    public function chemistryThreads(): HasMany
+    {
+        return $this->hasMany(ChemistryThread::class);
+    }
+
+    public function chemistryAnalyses(): HasMany
+    {
+        return $this->hasMany(ChemistryAnalysis::class);
+    }
+
+    public function chemistryCsvJobs(): HasMany
+    {
+        return $this->hasMany(ChemistryCsvJob::class);
     }
 }
