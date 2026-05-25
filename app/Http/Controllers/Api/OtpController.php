@@ -29,13 +29,10 @@ class OtpController extends BaseController
         }
 
         try {
-            // التحقق من OTP
             $this->otpService->verifyOtp($user, 'email_verification', $request->otp);
 
-            // تحديث حالة التحقق
             $user->update(['is_verified' => true]);
 
-            // إنشاء token للمستخدم
             $token = $user->createToken('auth_token')->plainTextToken;
 
             return $this->successResponse('Email verified successfully', [

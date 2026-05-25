@@ -44,7 +44,6 @@ class ChemicalSearchController extends BaseController
 
     /**
      * POST /api/chemical-search/full-rag
-     * Full RAG (مع reason)
      */
     public function fullRag(ChemicalSearchRequest $request): JsonResponse
     {

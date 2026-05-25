@@ -82,7 +82,6 @@ class OtpService
             ]);
         }
 
-        // ✅ رجعنا الـ throw هنا - ده للـ resend endpoint العادي
         if ($user->$otpExpiresField && now()->lt($user->$otpExpiresField)) {
             $secondsRemaining = now()->diffInSeconds($user->$otpExpiresField);
             $timeText = $this->formatRemainingTime((int) $secondsRemaining);
@@ -141,12 +140,10 @@ class OtpService
         $columns = $this->getOtpColumns($type);
         $expiresField = $columns['expires'];
 
-        // لو مفيش OTP expires field أو خلص
         if (!$user->$expiresField || now()->gte($user->$expiresField)) {
             return ['can_resend' => true, 'remaining_seconds' => null];
         }
 
-        // لسه الـ OTP صالح
         $remainingSeconds = now()->diffInSeconds($user->$expiresField);
 
         return ['can_resend' => false, 'remaining_seconds' => $remainingSeconds];
