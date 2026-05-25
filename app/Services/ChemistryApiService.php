@@ -6,6 +6,7 @@ use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Http\UploadedFile;
 
+
 class ChemistryApiService
 {
     protected string $baseUrl;
