@@ -23,6 +23,8 @@ class User extends Authenticatable
         'is_verified',
         'password_reset_otp',
         'password_reset_otp_expires_at',
+        'last_otp_sent_at',
+
     ];
     protected $hidden = [
         'password',
@@ -39,6 +41,8 @@ class User extends Authenticatable
             'email_verification_otp_expires_at' => 'datetime',
             'password_reset_otp_expires_at' => 'datetime',
             'is_verified' => 'boolean',
+            'last_otp_sent_at' => 'datetime',
+
         ];
     }
 

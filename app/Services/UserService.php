@@ -39,7 +39,15 @@ class UserService
         }
 
         if (!$user->is_verified) {
-            $this->otpService->resendOtp($user, 'email_verification');
+            // ✅ بنستخدم canResendOtp() مش resendOtp()
+            $otpCheck = $this->otpService->canResendOtp($user, 'email_verification');
+
+            // لو الـ OTP خلص (عدت الـ 5 دقايق) → ابعتي جديد
+            if ($otpCheck['can_resend']) {
+                $this->otpService->resendOtp($user, 'email_verification');
+            }
+
+            // ✅ دايماً نفس الـ response في الـ login
             return ['error' => 'Email not verified. OTP sent again.', 'code' => 403];
         }
 
