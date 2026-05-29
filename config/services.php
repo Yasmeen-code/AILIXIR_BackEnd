@@ -20,7 +20,15 @@ return [
     ],
 
     'chemical_ai' => [
-        'url' => env('CHEMICAL_AI_URL', 'https://unsteady-chlorine-imaginary.ngrok-free.dev'),
+        'url' => env('CHEMICAL_AI_URL', 'http://chemical-rag:5000'),
+    ],
+
+    'admet' => [
+        'url' => env('ADMET_AI_URL', 'http://admet:8000'),
+    ],
+
+    'drug_repurposing' => [
+        'url' => env('DRUG_REPURPOSING_URL', 'http://drug-repurposing:8000'),
     ],
 
     'postmark' => [

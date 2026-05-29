@@ -15,6 +15,8 @@ return [
 
     'name' => env('APP_NAME', 'Laravel'),
 
+    'enable_ai_integration_routes' => (bool) env('AI_INTEGRATION_ROUTES_ENABLED', false),
+
     /*
     |--------------------------------------------------------------------------
     | Application Environment

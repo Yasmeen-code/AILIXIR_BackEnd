@@ -1,0 +1,74 @@
+version: '3.8'
+
+services:
+  # Main API Service
+  api:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    container_name: drug-repurposing-api
+    ports:
+      - "8000:8000"
+    environment:
+      - HOST=0.0.0.0
+      - PORT=8000
+      - DEBUG=False
+      - LOG_LEVEL=INFO
+      - USE_MOCK_MODEL=False
+      - USE_MOCK_DRUGS=False
+      - DEEP_PURPOSE_MODEL=MPNN_CNN_BindingDB
+      - TDC_DATASET=Half_Life_Obach
+    volumes:
+      - ./logs:/app/logs
+      - ./data:/app/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - drug-repurposing-network
+    # Uncomment for production logging
+    # logging:
+    #   driver: "json-file"
+    #   options:
+    #     max-size: "10m"
+    #     max-file: "3"
+
+  # Redis Cache (Optional - for future caching improvements)
+  # redis:
+  #   image: redis:7-alpine
+  #   container_name: drug-repurposing-cache
+  #   ports:
+  #     - "6379:6379"
+  #   volumes:
+  #     - redis-data:/data
+  #   networks:
+  #     - drug-repurposing-network
+  #   restart: unless-stopped
+
+  # PostgreSQL Database (Optional - for storing results)
+  # db:
+  #   image: postgres:15-alpine
+  #   container_name: drug-repurposing-db
+  #   environment:
+  #     POSTGRES_DB: drug_repurposing
+  #     POSTGRES_USER: appuser
+  #     POSTGRES_PASSWORD: secure_password
+  #   ports:
+  #     - "5432:5432"
+  #   volumes:
+  #     - postgres-data:/var/lib/postgresql/data
+  #   networks:
+  #     - drug-repurposing-network
+  #   restart: unless-stopped
+
+networks:
+  drug-repurposing-network:
+    driver: bridge
+
+volumes:
+  # redis-data:
+  # postgres-data:

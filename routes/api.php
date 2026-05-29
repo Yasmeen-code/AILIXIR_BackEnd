@@ -20,6 +20,17 @@ use App\Http\Controllers\Api\EmailVerificationController;
 use App\Http\Controllers\Api\MdFileController;
 use App\Http\Controllers\Api\ChemicalSearchController;
 use App\Http\Controllers\Api\ChemistryController;
+use App\Http\Controllers\Api\AiServicesIntegrationController;
+
+// ==================== AI INTEGRATION (Docker / CI) ====================
+if (config('app.enable_ai_integration_routes')) {
+    Route::prefix('ai-services')->group(function () {
+        Route::get('/health', [AiServicesIntegrationController::class, 'health']);
+        Route::post('/test/admet', [AiServicesIntegrationController::class, 'testAdmet']);
+        Route::post('/test/chemical-search', [AiServicesIntegrationController::class, 'testChemicalSearch']);
+        Route::get('/test/drug-repurposing', [AiServicesIntegrationController::class, 'testDrugRepurposing']);
+    });
+}
 
 // ==================== AWARDS ====================
 Route::get('/awards', [AwardController::class, 'index']);
