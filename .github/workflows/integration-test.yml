@@ -34,6 +34,12 @@ jobs:
           # Generate and set key inside container
           docker compose exec -T laravel php artisan key:generate --force
           
+          # Verify key was generated correctly (should output 44 chars for base64 32-byte key)
+          docker compose exec -T laravel php artisan tinker --execute="echo 'Key length: ' . strlen(config('app.key')) . PHP_EOL;"
+          
+          # Clear config cache to ensure key is loaded
+          docker compose exec -T laravel php artisan config:clear
+          
           # Run fresh migrations to ensure clean database state
           docker compose exec -T laravel php artisan migrate:fresh --force
 
