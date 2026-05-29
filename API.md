@@ -1,6 +1,7 @@
-# 📡 AILIXIR API Reference
 
-**Version:** 2.0 | **Last Updated:** May 29, 2026 | **Status:** Production Ready
+content = '''# 📡 AILIXIR API Reference
+
+**Version:** 2.1 | **Last Updated:** May 29, 2026 | **Status:** Production Ready
 
 Complete API specification for AILIXIR-Backend, including all endpoints, authentication, request/response schemas, error handling, and integration examples.
 
@@ -16,6 +17,7 @@ Complete API specification for AILIXIR-Backend, including all endpoints, authent
 - [Authentication Endpoints](#authentication-endpoints)
 - [AI Integration Endpoints](#ai-integration-endpoints)
 - [AI Service Endpoints](#ai-service-endpoints)
+- [AI Agent Endpoints](#ai-agent-endpoints)
 - [Chemical Search Endpoints](#chemical-search-endpoints)
 - [Docking API](#docking-api)
 - [Convert SMILES API](#convert-smiles-api)
@@ -44,6 +46,7 @@ AILIXIR provides a RESTful API for accessing all drug discovery services. The AP
 - User authentication and authorization
 - Result caching and versioning
 - File upload/download support
+- AI-powered chemistry analysis agent with conversation memory
 
 ---
 
@@ -670,6 +673,448 @@ Authorization: Bearer YOUR_ACCESS_TOKEN
 
 ---
 
+## 🤖 AI Agent Endpoints (Chemistry AI)
+
+AI-powered chemistry analysis agent with conversation memory. All endpoints require authentication.
+
+**Base Path:** `/api/chemistry`
+
+**Capabilities:**
+- SMILES validation and property calculation
+- Drug-likeness classification (Lipinski Ro5, Veber, Lead-likeness)
+- ADMET profiling with structural toxicity alerts
+- Molecular docking result ranking and recommendation
+- Multi-molecule side-by-side comparison
+- Async CSV batch processing
+- Conversation context via thread_id
+
+---
+
+### Create Conversation Thread
+
+Start a new isolated chemistry conversation thread.
+
+```http
+POST /api/chemistry/thread
+Authorization: Bearer YOUR_ACCESS_TOKEN
+```
+
+**Response (200 OK):**
+```json
+{
+  "success": true,
+  "data": {
+    "thread_id": "aa761d2c-ecbc-4da0-abe4-189c2d77eede",
+    "id": 1,
+    "created_at": "2026-05-29T12:00:00Z"
+  }
+}
+```
+
+**Notes:**
+- One thread_id per user session
+- Do not share thread IDs across different users
+- Pass the same thread_id across multiple calls to maintain conversation history
+
+---
+
+### List User Threads
+
+Get all active threads for the authenticated user.
+
+```http
+GET /api/chemistry/threads
+Authorization: Bearer YOUR_ACCESS_TOKEN
+```
+
+**Response (200 OK):**
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "id": 1,
+      "thread_id": "aa761d2c-ecbc-4da0-abe4-189c2d77eede",
+      "title": "New Conversation",
+      "last_used_at": "2026-05-29T12:30:00Z",
+      "created_at": "2026-05-29T12:00:00Z"
+    }
+  ]
+}
+```
+
+---
+
+### Send Chat Message
+
+Send a natural language chemistry question to the AI agent.
+
+```http
+POST /api/chemistry/chat
+Authorization: Bearer YOUR_ACCESS_TOKEN
+Content-Type: application/json
+
+{
+  "message": "Is CC(=O)Oc1ccccc1C(=O)O a good drug candidate?",
+  "thread_id": "aa761d2c-ecbc-4da0-abe4-189c2d77eede"
+}
+```
+
+**Response (200 OK):**
+```json
+{
+  "success": true,
+  "data": {
+    "reply": "Based on the analysis of CC(=O)Oc1ccccc1C(=O)O (Aspirin)...",
+    "thread_id": "aa761d2c-ecbc-4da0-abe4-189c2d77eede",
+    "processing_time_ms": 11888
+  }
+}
+```
+
+**Example Messages:**
+- `"Is CC(=O)Oc1ccccc1C(=O)O a good drug candidate?"`
+- `"Compare aspirin and ibuprofen CC(C)Cc1ccc(cc1)C(C)C(=O)O"`
+- `"What are the toxicity concerns for this molecule?"` (follow-up)
+- `"Which molecule we discussed has the best CNS penetration?"` (follow-up)
+
+**Notes:**
+- `thread_id` is optional. Omit to start a fresh conversation automatically.
+- The agent remembers all prior messages on the same thread.
+- The agent automatically handles: SMILES validation, molecular property calculation, drug-likeness rules, ADMET profiling, docking ranking, and multi-molecule comparison.
+
+---
+
+### Analyze Single SMILES
+
+Full molecular analysis pipeline in one call.
+
+```http
+POST /api/chemistry/analyze/smiles
+Authorization: Bearer YOUR_ACCESS_TOKEN
+Content-Type: application/json
+
+{
+  "smiles": "CC(=O)Oc1ccccc1C(=O)O",
+  "thread_id": "aa761d2c-ecbc-4da0-abe4-189c2d77eede"
+}
+```
+
+**Response (200 OK):**
+```json
+{
+  "success": true,
+  "data": {
+    "reply": "Complete analysis text...",
+    "thread_id": "aa761d2c-ecbc-4da0-abe4-189c2d77eede",
+    "processing_time_ms": 5234
+  }
+}
+```
+
+**Pipeline Steps:**
+1. Validate SMILES
+2. Compute molecular properties (MW, LogP, HBD, HBA, TPSA, QED, Fsp3)
+3. Drug-likeness classification (Lipinski Ro5, Veber, Lead-likeness)
+4. ADMET profile with structural toxicity alerts
+
+**Notes:**
+- `smiles` field is required in JSON body
+- URL-encode special characters if sending via query string: `CC%28%3DO%29Oc1ccccc1C%28%3DO%29O`
+
+---
+
+### Compare Multiple Molecules
+
+Side-by-side comparison of 2 or more molecules with recommendation.
+
+```http
+POST /api/chemistry/analyze/compare
+Authorization: Bearer YOUR_ACCESS_TOKEN
+Content-Type: application/json
+
+{
+  "smiles": [
+    "CC(=O)Oc1ccccc1C(=O)O",
+    "CC(C)Cc1ccc(cc1)C(C)C(=O)O",
+    "Cn1cnc2c1c(=O)n(c(=O)n2C)C"
+  ],
+  "thread_id": "aa761d2c-ecbc-4da0-abe4-189c2d77eede"
+}
+```
+
+**Response (200 OK):**
+```json
+{
+  "success": true,
+  "data": {
+    "reply": "Side-by-side property table and recommendation...",
+    "thread_id": "aa761d2c-ecbc-4da0-abe4-189c2d77eede",
+    "processing_time_ms": 23543
+  }
+}
+```
+
+**Agent Returns:**
+- Side-by-side property table (MW, LogP, HBD, HBA, TPSA, QED, Fsp3)
+- Drug-likeness pass/fail for each molecule
+- Named recommendation with justification
+
+---
+
+### Analyze Docking Results
+
+Rank and recommend best docking candidates.
+
+```http
+POST /api/chemistry/analyze/docking
+Authorization: Bearer YOUR_ACCESS_TOKEN
+Content-Type: application/json
+
+{
+  "docking_data": "CC(=O)Oc1ccccc1C(=O)O | -7.2 | 1.1 | H-bond to Ser195\\nCC(C)Cc1ccc(cc1)C(C)C(=O)O | -8.9 | 0.8 | deep pocket binding\\nCn1cnc2c1c(=O)n(c(=O)n2C)C | -6.1 | 1.9 |",
+  "thread_id": "aa761d2c-ecbc-4da0-abe4-189c2d77eede"
+}
+```
+
+**Docking Data Format:**
+```
+SMILES | binding_affinity_kcal_mol | rmsd_angstrom | optional_notes
+```
+
+**Response (200 OK):**
+```json
+{
+  "success": true,
+  "data": {
+    "reply": "Top Pick: CC(C)Cc1ccc(cc1)C(C)C(=O)O...",
+    "thread_id": "aa761d2c-ecbc-4da0-abe4-189c2d77eede",
+    "processing_time_ms": 5392
+  }
+}
+```
+
+**Interpretation Rules:**
+- ΔG more negative = stronger binding
+- RMSD < 2 Å = reliable pose; > 2 Å = uncertain binding mode
+- Best candidate = strongest binder that also passes Lipinski Ro5
+
+---
+
+### Upload CSV for Batch Analysis
+
+Process multiple molecules asynchronously.
+
+```http
+POST /api/chemistry/csv/upload
+Authorization: Bearer YOUR_ACCESS_TOKEN
+Content-Type: multipart/form-data
+
+file: [Choose File] molecules.csv
+analysis_type: full
+```
+
+**Analysis Types:**
+
+| Type | What It Runs | Speed |
+|------|-------------|-------|
+| `full` | Properties + drug-likeness + ADMET | Slow |
+| `quick` | Lipinski pass/fail + QED only | Fast |
+| `admet` | ADMET profile only | Medium |
+| `classify` | Drug-likeness classification only | Fast |
+
+**Required CSV Columns:**
+- `smiles` — SMILES string (required)
+- `name` — compound name or ID (optional, auto-generated if missing)
+
+**Example CSV:**
+```csv
+name,smiles
+Aspirin,CC(=O)Oc1ccccc1C(=O)O
+Ibuprofen,CC(C)Cc1ccc(cc1)C(C)C(=O)O
+Caffeine,Cn1cnc2c1c(=O)n(c(=O)n2C)C
+```
+
+**Response (200 OK):**
+```json
+{
+  "success": true,
+  "data": {
+    "job_id": "0ec86cee-6ce8-4e91-95f4-ad807f7ee283",
+    "id": 1,
+    "status": "queued",
+    "total_rows": 4
+  }
+}
+```
+
+**Limits:** Maximum 100 rows per upload. Split larger datasets into batches.
+
+---
+
+### Check CSV Job Status
+
+Poll for processing progress.
+
+```http
+GET /api/chemistry/csv/status/{job_id}
+Authorization: Bearer YOUR_ACCESS_TOKEN
+```
+
+**Response (200 OK - Running):**
+```json
+{
+  "success": true,
+  "data": {
+    "job_id": "0ec86cee-6ce8-4e91-95f4-ad807f7ee283",
+    "status": "running",
+    "total": 4,
+    "completed": 3,
+    "failed_rows": 2,
+    "progress_percent": 75
+  }
+}
+```
+
+**Status Values:**
+| Value | Meaning |
+|-------|---------|
+| `queued` | Job is waiting to start |
+| `running` | Actively processing rows |
+| `done` | All rows finished — results are ready |
+| `failed` | Job-level error (row errors are inside results) |
+
+**Polling:** Poll every 5–10 seconds. Once status == "done", call GET /csv/results/{job_id}.
+
+---
+
+### Download CSV Results
+
+Get completed analysis as CSV file download.
+
+```http
+GET /api/chemistry/csv/results/{job_id}
+Authorization: Bearer YOUR_ACCESS_TOKEN
+```
+
+**Response (200 OK):**
+```
+Content-Type: text/csv
+Content-Disposition: attachment; filename="results_{job_id}.csv"
+
+row,name,smiles,status,error,analysis
+1,Aspirin,CC(=O)Oc1ccccc1C(=O)O,success,,"Full analysis text..."
+2,Ibuprofen,CC(C)Cc1ccc(cc1)C(C)C(=O)O,failed,"Quota exceeded",...
+```
+
+**Output CSV Columns:**
+- `row` — original row number in the uploaded file
+- `name` — compound name
+- `smiles` — input SMILES string
+- `status` — success or failed
+- `analysis` — full agent analysis text
+- `error` — error message (empty if status is success)
+
+---
+
+### List User CSV Jobs
+
+```http
+GET /api/chemistry/csv/jobs
+Authorization: Bearer YOUR_ACCESS_TOKEN
+```
+
+**Response (200 OK):**
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "id": 1,
+      "job_id": "0ec86cee-6ce8-4e91-95f4-ad807f7ee283",
+      "filename": "molecules.csv",
+      "analysis_type": "full",
+      "status": "done",
+      "total_rows": 4,
+      "completed_rows": 4,
+      "failed_rows": 3,
+      "progress_percent": 100,
+      "created_at": "2026-05-29T12:00:00Z"
+    }
+  ]
+}
+```
+
+---
+
+### Delete CSV Job
+
+Remove completed job and free storage.
+
+```http
+DELETE /api/chemistry/csv/jobs/{job_id}
+Authorization: Bearer YOUR_ACCESS_TOKEN
+```
+
+**Response (200 OK):**
+```json
+{
+  "success": true,
+  "message": "Job deleted successfully"
+}
+```
+
+**Notes:**
+- Call this after successfully downloading results to keep memory usage low
+- Trying to delete a non-existent job returns 404
+
+---
+
+### Get User Analysis History
+
+Retrieve all past analyses with pagination.
+
+```http
+GET /api/chemistry/history?type=smiles&page=1
+Authorization: Bearer YOUR_ACCESS_TOKEN
+```
+
+**Query Parameters:**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `type` | string | Filter: `smiles`, `compare`, `docking`, `chat` |
+| `page` | integer | Page number |
+
+**Response (200 OK):**
+```json
+{
+  "success": true,
+  "data": {
+    "current_page": 1,
+    "data": [
+      {
+        "id": 1,
+        "type": "smiles",
+        "input_data": "CC(=O)Oc1ccccc1C(=O)O",
+        "response": "Analysis text...",
+        "status": "success",
+        "created_at": "2026-05-29T12:00:00Z",
+        "thread": {
+          "id": 1,
+          "thread_id": "aa761d2c-ecbc-4da0-abe4-189c2d77eede",
+          "title": "New Conversation"
+        }
+      }
+    ],
+    "per_page": 20,
+    "total": 42
+  }
+}
+```
+
+---
+
 ## 🔍 Chemical Search Endpoints
 
 ### Retrieval-Only Search
@@ -826,19 +1271,19 @@ Authorization: Bearer YOUR_ACCESS_TOKEN
 #### Example curl request
 
 ```bash
-curl -X POST "{base_url}/api/docking/submit" \
-  -H "Authorization: Bearer {token}" \
-  -F "protein_name=EGFR" \
-  -F "protein_file=@protein.pdbqt" \
-  -F "ligand_name=Erlotinib" \
-  -F "ligand_smiles=CC1=CC(=O)NC2=C1C=CC=C2" \
-  -F "center_x=10.0" \
-  -F "center_y=15.0" \
-  -F "center_z=20.0" \
-  -F "box_size_x=25.0" \
-  -F "box_size_y=25.0" \
-  -F "box_size_z=25.0" \
-  -F "exhaustiveness=8" \
+curl -X POST "{base_url}/api/docking/submit" \\
+  -H "Authorization: Bearer {token}" \\
+  -F "protein_name=EGFR" \\
+  -F "protein_file=@protein.pdbqt" \\
+  -F "ligand_name=Erlotinib" \\
+  -F "ligand_smiles=CC1=CC(=O)NC2=C1C=CC=C2" \\
+  -F "center_x=10.0" \\
+  -F "center_y=15.0" \\
+  -F "center_z=20.0" \\
+  -F "box_size_x=25.0" \\
+  -F "box_size_y=25.0" \\
+  -F "box_size_z=25.0" \\
+  -F "exhaustiveness=8" \\
   -F "n_poses=5"
 ```
 
@@ -992,9 +1437,9 @@ If the job is not completed, the `results` block may be omitted.
 #### Example curl request
 
 ```bash
-curl -X POST "{base_url}/api/convert-smiles/convert" \
-  -H "Authorization: Bearer {token}" \
-  -H "Content-Type: application/json" \
+curl -X POST "{base_url}/api/convert-smiles/convert" \\
+  -H "Authorization: Bearer {token}" \\
+  -H "Content-Type: application/json" \\
   -d '{"ligand_smiles":"CCN1CC(CCN2CCOCC2)C(c2ccccc2)(c2ccccc2)Cl=0"}'
 ```
 
@@ -1265,6 +1710,11 @@ All errors follow this standard format:
 | `AUTHENTICATION_FAILED` | Invalid credentials |
 | `INSUFFICIENT_QUOTA` | User quota exceeded |
 | `UNSUPPORTED_OPERATION` | Feature not available |
+| `QUOTA_EXCEEDED` | LLM API daily quota reached |
+| `THREAD_NOT_FOUND` | Thread ID doesn't exist or unauthorized |
+| `JOB_NOT_COMPLETE` | Results requested before job completion |
+| `CSV_TOO_LARGE` | Exceeds 100 row limit |
+| `MISSING_SMILES` | smiles field not provided |
 
 ### Example Error Response
 
@@ -1306,6 +1756,19 @@ X-RateLimit-Reset: 1716954645
 | **Search** | 500 requests | 1 hour |
 | **General** | 1000 requests | 1 hour |
 
+### AI Agent Rate Limits
+
+| Endpoint | Limit | Window |
+|----------|-------|--------|
+| `/chat` | 20 requests | Per day (upstream quota) |
+| `/analyze/smiles` | 20 requests | Per day (upstream quota) |
+| `/analyze/compare` | 20 requests | Per day (upstream quota) |
+| `/analyze/docking` | 20 requests | Per day (upstream quota) |
+| `/csv/upload` | 10 uploads | Per day |
+| All others | 1000 requests | 1 hour |
+
+**Note:** AI-powered endpoints are limited by upstream Google Gemini free tier (20 requests/day). Use `analysis_type: quick` to reduce consumption.
+
 ### Handling Rate Limits
 
 When rate limited (HTTP 429):
@@ -1336,10 +1799,10 @@ SMILES="CC(=O)Oc1ccccc1C(=O)O"
 
 # Step 1: Submit job
 echo "1. Submitting ADMET job..."
-JOB_RESPONSE=$(curl -s -X POST "$BASE_URL/ai/run" \
-  -H "Authorization: Bearer $TOKEN" \
-  -H "Content-Type: application/json" \
-  -d "{\"job_type\": \"admet_prediction\", \"parameters\": {\"smiles\": \"$SMILES\"}}")
+JOB_RESPONSE=$(curl -s -X POST "$BASE_URL/ai/run" \\
+  -H "Authorization: Bearer $TOKEN" \\
+  -H "Content-Type: application/json" \\
+  -d "{\\"job_type\\": \\"admet_prediction\\", \\"parameters\\": {\\"smiles\\": \\"$SMILES\\"}}")
 
 JOB_ID=$(echo $JOB_RESPONSE | jq -r '.job_id')
 echo "Job ID: $JOB_ID"
@@ -1347,7 +1810,7 @@ echo "Job ID: $JOB_ID"
 # Step 2: Poll for completion
 echo "2. Waiting for results..."
 while true; do
-  STATUS_RESPONSE=$(curl -s -X GET "$BASE_URL/ai/status/$JOB_ID" \
+  STATUS_RESPONSE=$(curl -s -X GET "$BASE_URL/ai/status/$JOB_ID" \\
     -H "Authorization: Bearer $TOKEN")
   
   STATUS=$(echo $STATUS_RESPONSE | jq -r '.status')
@@ -1368,8 +1831,8 @@ done
 
 # Step 3: Download results
 echo "3. Downloading full results..."
-curl -X GET "$BASE_URL/ai/download/full/$JOB_ID" \
-  -H "Authorization: Bearer $TOKEN" \
+curl -X GET "$BASE_URL/ai/download/full/$JOB_ID" \\
+  -H "Authorization: Bearer $TOKEN" \\
   -o results.zip
 
 echo "✓ Results saved to results.zip"
@@ -1452,7 +1915,7 @@ async function checkSystemHealth() {
     const allHealthy = servicesResponse.data.success;
     const services = servicesResponse.data.services;
     
-    console.log('\nAI Services Status:');
+    console.log('\\nAI Services Status:');
     Object.entries(services).forEach(([name, status]) => {
       const indicator = status.status === 'healthy' ? '✓' : '✗';
       console.log(`${indicator} ${name}: ${status.status}`);
@@ -1471,6 +1934,96 @@ async function checkSystemHealth() {
 setInterval(checkSystemHealth, 60000);
 ```
 
+### Example 4: AI Agent Drug Discovery Workflow
+
+```bash
+#!/bin/bash
+
+BASE_URL="http://localhost:8080/api"
+TOKEN="your_access_token_here"
+
+# Step 1: Create thread
+echo "1. Creating thread..."
+THREAD_RESPONSE=$(curl -s -X POST "$BASE_URL/chemistry/thread" \\
+  -H "Authorization: Bearer $TOKEN")
+
+THREAD_ID=$(echo $THREAD_RESPONSE | jq -r '.data.thread_id')
+echo "Thread ID: $THREAD_ID"
+
+# Step 2: Analyze SMILES
+echo "2. Analyzing Aspirin..."
+curl -s -X POST "$BASE_URL/chemistry/analyze/smiles" \\
+  -H "Authorization: Bearer $TOKEN" \\
+  -H "Content-Type: application/json" \\
+  -d "{\\"smiles\\": \\"CC(=O)Oc1ccccc1C(=O)O\\", \\"thread_id\\": \\"$THREAD_ID\\"}" | jq '.data.reply'
+
+# Step 3: Compare with Ibuprofen
+echo "3. Comparing molecules..."
+curl -s -X POST "$BASE_URL/chemistry/analyze/compare" \\
+  -H "Authorization: Bearer $TOKEN" \\
+  -H "Content-Type: application/json" \\
+  -d "{\\"smiles\\": [\\"CC(=O)Oc1ccccc1C(=O)O\\", \\"CC(C)Cc1ccc(cc1)C(C)C(=O)O\\"], \\"thread_id\\": \\"$THREAD_ID\\"}" | jq '.data.reply'
+
+# Step 4: Chat follow-up
+echo "4. Follow-up question..."
+curl -s -X POST "$BASE_URL/chemistry/chat" \\
+  -H "Authorization: Bearer $TOKEN" \\
+  -H "Content-Type: application/json" \\
+  -d "{\\"message\\": \\"Which molecule has better CNS penetration?\\", \\"thread_id\\": \\"$THREAD_ID\\"}" | jq '.data.reply'
+
+echo "✓ Workflow complete!"
+```
+
+### Example 5: Flutter Integration
+
+```dart
+class ChemistryApiService {
+  final String baseUrl = 'http://your-domain.com/api/chemistry';
+  String? token;
+
+  Future<Map<String, dynamic>> analyzeSmiles(String smiles, {String? threadId}) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/analyze/smiles'),
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Content-Type': 'application/json',
+      },
+      body: jsonEncode({
+        'smiles': smiles,
+        'thread_id': threadId,
+      }),
+    );
+    return jsonDecode(response.body);
+  }
+
+  Future<Map<String, dynamic>> chat(String message, {String? threadId}) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/chat'),
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Content-Type': 'application/json',
+      },
+      body: jsonEncode({
+        'message': message,
+        'thread_id': threadId,
+      }),
+    );
+    return jsonDecode(response.body);
+  }
+
+  Future<Map<String, dynamic>> createThread() async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/thread'),
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Content-Type': 'application/json',
+      },
+    );
+    return jsonDecode(response.body);
+  }
+}
+```
+
 ---
 
 ## 📞 Support
@@ -1485,4 +2038,12 @@ For API issues or questions:
 
 ---
 
-**Created:** May 29, 2026 | **Version:** 2.0.0 | **Last Updated:** May 29, 2026
+**Created:** May 29, 2026 | **Version:** 2.1.0 | **Last Updated:** May 29, 2026
+'''
+
+with open('/mnt/agents/output/AILIXIR_API_Reference_v2.1.md', 'w', encoding='utf-8') as f:
+    f.write(content)
+
+print("File saved successfully!")
+print(f"Total lines: {len(content.splitlines())}")
+print(f"Total characters: {len(content)}")
