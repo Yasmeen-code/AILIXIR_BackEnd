@@ -18,10 +18,10 @@ RUN pip install --no-cache-dir --upgrade pip && \
     pip install --no-cache-dir -r requirements.txt
 
 # Install DeepPurpose from GitHub (not on PyPI)
-RUN pip install --no-cache-dir git+https://github.com/Alantic/DeepPurpose.git
+RUN pip install --no-cache-dir git+https://github.com/kexinhuang12345/DeepPurpose.git
 
 # Install TDC from GitHub (Therapeutic Data Commons)
-RUN pip install --no-cache-dir git+https://github.com/Alantic/TDC.git
+RUN pip install --no-cache-dir git+https://github.com/mims-harvard/TDC.git
 
 # Final stage
 FROM python:3.10-slim

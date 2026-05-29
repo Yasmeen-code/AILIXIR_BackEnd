@@ -1,10 +1,32 @@
-# 🧬 AILIXIR BackEnd — AI-Driven Drug Discovery Platform
+# 🧬 AILIXIR — Production-Grade AI Drug Discovery Backend
 
 ![Status](https://img.shields.io/badge/Status-Production--Ready-brightgreen?style=flat-square)
 ![Version](https://img.shields.io/badge/Version-2.0-blue?style=flat-square)
-![License](https://img.shields.io/badge/License-Proprietary-red?style=flat-square)
+![Python](https://img.shields.io/badge/Python-3.10%2B-blue?style=flat-square)
+![PHP](https://img.shields.io/badge/PHP-8.3-indigo?style=flat-square)
+![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?style=flat-square)
 
-**Last Updated:** May 2026 | **Maintainers:** Omar Fadlalla & Team
+Modular microservices backend combining **Laravel orchestration** and **3 AI services** for scalable drug discovery, ADMET prediction, and chemical similarity search.
+
+---
+
+## 📚 Documentation
+
+Start here for your use case:
+
+| Guide | Purpose |
+|-------|---------|
+| **[QUICK_START.md](./QUICK_START.md)** | Get running in 5 minutes (Docker) |
+| **[ARCHITECTURE.md](./ARCHITECTURE.md)** | System design and data flows |
+| **[DOCKER.md](./DOCKER.md)** | Container setup and deployment |
+| **[PRODUCTION_GUIDE.md](./PRODUCTION_GUIDE.md)** | Deployment, scaling, monitoring |
+| **[TROUBLESHOOTING.md](./TROUBLESHOOTING.md)** | Common issues and fixes |
+| **[API_REFERENCE.md](./API_REFERENCE.md)** | Complete endpoint documentation |
+
+**Service READMEs:**
+- [ADMET Inference](./ai_apps/ADMIT/README.md) — MPNN drug property prediction
+- [Drug Repurposing](./ai_apps/Drug%20Reporposing/README.md) — Virtual screening pipeline
+- [Chemical RAG](./ai_apps/chemical-rag-system/README.md) — FAISS-IVF search engine
 
 ---
 
@@ -12,37 +34,25 @@
 
 - [Overview](#overview)
 - [Key Features](#key-features)
-- [Quick Start](#quick-start)
 - [Architecture](#architecture)
-- [Installation & Setup](#installation--setup)
-- [Running Services](#running-services)
-- [API Documentation](#api-documentation)
-- [Environment Variables](#environment-variables)
-- [Project Structure](#project-structure)
-- [Troubleshooting](#troubleshooting)
-- [Production Guide](#production-guide)
+- [Quick Start](#quick-start)
+- [Services](#services)
+- [API](#api)
+- [Deployment](#deployment)
 - [Contributing](#contributing)
 
 ---
 
 ## 🎯 Overview
 
-**AILIXIR** is a production-grade, modular backend platform for AI-driven drug discovery and molecular analysis. It combines:
+**AILIXIR** is an enterprise-grade backend platform for AI-driven drug discovery. It provides:
 
-- **Laravel API** (PHP 8.3) - Central orchestration, authentication, and job management
-- **3 AI Microservices** (Python FastAPI) - Distributed AI workloads
-- **MariaDB** - Persistent storage for application state and results
-- **Docker/Compose** - Complete containerization for reproducible deployments
+- **Microservices Architecture** — Independent AI services (Python/FastAPI) + orchestration (Laravel)
+- **Production-Ready** — Docker containerized, load-balanced, monitored
+- **Scalable** — Horizontal scaling for all components, optimized for GPU
+- **Complete Pipeline** — Disease targets → protein sequences → drug screening → ADMET prediction → chemical search
 
-The system implements a complete drug discovery pipeline:
-1. Identify disease targets from medical databases
-2. Retrieve protein sequences
-3. Screen drugs against targets using AI
-4. Predict ADMET properties  
-5. Search chemical similarity using vector search
-6. Aggregate and rank results
-
-**Target Users:** Researchers, pharmaceutical companies, biotech startups integrating AI-driven screening into their workflows.
+**Use Cases:** Pharmaceutical research, biotech screening, computational drug discovery, academic chemistry research.
 
 ---
 
@@ -50,724 +60,141 @@ The system implements a complete drug discovery pipeline:
 
 | Feature | Component | Capability |
 |---------|-----------|-----------|
-| **ADMET Prediction** | ADMET Service (Port 8002) | 5-property MPNN models for drug properties |
-| **Virtual Screening** | Drug Repurposing (Port 8001) | DeepPurpose AI for binding affinity prediction |
-| **Chemical Search** | Chemical RAG (Port 5000) | FAISS-IVF search for 1M+ compounds + LLM explanations |
-| **Orchestration** | Laravel API (Port 8080) | REST endpoints, job queuing, authentication, result aggregation |
-| **Database** | MariaDB (Port 3306) | Job tracking, results storage, user management |
-| **Job Queue** | Laravel Queue Worker | Background processing for long-running pipelines |
+| **ADMET Prediction** | ADMET Service | 5-property MPNN models (Absorption, Distribution, Metabolism, Excretion, Toxicity) |
+| **Virtual Screening** | Drug Repurposing | DeepPurpose AI binding affinity prediction |
+| **Chemical Search** | Chemical RAG | FAISS-IVF vector search for 1M+ compounds + LLM explanations |
+| **Orchestration** | Laravel API | REST endpoints, job queuing, authentication, result aggregation |
+| **Persistence** | MariaDB | Job tracking, results storage, user management |
+| **Async Processing** | Queue Worker | Background job execution for long-running pipelines |
 
 ---
+
+## 🏗️ Architecture
+
+```
+                         CLIENT APPS
+                       (Web, Mobile, CLI)
+                              │
+                              ▼
+        ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+        ┃   LARAVEL API (Orchestration)    ┃
+        ┃   Authentication • Job Dispatch   ┃
+        ┃   Result Aggregation              ┃
+        ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+            │               │              │
+     ┌──────┴──────┐  ┌─────┴─────┐  ┌───┴───────┐
+     ▼            ▼  ▼             ▼  ▼           ▼
+  ┌────────┐ ┌────────┐  ┌────────────────┐  ┌─────────┐
+  │ Queue  │ │ MySQL  │  │  AI Services   │  │         │
+  │ Worker │ │        │  ├────────────────┤  │  Storage│
+  └────────┘ └────────┘  │ • ADMET        │  └─────────┘
+                         │ • Drug Reposit │
+                         │ • Chemical RAG │
+                         └────────────────┘
+        
+        All services: Docker network 'ailixir' with persistent volumes
+```
+
+**Data Flow:** Clients → Laravel → AI services → Database → Results cached
+
+See [ARCHITECTURE.md](./ARCHITECTURE.md) for detailed diagrams and component descriptions.
 
 ## 🚀 Quick Start
 
-### Option 1: Docker (Recommended - 5 minutes)
-
-**Prerequisites:** Docker & Docker Compose v2, 16GB+ RAM
+### Docker (Recommended — 5 minutes)
 
 ```bash
-# Clone repository
-git clone <repo-url> ailixir-backend
+git clone <repo-url>
 cd ailixir-backend
 
-# Build and start all services
 docker compose build --parallel
 docker compose up -d
 
-# Verify all services are healthy
+# Verify
 docker compose ps
 
-# View API documentation
-open http://localhost:8080/api/documentation  # or visit in browser
+# Access: http://localhost:8080/api/documentation
 ```
 
-**Check service health:**
-```bash
-curl http://localhost:8080/api/ai-services/health
-```
+### Local Development
 
-### Option 2: Local Development (Per-service setup)
+See detailed setup in [DOCKER.md](./DOCKER.md#local-development-setup) for per-service configuration.
 
-See detailed setup instructions in [Installation & Setup](#installation--setup) section.
+**Prerequisites:**
+- Docker & Docker Compose v2+ (recommended)
+- OR: PHP 8.2+, Python 3.10+, MariaDB 11+
 
 ---
 
-## 📐 Architecture
+## 🔧 Services
 
-### System-Level Overview
+| Service | Language | Port | Purpose |
+|---------|----------|------|---------|
+| **Laravel API** | PHP 8.3 | 8080 | REST API, orchestration, authentication |
+| **ADMET** | Python 3.11 | 8002 | MPNN models for drug properties |
+| **Drug Repurposing** | Python 3.10 | 8001 | DeepPurpose virtual screening |
+| **Chemical RAG** | Python 3.11 | 5000 | FAISS search + LLM explanations |
+| **Queue Worker** | PHP 8.3 | — | Background job processor |
+| **MariaDB** | SQL | 3306 | Persistent storage |
 
-```
-┌─────────────────────────────────────────────────────────────────────┐
-│                        CLIENTS & EXTERNAL SYSTEMS                   │
-│              (Web UI, Mobile Apps, Third-party APIs)                │
-└────────────────────────────────┬────────────────────────────────────┘
-                                 │ HTTP(S)
-                                 ▼
-        ┌────────────────────────────────────────────────────┐
-        │         LARAVEL ORCHESTRATION API (8080)           │
-        │  ┌───────────────────────────────────────────────┐ │
-        │  │  Authentication • Validation • Routing        │ │
-        │  │  Job Dispatch • Result Aggregation • Logging  │ │
-        │  └───────────────────────────────────────────────┘ │
-        └────────────────────┬───────────────────────────────┘
-                   ┌─────────┼─────────┬─────────────────┐
-                   ▼         ▼         ▼                 ▼
-            ┌──────────┐ ┌─────────┐ ┌──────────────┐ ┌──────────────┐
-            │ QUEUE    │ │ MYSQL   │ │ ADMET        │ │ DRUG REPOSIT │
-            │ WORKER   │ │ (3306)  │ │ (8002)       │ │ IONING (8001)│
-            │ (async)  │ │         │ │ FastAPI      │ │ FastAPI      │
-            └──────────┘ └─────────┘ └──────────────┘ └──────────────┘
-                                          ▼
-                                    ┌──────────────┐
-                                    │ CHEMICAL RAG │
-                                    │ (5000)       │
-                                    │ FastAPI      │
-                                    └──────────────┘
-        
-        All services run in Docker network 'ailixir' with persistent volumes
-```
-
-### Component Responsibilities
-
-| Component | Type | Responsibility |
-|-----------|------|-----------------|
-| **Laravel API** | PHP 8.3 | Request routing, auth, job orchestration, result aggregation |
-| **Queue Worker** | PHP 8.3 | Background job execution, long-running pipelines |
-| **MySQL/MariaDB** | Database | Application state, user accounts, job metadata, results |
-| **ADMET Service** | FastAPI | MPNN models for property prediction (Absorption, Distribution, Metabolism, Excretion, Toxicity) |
-| **Drug Repurposing** | FastAPI | DeepPurpose AI model for drug-target binding affinity prediction |
-| **Chemical RAG** | FastAPI | FAISS-IVF semantic search + LLM explanations for chemical compounds |
+**API Documentation:**
+- OpenAPI/Swagger: http://localhost:8080/api/documentation
+- Per-service docs: http://localhost:[port]/docs (FastAPI services)
 
 ---
 
-## 📦 Installation & Setup
+## 📡 API
 
-### Prerequisites
+### Core Endpoints
 
-| Requirement | Docker | Local |
-|-------------|--------|-------|
-| **OS** | Windows/Mac/Linux | Windows/Mac/Linux |
-| **Memory** | 16GB+ recommended | 8GB+ (per service varies) |
-| **Disk** | 20GB+ for images & data | 30GB+ (models can be large) |
-| **Docker** | v24+, Compose v2+ | N/A |
-| **PHP** | N/A | 8.2+ with extensions (curl, mbstring, bcmath, json) |
-| **Python** | N/A | 3.10+ |
-| **Database** | Included | MariaDB 11+ or compatible |
+| Endpoint | Method | Purpose |
+|----------|--------|---------|
+| `/api/health` | GET | System health status |
+| `/api/ai-services/health` | GET | All AI services status |
+| `/api/ai-services/test/admet` | POST | Test ADMET prediction |
+| `/api/ai-services/test/chemical-search` | POST | Test chemical similarity |
 
-### Docker Setup (Recommended)
+### Example Request
 
-#### 1. Initialize Project
-
-```bash
-cd ailixir-backend
-
-# Copy and customize environment file
-cp docker/laravel.env .env
-# Edit .env if needed for local customization
-
-# Build all services in parallel
-docker compose build --parallel
-
-# Start all services
-docker compose up -d
-
-# Wait 30-60 seconds for services to initialize
-docker compose ps
-```
-
-#### 2. Verify Services
-
-```bash
-# Check container health
-docker compose ps
-
-# View logs for any service
-docker compose logs -f laravel
-docker compose logs -f admet
-docker compose logs -f drug-repurposing
-docker compose logs -f chemical-rag
-docker compose logs -f mysql
-
-# Test API connectivity
-curl http://localhost:8080/api/ai-services/health
-```
-
-#### 3. Initialize Database (if needed)
-
-```bash
-# Run Laravel migrations
-docker compose exec laravel php artisan migrate
-
-# Seed sample data (if applicable)
-docker compose exec laravel php artisan db:seed
-```
-
-### Local Development Setup
-
-#### Laravel (Orchestration API)
-
-```bash
-# 1. Install PHP 8.2+ and Composer
-# On Windows: Use XAMPP, WAMP, or check https://getcomposer.org/
-
-# 2. Clone and prepare project
-cd ailixir-backend
-cp docker/laravel.env .env
-
-# 3. Install PHP dependencies
-composer install
-
-# 4. Generate application key
-php artisan key:generate
-
-# 5. Create/migrate database
-# Ensure MySQL/MariaDB is running locally
-php artisan migrate
-
-# 6. Start Laravel development server
-php artisan serve --host=0.0.0.0 --port=8000
-# Access: http://localhost:8000
-```
-
-#### ADMET Service (Port 8002)
-
-```bash
-# 1. Navigate to service directory
-cd ai_apps/ADMIT/admet_inference
-
-# 2. Create Python virtual environment
-python -m venv venv
-
-# 3. Activate virtual environment
-# Windows:
-venv\Scripts\activate
-# Mac/Linux:
-source venv/bin/activate
-
-# 4. Install dependencies
-pip install -r requirements.txt
-
-# 5. Verify model files exist
-ls -la models/*/best_model.ckpt
-
-# 6. Start FastAPI server
-uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
-# Access: http://localhost:8000/docs (API documentation)
-```
-
-#### Drug Repurposing Service (Port 8001)
-
-```bash
-# 1. Navigate to service directory
-cd ai_apps/Drug\ Reporposing
-
-# 2. Create Python virtual environment
-python -m venv venv
-
-# 3. Activate virtual environment
-# Windows:
-venv\Scripts\activate
-# Mac/Linux:
-source venv/bin/activate
-
-# 4. Install dependencies
-pip install -r requirements.txt
-
-# 5. Start FastAPI server
-uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
-# Access: http://localhost:8000/docs
-
-# For quick setup on Windows:
-start.bat
-
-# For quick setup on Mac/Linux:
-chmod +x start.sh && ./start.sh
-```
-
-#### Chemical RAG Service (Port 5000)
-
-```bash
-# 1. Navigate to service directory
-cd ai_apps/chemical-rag-system/chemical-rag-system
-
-# 2. Create Python virtual environment
-python -m venv venv
-
-# 3. Activate virtual environment
-# Windows:
-venv\Scripts\activate
-# Mac/Linux:
-source venv/bin/activate
-
-# 4. Install dependencies
-pip install -r requirements.txt
-
-# 5. Start FastAPI server
-# The service auto-detects and initializes FAISS index on first run
-uvicorn app.main:app --host 0.0.0.0 --port 5000 --reload
-# Access: http://localhost:5000/docs
-
-# First run will build the FAISS index (~3-5 minutes for 1M compounds)
-```
-
----
-
-## ▶️ Running Services
-
-### Docker Commands
-
-```bash
-# Start all services
-docker compose up -d
-
-# View running services
-docker compose ps
-
-# View logs for specific service
-docker compose logs -f <service-name>
-# Services: laravel, queue, mysql, admet, drug-repurposing, chemical-rag
-
-# Stop all services
-docker compose down
-
-# Stop and remove volumes (data loss)
-docker compose down -v
-
-# Rebuild specific service
-docker compose build admet --no-cache
-docker compose up -d admet
-
-# Execute command in running container
-docker compose exec laravel php artisan tinker
-docker compose exec mysql mysql -u ailixir -p ailixir
-```
-
-### Service Health Checks
-
-```bash
-# Laravel API health
-curl http://localhost:8080/api/health
-
-# All AI services health
-curl http://localhost:8080/api/ai-services/health
-
-# Individual services
-curl http://localhost:8002/health  # ADMET
-curl http://localhost:8001/health  # Drug Repurposing
-curl http://localhost:5000/health  # Chemical RAG
-
-# Database connectivity (from Laravel container)
-docker compose exec laravel php artisan db:ping
-```
-
-### Local Development Commands
-
-```bash
-# Laravel development server
-php artisan serve --host=0.0.0.0
-
-# Run migrations
-php artisan migrate
-
-# Queue worker (in separate terminal)
-php artisan queue:work
-
-# Python FastAPI with auto-reload
-uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
-
-# Jupyter notebook (for ADMET training)
-jupyter notebook train_ADMET_model.ipynb
-```
-
----
-
-## 🔌 API Documentation
-
-### Laravel Integration Endpoints
-
-When `AI_INTEGRATION_ROUTES_ENABLED=true`, Laravel provides unified access to AI services:
-
-| Method | Endpoint | Purpose |
-|--------|----------|---------|
-| `GET` | `/api/health` | API health status |
-| `GET` | `/api/ai-services/health` | All AI services status |
-| `POST` | `/api/ai-services/test/admet` | Test ADMET prediction |
-| `POST` | `/api/ai-services/test/chemical-search` | Test chemical search |
-| `GET` | `/api/ai-services/test/drug-repurposing` | Drug Repurposing status |
-
-### API Examples
-
-#### Health Check
-```bash
-curl http://localhost:8080/api/ai-services/health
-```
-
-**Response:**
-```json
-{
-  "status": "healthy",
-  "timestamp": "2026-05-29T10:30:00Z",
-  "services": {
-    "admet": "healthy",
-    "drug_repurposing": "healthy",
-    "chemical_rag": "healthy",
-    "database": "connected"
-  }
-}
-```
-
-#### ADMET Prediction
 ```bash
 curl -X POST http://localhost:8080/api/ai-services/test/admet \
   -H "Content-Type: application/json" \
-  -d '{
-    "smiles": "c1ccccc1",
-    "batch_size": 32
-  }'
+  -d '{"smiles":"c1ccccc1","batch_size":32}'
 ```
 
-#### Chemical Search
-```bash
-curl -X POST http://localhost:8080/api/ai-services/test/chemical-search \
-  -H "Content-Type: application/json" \
-  -d '{
-    "query_smiles": "CC(=O)Oc1ccccc1C(=O)O",
-    "mode": "retrieval-only",
-    "top_k": 10
-  }'
-```
-
-### Detailed Service Documentation
-
-Each service provides interactive OpenAPI documentation:
-
-- **ADMET API:** http://localhost:8002/docs
-- **Drug Repurposing API:** http://localhost:8001/docs
-- **Chemical RAG API:** http://localhost:5000/docs
-- **Laravel API:** http://localhost:8080/api/documentation
+See [API_REFERENCE.md](./API_REFERENCE.md) for complete documentation and all endpoints.
 
 ---
 
-## 🔐 Environment Variables
+## � Deployment
 
-### Laravel Configuration (`docker/laravel.env`)
+### Docker (Production)
+
+```bash
+docker compose -f docker-compose.yml build --parallel
+docker compose -f docker-compose.yml up -d
+```
+
+Environment variables: [docker/laravel.env](./docker/laravel.env)
+
+See [PRODUCTION_GUIDE.md](./PRODUCTION_GUIDE.md) for:
+- Kubernetes deployment configs
+- Scaling recommendations
+- Monitoring setup
+- Security hardening
+- Performance tuning
+
+### Environment Variables
+
+Key variables (see [docker/laravel.env](./docker/laravel.env)):
 
 ```ini
-# Application
-APP_NAME=AILIXIR
 APP_ENV=production
-APP_DEBUG=false
-APP_KEY=base64:<your-key-here>
-APP_URL=http://localhost:8080
-
-# Logging
-LOG_CHANNEL=stderr
-LOG_LEVEL=info
-
-# Database (MySQL)
-DB_CONNECTION=mysql
 DB_HOST=mysql
-DB_PORT=3306
-DB_DATABASE=ailixir
-DB_USERNAME=ailixir
-DB_PASSWORD=secret
-
-# Session & Cache
-SESSION_DRIVER=database
-SESSION_LIFETIME=120
-CACHE_STORE=database
-
-# Queue
-QUEUE_CONNECTION=database
-
-# AI Service URLs (Docker: service names, Local: localhost:port)
-CHEMICAL_AI_URL=http://chemical-rag:5000
 ADMET_AI_URL=http://admet:8000
 DRUG_REPURPOSING_URL=http://drug-repurposing:8000
-
-# Feature Flags
+CHEMICAL_AI_URL=http://chemical-rag:5000
 AI_INTEGRATION_ROUTES_ENABLED=true
-
-# Email (optional)
-MAIL_MAILER=log
-```
-
-### Local Development `.env` Customization
-
-For local development, override service URLs:
-
-```ini
-CHEMICAL_AI_URL=http://localhost:5000
-ADMET_AI_URL=http://localhost:8002
-DRUG_REPURPOSING_URL=http://localhost:8001
-```
-
-### per-Service Environment Notes
-
-- **ADMET:** Auto-detects GPU (CUDA) availability
-- **Drug Repurposing:** Logs to stdout with `DEBUG=True` for troubleshooting
-- **Chemical RAG:** Auto-detects FAISS index, builds on first run
-- **Python Services:** Set `PYTHONUNBUFFERED=1` for real-time logs
-
----
-
-## 📂 Project Structure
-
-```
-ailixir-backend/
-├── README.md                          # This file
-├── ARCHITECTURE.md                    # Detailed system design & diagrams
-├── DOCKER.md                          # Docker-specific documentation
-├── DOCKER_FIXES.md                    # Known issues & resolutions
-├── docker-compose.yml                 # Service orchestration config
-├── Dockerfile                         # Laravel multi-stage image
-│
-├── app/                               # Laravel application code
-│   ├── Http/                          # Controllers, middleware
-│   ├── Models/                        # Eloquent models
-│   ├── Repositories/                  # Data access layer
-│   ├── Services/                      # Business logic
-│   ├── Jobs/                          # Queueable jobs
-│   └── Traits/                        # Reusable traits
-│
-├── routes/                            # API routes
-│   ├── api.php                        # REST endpoints
-│   ├── web.php                        # Web routes
-│   └── console.php                    # CLI commands
-│
-├── config/                            # Laravel configuration
-│   ├── app.php
-│   ├── auth.php
-│   ├── database.php
-│   └── services.php
-│
-├── database/                          # Migrations & seeders
-│   ├── migrations/
-│   └── seeders/
-│
-├── docker/                            # Container configurations
-│   ├── laravel.env                    # Environment vars for Docker
-│   ├── nginx/                         # Nginx config (if used)
-│   └── php/                           # PHP config
-│
-├── storage/                           # File storage (persistent)
-│   ├── app/
-│   ├── logs/
-│   └── framework/
-│
-├── resources/                         # View templates & assets
-│   ├── css/
-│   ├── js/
-│   └── views/
-│
-├── public/                            # Web root
-│   └── index.php                      # Entry point
-│
-├── tests/                             # Test suites
-│   ├── Feature/
-│   └── Unit/
-│
-├── scripts/                           # Utility scripts
-│   ├── fix_complete_system.py
-│   ├── md_simulation.py
-│   ├── precheck.py
-│   ├── smiles_to_pdbqt.py
-│   └── vina_docking.py
-│
-├── ai_apps/                           # Microservices
-│   │
-│   ├── ADMIT/                         # ADMET Model Training & Inference
-│   │   ├── README.md                  # ADMET documentation
-│   │   ├── train_ADMET_model.ipynb    # Training notebook
-│   │   └── admet_inference/
-│   │       ├── Dockerfile            # FastAPI inference service
-│   │       ├── app/
-│   │       │   ├── main.py            # FastAPI app
-│   │       │   ├── config.py
-│   │       │   └── models/            # Pretrained models
-│   │       └── requirements.txt
-│   │
-│   ├── Drug Reporposing/              # Drug Repurposing Pipeline
-│   │   ├── README.md                  # Detailed docs
-│   │   ├── QUICK_START.md             # 60-second setup
-│   │   ├── PRODUCTION_GUIDE.md        # Complete guide
-│   │   ├── IMPLEMENTATION_SUMMARY.md  # Implementation details
-│   │   ├── app/
-│   │   │   ├── main.py                # FastAPI app
-│   │   │   ├── pipelines/             # 5-stage pipeline
-│   │   │   └── models.py
-│   │   ├── docker/
-│   │   │   └── Dockerfile
-│   │   ├── start.sh / start.bat        # Quick setup scripts
-│   │   ├── test_api.py
-│   │   └── requirements.txt
-│   │
-│   └── chemical-rag-system/           # Chemical Search & RAG
-│       ├── README.md                  # RAG documentation
-│       └── chemical-rag-system/
-│           ├── Dockerfile            # FastAPI service
-│           ├── app/
-│           │   ├── main.py            # FastAPI app
-│           │   ├── models.py
-│           │   └── ingestion.py       # FAISS index builder
-│           ├── data/
-│           │   ├── compounds.json     # Chemical database
-│           │   └── faiss_index        # FAISS index (built on first run)
-│           └── requirements.txt
-│
-├── composer.json                      # PHP dependencies
-├── package.json                       # Frontend dependencies (Vite)
-├── phpunit.xml                        # Test configuration
-└── vite.config.js                     # Frontend build config
-```
-
----
-
-## 🐛 Troubleshooting
-
-### Container Issues
-
-| Problem | Solution |
-|---------|----------|
-| **Container won't start** | Check logs: `docker compose logs -f <service>` and ensure 16GB+ RAM available |
-| **Port already in use** | Change port in `docker-compose.yml` or stop conflicting containers |
-| **Out of memory** | Increase Docker desktop memory allocation (Settings > Resources) |
-| **Build failures** | Rebuild with no cache: `docker compose build --no-cache --parallel` |
-
-### Database Issues
-
-| Problem | Solution |
-|---------|----------|
-| **Migrations fail** | Ensure MySQL is healthy: `docker compose ps mysql` and `docker compose logs -f mysql` |
-| **Can't connect to DB** | Check DB credentials in `docker/laravel.env` and run: `docker compose exec laravel php artisan db:ping` |
-| **Data loss after restart** | Check volume persistence: `docker volume ls` and ensure `mysql-data` volume exists |
-
-### AI Service Issues
-
-| Problem | Solution |
-|---------|----------|
-| **Model loading errors** | Verify model files exist: `ls ai_apps/ADMIT/admet_inference/models/*/best_model.ckpt` |
-| **Out of memory on GPU** | Reduce batch size in service config or disable GPU with `CUDA_VISIBLE_DEVICES=-1` |
-| **Service timeout** | Increase startup timeout or check logs: `docker compose logs -f <service>` |
-| **FAISS index build slow** | First run of Chemical RAG builds 1M compound index (~3-5 min) - this is normal |
-
-### Development Issues
-
-| Problem | Solution |
-|---------|----------|
-| **Python venv not working** | Ensure Python 3.10+ installed: `python --version` |
-| **Missing dependencies** | Reinstall: `pip install -r requirements.txt --upgrade` |
-| **PyTorch not finding CUDA** | Install CUDA-compatible PyTorch: `pip install torch torchvision --index-url https://download.pytorch.org/whl/cu121` |
-| **Permission denied on scripts** | Make executable: `chmod +x start.sh` (Mac/Linux) |
-
-### Common Errors & Fixes
-
-**Error:** `ERROR: Could not find a version that satisfies the requirement torchaudio==0.15.2`
-
-**Fix:** This was resolved in v2.0. Update dependencies: `docker compose build --no-cache`
-
-**Error:** `Connection refused: Cannot connect to laravel service`
-
-**Fix:** Ensure Laravel is healthy: `curl http://localhost:8080/api/health` or check `docker compose logs -f laravel`
-
----
-
-## 🔒 Production Guide
-
-### Pre-Deployment Checklist
-
-- [ ] All services tested locally with `docker compose up`
-- [ ] Environment variables securely configured (no hardcoded secrets in code)
-- [ ] Database backups configured
-- [ ] Monitoring and logging endpoints configured
-- [ ] Rate limiting applied to API endpoints
-- [ ] HTTPS/TLS certificates provisioned
-
-### Deployment Architecture
-
-```yaml
-┌────────────────────────────────────────────┐
-│         PRODUCTION ENVIRONMENT             │
-├────────────────────────────────────────────┤
-│                                            │
-│  ┌─────────────────────────────────────┐  │
-│  │   NGINX Reverse Proxy + TLS         │  │
-│  │   (Terminates HTTPS, routes traffic)│  │
-│  └─────────────────────────────────────┘  │
-│            │                               │
-│  ┌─────────┴────────────────────────────┐ │
-│  │  Docker Compose / Kubernetes         │ │
-│  │  ├── Laravel API (3+ replicas)       │ │
-│  │  ├── Queue Workers (2-4 replicas)    │ │
-│  │  ├── MySQL Primary + Replicas        │ │
-│  │  ├── ADMET Services (auto-scale)     │ │
-│  │  ├── Drug Repurposing (auto-scale)   │ │
-│  │  └── Chemical RAG (1+ replicas)      │ │
-│  └──────────────────────────────────────┘ │
-│            │                               │
-│  ┌─────────┴────────────────────────────┐ │
-│  │  Persistent Storage                  │ │
-│  │  ├── MySQL Data Volume               │ │
-│  │  ├── FAISS Index Cache               │ │
-│  │  └── Model Artifacts                 │ │
-│  └──────────────────────────────────────┘ │
-│                                            │
-└────────────────────────────────────────────┘
-```
-
-### Scaling Considerations
-
-- **Horizontal Scaling:** Increase replicas for stateless services (Laravel, AI services)
-- **Database Scaling:** Use read replicas for MySQL, implement connection pooling
-- **Queue Scaling:** Add more queue workers based on job volume
-- **Memory Management:** Each AI service requires: ADMET 6GB, Drug Repurposing 8GB, Chemical RAG 4GB
-
-### Monitoring
-
-Key metrics to monitor:
-
-```bash
-# Container health
-docker compose ps
-
-# Resource usage
-docker stats
-
-# Service logs
-docker compose logs --tail=100 -f <service>
-
-# Database connection pool
-docker compose exec laravel php artisan tinker
-```
-
----
-
-## 📋  Testing
-
-### Running Tests
-
-```bash
-# Laravel tests
-docker compose exec laravel php artisan test
-
-# AI service tests (Drug Repurposing example)
-cd ai_apps/Drug\ Reporposing
-python -m pytest test_api.py -v
-
-# Integration tests
-docker compose exec drug-repurposing python test_integration.py
-```
-
-### Health Check Scripts
-
-Each service exposes `/health` endpoint:
-
-```bash
-# Check all services
-for service in admet drug-repurposing chemical-rag; do
-  echo "Testing $service..."
-  curl http://localhost:${PORT}/health
-done
 ```
 
 ---
@@ -776,99 +203,104 @@ done
 
 ### Development Workflow
 
-1. **Clone and Setup**
-   ```bash
-   git clone <repo-url>
-   cd ailixir-backend
-   docker compose build --parallel
-   ```
+1. Clone repository and set up Docker environment
+2. Create feature branch from `main`
+3. Make changes and test locally
+4. Update relevant documentation
+5. Submit pull request with clear description
 
-2. **Make Changes**
-   - Edit files directly (Docker volumes mount local code)
-   - Services auto-reload in development mode
+### Code Standards
 
-3. **Test Your Changes**
-   ```bash
-   docker compose exec laravel php artisan test
-   python -m pytest ai_apps/Drug\ Reporposing/test_api.py
-   ```
+- **PHP:** PSR-12 (Laravel conventions)
+- **Python:** PEP 8 with type hints
+- **Commits:** Conventional format (`feat:`, `fix:`, `docs:`)
+- **Documentation:** Update all affected README files
 
-4. **Commit & Push**
-   ```bash
-   git add .
-   git commit -m "Clear description of changes"
-   git push origin feature-branch
-   ```
+### Testing
 
-### Code Style Guidelines
+```bash
+# Laravel tests
+docker compose exec laravel php artisan test
 
-- **PHP:** PSR-12 standard (Laravel IDE Helper available)
-- **Python:** PEP 8 standard (Black formatter can be used)
-- **Commits:** Use conventional commit format (`feat:`, `fix:`, `docs:`)
+# Python service tests
+cd ai_apps/Drug\ Reporposing
+pytest test_api.py -v
+```
 
-### Documentation Updates
-
-Update relevant documentation when:
-- Adding new API endpoints → Update service README
-- Changing environment variables → Update `docker/laravel.env` and this README
-- Modifying Docker setup → Update `DOCKER.md`
-- Changing deployment steps → Update `PRODUCTION_GUIDE.md`
+See [CONTRIBUTING.md](./CONTRIBUTING.md) for detailed guidelines.
 
 ---
 
-## 📚 Additional Resources
+## ❓ Support & Troubleshooting
 
-### Service-Specific Documentation
+### Common Issues
 
-- **[ADMET Inference](./ai_apps/ADMIT/README.md)** - MPNN models for drug properties
-- **[Drug Repurposing](./ai_apps/Drug%20Reporposing/README.md)** - See also `QUICK_START.md` (60-second setup), `PRODUCTION_GUIDE.md`
-- **[Chemical RAG](./ai_apps/chemical-rag-system/README.md)** - FAISS + LLM powered search
+| Problem | Solution |
+|---------|----------|
+| **Service won't start** | Check logs: `docker compose logs -f <service>` |
+| **Port already in use** | Change port in `docker-compose.yml` |
+| **Out of memory** | Increase Docker desktop memory or reduce services |
+| **FAISS index slow** | First run caches index (~3-5 min, then <1 sec) |
 
-### Key Documentation Files
-
-- **[ARCHITECTURE.md](./ARCHITECTURE.md)** - System design, component diagrams, data flows
-- **[DOCKER.md](./DOCKER.md)** - Docker-specific setup and configuration
-- **[DOCKER_FIXES.md](./DOCKER_FIXES.md)** - Known issues and resolutions
-
-### External Resources
-
-- [Laravel Documentation](https://laravel.com/docs/12)
-- [FastAPI Guide](https://fastapi.tiangolo.com/)
-- [Docker Compose Reference](https://docs.docker.com/compose/compose-file/)
-- [PyTorch Documentation](https://pytorch.org/docs/stable/index.html)
+**✓ See [TROUBLESHOOTING.md](./TROUBLESHOOTING.md) for comprehensive troubleshooting guide.**
 
 ---
 
-## 📞 Support & Contact
+## 📋 Project Structure
 
-For issues or questions:
-
-1. **Check existing documentation** first (ARCHITECTURE.md, service READMEs)
-2. **Review troubleshooting guide** above
-3. **Check container logs** for error details
-4. **Contact team:** Omar Fadlalla & Development Team
+```
+ailixir-backend/
+├── app/                      # Laravel application
+├── ai_apps/                  # AI microservices
+│   ├── ADMIT/                # ADMET training & inference
+│   ├── Drug Reporposing/     # Drug repurposing pipeline
+│   └── chemical-rag-system/  # Chemical search & RAG
+├── routes/                   # API routes
+├── config/                   # Configuration files
+├── database/                 # Migrations & seeders
+├── docker/                   # Docker configs
+├── storage/                  # File storage
+├── docker-compose.yml        # Orchestration
+└── Dockerfile                # Laravel container
+```
 
 ---
 
 ## 📄 License
 
-This project is proprietary software. All rights reserved. See LICENSE file for details.
+**Proprietary** — All rights reserved. See [LICENSE](./LICENSE) for details.
 
 ---
 
-## 🗺️ Roadmap
+## 🔗 Links
 
-**v2.1 (Q3 2026)**
-- [ ] Kubernetes deployment configs
-- [ ] Advanced monitoring dashboard
-- [ ] API rate limiting & caching
-- [ ] GraphQL endpoint option
+**Documentation:**
+- [System Architecture](./ARCHITECTURE.md)
+- [Docker Setup](./DOCKER.md)
+- [Production Guide](./PRODUCTION_GUIDE.md)
+- [API Reference](./API_REFERENCE.md)
+- [Troubleshooting](./TROUBLESHOOTING.md)
 
-**v3.0 (Q4 2026)**
-- [ ] Multi-tenant support
-- [ ] Advanced result export formats
-- [ ] Custom model upload capability
-- [ ] Integration with external databases
+**Service READMEs:**
+- [ADMET Inference](./ai_apps/ADMIT/README.md)
+- [Drug Repurposing](./ai_apps/Drug%20Reporposing/README.md)
+- [Chemical RAG](./ai_apps/chemical-rag-system/README.md)
+
+**External:**
+- [Laravel](https://laravel.com/docs)
+- [FastAPI](https://fastapi.tiangolo.com/)
+- [Docker Compose](https://docs.docker.com/compose/)
+- [PyTorch](https://pytorch.org/)
+
+---
+
+## 📞 Support
+
+Questions or issues? Check:
+1. [TROUBLESHOOTING.md](./TROUBLESHOOTING.md) — Common solutions
+2. [ARCHITECTURE.md](./ARCHITECTURE.md) — System design
+3. Service READMEs — Component-specific help
+4. Contact: Omar Fadlalla & Development Team
 
 ---
 
