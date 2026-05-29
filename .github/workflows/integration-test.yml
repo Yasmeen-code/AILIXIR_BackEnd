@@ -27,10 +27,19 @@ jobs:
         run: |
           # Clean up volumes from previous runs
           docker compose down -v 2>/dev/null || true
+          
+          # Generate a valid 32-byte base64-encoded APP_KEY
+          VALID_KEY=$(python3 -c "import base64, os; print('base64:' + base64.b64encode(os.urandom(32)).decode())")
+          sed -i "s|APP_KEY:.*|APP_KEY: $VALID_KEY|" docker-compose.yml
+          
           docker compose build --parallel
           docker compose up -d --wait
-          # Generate valid APP_KEY for Laravel encryption
-          docker compose exec -T laravel php artisan key:generate --force 2>/dev/null || true
+          
+          # Run fresh migrations to ensure clean database state
+          docker compose exec -T laravel php artisan migrate:fresh --force
+          
+          # Generate and set key inside container (will override the one set above)
+          docker compose exec -T laravel php artisan key:generate --force
 
       - name: Show service status
         if: always()

@@ -13,7 +13,7 @@ services:
     env_file:
       - docker/laravel.env
     environment:
-      APP_KEY: base64:kOp/n8FhFWoP8p98V7dq7F3N+2V0R1QS5Z9L6M2N3O4=
+      APP_KEY: base64:2B0L7X9mK3pN6vT1wY5qS8aD4eF7hJ9iP2rU5M7bN3c=
       DB_HOST: mysql
       CHEMICAL_AI_URL: http://chemical-rag:5000
       ADMET_AI_URL: http://admet:8000
