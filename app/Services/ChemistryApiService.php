@@ -6,7 +6,6 @@ use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Http\UploadedFile;
 
-
 class ChemistryApiService
 {
     protected string $baseUrl;
@@ -14,8 +13,8 @@ class ChemistryApiService
 
     public function __construct()
     {
-        $this->baseUrl = rtrim(config('services.chemistry.base_url'), '/');
-        $this->timeout = config('services.chemistry.timeout', 30);
+        $this->baseUrl = rtrim((string) config('services.chemistry.base_url') ?: '', '/');
+        $this->timeout = (int) config('services.chemistry.timeout', 30);
     }
 
     // ==================== Health ====================
@@ -42,10 +41,19 @@ class ChemistryApiService
     // ==================== Analyze SMILES ====================
     public function analyzeSmiles(string $smiles, ?string $threadId = null): array
     {
-        return $this->request('post', '/analyze/smiles', [
-            'smiles' => $smiles,
-            'thread_id' => $threadId,
-        ]);
+        $query = ['smiles' => $smiles];
+
+        if ($threadId) {
+            $query['thread_id'] = $threadId;
+        }
+
+        $queryString = http_build_query($query);
+
+        $response = Http::timeout($this->timeout)
+            ->withHeaders(['Content-Type' => 'application/json'])
+            ->post("{$this->baseUrl}/analyze/smiles?{$queryString}");
+
+        return $this->handleResponse($response);
     }
 
     // ==================== Compare ====================

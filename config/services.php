@@ -16,7 +16,7 @@ return [
     #AI agent
     'chemistry' => [
         'base_url' => env('CHEMISTRY_API_BASE_URL', 'https://bronchial-carpentry-football.ngrok-free.dev'),
-        'timeout' => env('CHEMISTRY_API_TIMEOUT', 30),
+        'timeout' => env('CHEMISTRY_API_TIMEOUT', 60),
     ],
 
     'chemical_ai' => [

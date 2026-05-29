@@ -118,7 +118,7 @@ class ChemistryController extends BaseController
     // ==================== Analyze SMILES ====================
     public function analyzeSmiles(Request $request): JsonResponse
     {
-        $user = Auth::user();
+        $user = auth()->user();
 
         $request->validate([
             'smiles' => 'required|string|max:1000',
@@ -128,12 +128,11 @@ class ChemistryController extends BaseController
         $threadId = $request->input('thread_id');
         $thread = $this->validateThread($user->id, $threadId);
 
-        $result = $this->chemistryService->analyzeSmiles(
-            $request->input('smiles'),
-            $threadId
-        );
+        $smiles = $request->input('smiles');
 
-        return $this->saveAndRespond($result, $user->id, 'smiles', $request->input('smiles'), $thread?->id);
+        $result = $this->chemistryService->analyzeSmiles($smiles, $threadId);
+
+        return $this->saveAndRespond($result, $user->id, 'smiles', $smiles, $thread?->id);
     }
 
     // ==================== Compare ====================
