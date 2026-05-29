@@ -70,9 +70,10 @@ COPY --from=vendor --chown=www-data:www-data /app /var/www/html
 COPY --from=assets --chown=www-data:www-data /app/public/build /var/www/html/public/build
 
 COPY docker/entrypoint.sh /usr/local/bin/entrypoint.sh
+COPY docker/laravel.env .env
 RUN chmod +x /usr/local/bin/entrypoint.sh \
     && mkdir -p storage/framework/{cache,sessions,views} storage/logs bootstrap/cache \
-    && chown -R www-data:www-data storage bootstrap/cache
+    && chown -R www-data:www-data storage bootstrap/cache .env
 
 USER www-data
 
