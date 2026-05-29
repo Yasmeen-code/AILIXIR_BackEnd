@@ -1075,7 +1075,7 @@ Authorization: Bearer YOUR_ACCESS_TOKEN
 Retrieve all past analyses with pagination.
 
 ```http
-GET /api/chemistry/history?type=smiles&page=1
+GET /api/chemistry/history?type=smiles
 Authorization: Bearer YOUR_ACCESS_TOKEN
 ```
 
@@ -1528,35 +1528,58 @@ Content-Type: application/json
 
 ---
 
+
 ## 🏆 Awards & Scientists Endpoints
 
 ### List Awards
 
 ```http
-GET /awards?page=1&per_page=20
+GET /awards?page=1&per_page=10
 ```
 
 **Response (200 OK):**
 ```json
 {
   "success": true,
-  "data": [
-    {
-      "id": 1,
-      "name": "Nobel Prize in Chemistry 2025",
-      "description": "...",
-      "year": 2025
-    }
-  ],
-  "meta": {
+  "message": "Awards retrieved successfully",
+  "data": {
+    "results": [
+      {
+        "id": 1,
+        "name": "Nobel Prize in Physiology or Medicine",
+        "category": "Medicine",
+        "images": ["https://..."],
+        "short_description": "The Nobel Prize in Physiology or Medicine is the world's most prestigious award...",
+        "scientists_count": 9,
+        "scientists": [
+          {
+            "id": 14,
+            "name": "Alexander Fleming",
+            "nationality": "British",
+            "birth_year": null,
+            "death_year": null,
+            "field": "Microbiology",
+            "images": ["https://..."],
+            "bio": null,
+            "short_bio": null,
+            "impact": null
+          }
+        ]
+      }
+    ],
     "pagination": {
-      "current_page": 1,
-      "per_page": 20,
-      "total": 150
+      "currentPage": 1,
+      "totalPages": 1,
+      "totalResults": 10,
+      "perPage": 10,
+      "hasNextPage": false,
+      "hasPrevPage": false
     }
   }
 }
 ```
+
+---
 
 ### Get Award Details
 
@@ -1564,11 +1587,70 @@ GET /awards?page=1&per_page=20
 GET /awards/{award_id}
 ```
 
+**Example:** `GET /awards/2`
+
+**Response (200 OK):**
+```json
+{
+  "success": true,
+  "message": "Award retrieved successfully",
+  "data": {
+    "id": 2,
+    "name": "Lasker Award",
+    "category": "Medical Research",
+    "images": ["https://..."],
+    "short_description": "The Lasker Award is often called the 'American Nobel Prize'...",
+    "scientists": [
+      {
+        "id": 17,
+        "name": "Tu Youyou",
+        "nationality": "Chinese",
+        "birth_year": null,
+        "death_year": null,
+        "field": "Pharmaceutical Chemistry",
+        "images": ["https://..."],
+        "bio": null,
+        "short_bio": null,
+        "impact": null
+      }
+    ]
+  }
+}
+```
+
+---
+
 ### Get Award Scientists
 
 ```http
 GET /awards/{award_id}/scientists
 ```
+
+**Example:** `GET /awards/2/scientists`
+
+**Response (200 OK):**
+```json
+{
+  "success": true,
+  "message": "Scientists retrieved successfully",
+  "data": [
+    {
+      "id": 17,
+      "name": "Tu Youyou",
+      "nationality": "Chinese",
+      "birth_year": null,
+      "death_year": null,
+      "field": "Pharmaceutical Chemistry",
+      "images": ["https://..."],
+      "bio": null,
+      "short_bio": null,
+      "impact": null
+    }
+  ]
+}
+```
+
+---
 
 ### List Scientists
 
@@ -1576,16 +1658,96 @@ GET /awards/{award_id}/scientists
 GET /scientists?page=1&per_page=50
 ```
 
+**Response (200 OK):**
+```json
+{
+  "success": true,
+  "message": "Scientists retrieved successfully",
+  "data": {
+    "results": [
+      {
+        "id": 14,
+        "name": "Alexander Fleming",
+        "nationality": "British",
+        "birth_year": null,
+        "death_year": null,
+        "field": "Microbiology",
+        "images": ["https://..."],
+        "bio": null,
+        "short_bio": null,
+        "impact": null
+      }
+    ],
+    "pagination": {
+      "currentPage": 1,
+      "totalPages": 1,
+      "totalResults": 24,
+      "perPage": 50,
+      "hasNextPage": false,
+      "hasPrevPage": false
+    }
+  }
+}
+```
+
+---
+
 ### Get Scientist Details
 
 ```http
 GET /scientists/{scientist_id}
 ```
 
+**Response (200 OK):**
+```json
+{
+  "success": true,
+  "message": "Scientist retrieved successfully",
+  "data": {
+    "id": 14,
+    "name": "Alexander Fleming",
+    "nationality": "British",
+    "birth_year": null,
+    "death_year": null,
+    "field": "Microbiology",
+    "images": ["https://..."],
+    "bio": "Full biography text...",
+    "short_bio": "Short biography...",
+    "impact": "Scientific impact description...",
+    "awards": [
+      {
+        "id": 1,
+        "name": "Nobel Prize in Physiology or Medicine",
+        "year": 1945
+      }
+    ]
+  }
+}
+```
+
+---
+
 ### Get Scientist Awards
 
 ```http
 GET /scientists/{scientist_id}/awards
+```
+
+**Response (200 OK):**
+```json
+{
+  "success": true,
+  "message": "Awards retrieved successfully",
+  "data": [
+    {
+      "id": 1,
+      "name": "Nobel Prize in Physiology or Medicine",
+      "category": "Medicine",
+      "year": 1945,
+      "images": ["https://..."]
+    }
+  ]
+}
 ```
 
 ---
@@ -1595,7 +1757,7 @@ GET /scientists/{scientist_id}/awards
 ### Get News Feed
 
 ```http
-GET /news?page=1&per_page=20&category=chemistry
+GET /news?page=1&per_page=10
 Authorization: Bearer YOUR_ACCESS_TOKEN
 ```
 
@@ -1603,17 +1765,68 @@ Authorization: Bearer YOUR_ACCESS_TOKEN
 ```json
 {
   "success": true,
-  "data": [
-    {
-      "id": 1,
-      "title": "New AI Model for Drug Discovery",
-      "category": "chemistry",
-      "published_at": "2026-05-29T10:00:00Z",
-      "image_url": "https://..."
+  "message": "Articles retrieved successfully",
+  "data": {
+    "results": [
+      {
+        "id": 13,
+        "title": "AAPS National Biotechnology Conference",
+        "summary": "11 May 2026 - 14 May 2026 - All Day Sheraton San Diego...",
+        "source": "European Pharmaceutical Review",
+        "url": "https://...",
+        "published_at": "2026-05-11T07:00:00+00:00"
+      }
+    ],
+    "pagination": {
+      "currentPage": 1,
+      "totalPages": 44,
+      "totalResults": 434,
+      "perPage": 10,
+      "hasNextPage": true,
+      "hasPrevPage": false
     }
-  ]
+  }
 }
 ```
+
+---
+
+### Get News with Pagination
+
+```http
+GET /news?page=24&per_page=10
+Authorization: Bearer YOUR_ACCESS_TOKEN
+```
+
+**Response (200 OK):**
+```json
+{
+  "success": true,
+  "message": "Articles retrieved successfully",
+  "data": {
+    "results": [
+      {
+        "id": 21,
+        "title": "EU kicks off one-year pilot to expedite multinational trials",
+        "summary": "The European Union unveiled details of a pilot project...",
+        "source": "Endpoints News",
+        "url": "https://...",
+        "published_at": "2026-01-23T19:24:15+00:00"
+      }
+    ],
+    "pagination": {
+      "currentPage": 24,
+      "totalPages": 44,
+      "totalResults": 434,
+      "perPage": 10,
+      "hasNextPage": true,
+      "hasPrevPage": true
+    }
+  }
+}
+```
+
+---
 
 ### Refresh News
 
@@ -1622,6 +1835,20 @@ GET /news/refresh
 Authorization: Bearer YOUR_ACCESS_TOKEN
 ```
 
+**Response (200 OK):**
+```json
+{
+  "success": true,
+  "message": "News refreshed successfully",
+  "data": {
+    "new_articles": 5,
+    "total_articles": 439
+  }
+}
+```
+
+---
+
 ### Get News Categories
 
 ```http
@@ -1629,12 +1856,46 @@ GET /news/categories
 Authorization: Bearer YOUR_ACCESS_TOKEN
 ```
 
+**Response (200 OK):**
+```json
+{
+  "success": true,
+  "message": "Categories retrieved successfully",
+  "data": [
+    "chemistry",
+    "pharma",
+    "biotech",
+    "medicine",
+    "research",
+    "clinical_trials"
+  ]
+}
+```
+
+---
+
 ### Save Article
 
 ```http
 POST /news/{article_id}/save
 Authorization: Bearer YOUR_ACCESS_TOKEN
 ```
+
+**Response (200 OK):**
+```json
+{
+  "success": true,
+  "message": "Article saved successfully",
+  "data": {
+    "saved_article_id": 123,
+    "article_id": 13,
+    "title": "AAPS National Biotechnology Conference",
+    "saved_at": "2026-05-29T12:00:00Z"
+  }
+}
+```
+
+---
 
 ### Share Article
 
@@ -1649,12 +1910,58 @@ Content-Type: application/json
 }
 ```
 
+**Response (200 OK):**
+```json
+{
+  "success": true,
+  "message": "Article shared successfully",
+  "data": {
+    "share_id": 456,
+    "article_id": 13,
+    "shared_with": "colleague@pharmaai.io",
+    "shared_at": "2026-05-29T12:00:00Z"
+  }
+}
+```
+
+---
+
 ### Get Saved Articles
 
 ```http
 GET /news/saved
 Authorization: Bearer YOUR_ACCESS_TOKEN
 ```
+
+**Response (200 OK):**
+```json
+{
+  "success": true,
+  "message": "Saved articles retrieved successfully",
+  "data": {
+    "results": [
+      {
+        "id": 123,
+        "article_id": 13,
+        "title": "AAPS National Biotechnology Conference",
+        "summary": "11 May 2026 - 14 May 2026...",
+        "source": "European Pharmaceutical Review",
+        "saved_at": "2026-05-29T12:00:00Z"
+      }
+    ],
+    "pagination": {
+      "currentPage": 1,
+      "totalPages": 1,
+      "totalResults": 5,
+      "perPage": 10,
+      "hasNextPage": false,
+      "hasPrevPage": false
+    }
+  }
+}
+```
+
+---
 
 ### Unsave Article
 
@@ -1663,7 +1970,14 @@ DELETE /news/saved/{saved_article_id}
 Authorization: Bearer YOUR_ACCESS_TOKEN
 ```
 
----
+**Response (200 OK):**
+```json
+{
+  "success": true,
+  "message": "Article unsaved successfully"
+}
+```
+'''
 
 ## ❌ Error Handling
 
