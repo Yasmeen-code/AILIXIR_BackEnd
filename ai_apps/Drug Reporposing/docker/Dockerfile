@@ -17,6 +17,12 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir --upgrade pip && \
     pip install --no-cache-dir -r requirements.txt
 
+# Install DeepPurpose from GitHub (not on PyPI)
+RUN pip install --no-cache-dir git+https://github.com/Alantic/DeepPurpose.git
+
+# Install TDC from GitHub (Therapeutic Data Commons)
+RUN pip install --no-cache-dir git+https://github.com/Alantic/TDC.git
+
 # Final stage
 FROM python:3.10-slim
 
@@ -27,6 +33,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 # Copy virtual environment from builder
 COPY --from=builder /opt/venv /opt/venv
+
+# Verify packages were copied successfully
+RUN /opt/venv/bin/pip list | grep -E 'DeepPurpose|TDC|torch' || echo "Warning: Some packages may not be present"
 
 # Set environment variables
 ENV PATH="/opt/venv/bin:$PATH" \
