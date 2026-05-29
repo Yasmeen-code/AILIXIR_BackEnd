@@ -39,9 +39,14 @@ WORKDIR /app
 # Copy application code
 COPY . /app
 
-# Download DeepPurpose pretrained model at build time (avoids runtime network dependency)
+# Remove any incomplete model artifacts from the repo copy, then download full weights
+RUN rm -rf /app/save_folder
+
 ARG DEEP_PURPOSE_MODEL=MPNN_CNN_BindingDB
-RUN python -c "from DeepPurpose.utils import download_pretrained_model; download_pretrained_model('${DEEP_PURPOSE_MODEL}')"
+RUN python -c "from DeepPurpose.utils import download_pretrained_model; import os; \
+model_path = download_pretrained_model('${DEEP_PURPOSE_MODEL}', save_dir='/app/save_folder'); \
+assert os.path.isfile(os.path.join(model_path, 'config.pkl')), 'config.pkl missing after download'; \
+assert os.path.isfile(os.path.join(model_path, 'model.pt')), 'model.pt missing after download'"
 
 # Create non-root user for security
 RUN useradd -m -u 1000 appuser && chown -R appuser:appuser /app
@@ -51,7 +56,7 @@ USER appuser
 EXPOSE 8000
 
 # Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
+HEALTHCHECK --interval=30s --timeout=10s --start-period=120s --retries=5 \
     CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"
 
 

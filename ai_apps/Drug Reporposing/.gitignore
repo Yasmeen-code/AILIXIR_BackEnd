@@ -137,6 +137,7 @@ dmypy.json
 # Project specific
 logs/
 data/
+save_folder/
 *.csv
 *.json
 *.pkl

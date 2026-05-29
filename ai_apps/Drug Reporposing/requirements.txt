@@ -6,12 +6,12 @@
 # Core Web Framework
 fastapi==0.104.1
 uvicorn==0.24.0
-pydantic==2.6.3
+pydantic==2.5.0
 python-multipart==0.0.6
 
 # Scientific Computing & Data Processing
-numpy==1.26.4
-pandas==2.1.4
+numpy==1.24.3
+pandas==2.0.3
 scikit-learn==1.3.2
 scipy==1.11.4
 xarray==2024.1.0
@@ -23,15 +23,20 @@ httpx==0.25.2
 # Deep Learning Framework
 torch==2.0.1
 torchvision==0.15.2
-torchaudio==2.0.2
+torchaudio==2.0.1
 
-# Drug repurposing AI stack (PyPI — no GitHub clones in Docker)
-DeepPurpose==0.1.5
-PyTDC==1.1.15
-descriptastorus==2.8.0
+# DeepPurpose Dependencies (REQUIRED for production)
+# NOTE: DeepPurpose is not on PyPI - install from GitHub:
+#   pip install git+https://github.com/Alantic/DeepPurpose.git
+# Will need: pytorch_lightning, scikit-learn, rdkit, etc.
 
 # RDKit for Chemistry (optional but recommended)
 # rdkit==2023.09.1
+
+# TDC (Therapeutic Data Commons) - Install from GitHub:
+#   pip install git+https://github.com/Alantic/TDC.git
+# OR with conda:
+#   conda install -c conda-forge pytdc
 
 # Additional Chemistry/ML utilities
 deepsmiles==1.0.1
@@ -61,9 +66,13 @@ python-dotenv==1.0.0
 # INSTALLATION NOTES FOR SPECIAL PACKAGES
 # ============================================================================
 # 
-# 1. DeepPurpose (REQUIRED for AI predictions): DeepPurpose==0.1.5 (PyPI)
+# 1. DeepPurpose (REQUIRED for AI predictions):
+#    pip install git+https://github.com/Alantic/DeepPurpose.git
 #
-# 2. TDC - Therapeutic Data Commons: PyTDC==1.1.15 (PyPI, provides `tdc` module)
+# 2. TDC - Therapeutic Data Commons (REQUIRED for drug library):
+#    Option A: pip install git+https://github.com/Alantic/TDC.git
+#    Option B: conda install -c conda-forge pytdc
+#
 #    If TDC fails, the system falls back to local_tdc.py with 40+ real drugs
 #
 # 3. RDKit (optional but recommended for chemistry):

@@ -45,7 +45,26 @@ class AIScreeningPipeline:
         
         try:
             from DeepPurpose import DTI as models
-            
+            from DeepPurpose.utils import download_pretrained_model, name2filename
+            import os
+            import shutil
+
+            folder_name = name2filename[model_name.lower()]
+            model_dir = os.path.join("./save_folder", "pretrained_models", folder_name)
+            config_path = os.path.join(model_dir, "config.pkl")
+
+            if not os.path.isfile(config_path):
+                if os.path.isdir(model_dir):
+                    logger.warning(
+                        f"Incomplete model at {model_dir} (missing config.pkl), re-downloading..."
+                    )
+                    shutil.rmtree(model_dir)
+                download_pretrained_model(model_name, save_dir="./save_folder")
+                if not os.path.isfile(config_path):
+                    raise RuntimeError(
+                        f"DeepPurpose model files missing after download: {config_path}"
+                    )
+
             # Load the model
             self.model = models.model_pretrained(model=model_name)
             
