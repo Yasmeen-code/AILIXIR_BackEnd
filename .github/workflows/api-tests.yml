@@ -31,8 +31,8 @@ jobs:
 
       - name: Run tests
         env:
-          BASE_URL: http://localhost:8000/api
-          AUTH_BASE_URL: http://localhost:8000/api
+          BASE_URL: https://america-hyperlipemic-grazyna.ngrok-free.dev/api
+          AUTH_BASE_URL: https://america-hyperlipemic-grazyna.ngrok-free.dev//api
           TEST_EMAIL: salehyasmeen080@gmail.com
           TEST_PASSWORD: 123456789
           TEST_NAME: yasmeen564
