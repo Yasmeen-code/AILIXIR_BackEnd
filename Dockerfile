@@ -49,6 +49,7 @@ RUN apt-get update && apt-get install -y \
     wget \
     bzip2 \
     ca-certificates \
+    openbabel \
     && docker-php-ext-install \
     pdo_mysql \
     zip \
@@ -77,7 +78,6 @@ RUN conda tos accept --override-channels --channel https://repo.anaconda.com/pkg
 # Create environment
 RUN conda create -y -p /var/www/html/vina_env -c conda-forge \
     vina=1.2.5 \
-    openbabel=3.1.0 \
     python=3.10
 
 # Install RDKit via pip to bypass Boost C++ solver compatibility conflicts
