@@ -63,13 +63,18 @@ COPY docker/php/opcache.ini /usr/local/etc/php/conf.d/opcache.ini
 
 # Install Miniconda
 ENV CONDA_DIR=/opt/conda
+
 RUN wget --quiet https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O /tmp/miniconda.sh && \
     /bin/bash /tmp/miniconda.sh -b -p $CONDA_DIR && \
     rm /tmp/miniconda.sh
 
 ENV PATH=$CONDA_DIR/bin:$PATH
 
-# Create Conda Environment for Vina, RDKit, Open Babel
+# Accept Anaconda ToS (required in CI/Docker)
+RUN conda tos accept --override-channels --channel https://repo.anaconda.com/pkgs/main && \
+    conda tos accept --override-channels --channel https://repo.anaconda.com/pkgs/r
+
+# Create environment
 RUN conda create -y -p /var/www/html/vina_env -c conda-forge \
     rdkit=2025.09.5 \
     vina=1.2.5 \
