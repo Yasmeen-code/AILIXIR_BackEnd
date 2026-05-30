@@ -103,7 +103,7 @@ class DockingTestController extends Controller
 
     private function convertSmilesToPdbqt(string $smiles): array
     {
-        $pythonPath = env('DOCKING_PYTHON_PATH', base_path('home/omar/miniconda3/envs/bio_env/bin/python'));
+        $pythonPath = env('DOCKING_PYTHON_PATH', base_path('vina_env/bin/python'));
         $scriptPath = env('SMILES_SCRIPT_PATH', base_path('scripts/smiles_to_pdbqt.py'));
 
         // Generate unique output path
