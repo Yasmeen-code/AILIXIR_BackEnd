@@ -78,7 +78,7 @@ RUN conda tos accept --override-channels --channel https://repo.anaconda.com/pkg
 RUN conda create -y -p /var/www/html/vina_env -c conda-forge \
     rdkit=2025.09.5 \
     vina=1.2.5 \
-    openbabel=3.1.0 \
+    openbabel\
     python=3.10
 
 ENV PATH=/var/www/html/vina_env/bin:$PATH
