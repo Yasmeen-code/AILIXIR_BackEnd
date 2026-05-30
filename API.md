@@ -1185,11 +1185,47 @@ Content-Type: application/json
 **Response (202 Accepted):**
 ```json
 {
-  "success": true,
-  "job_id": "chem-search-abc-123",
-  "status": "pending",
-  "type": "retrieval_only",
-  "check_url": "/api/chemical-search/chem-search-abc-123/status"
+    "success": true,
+    "query": {
+        "smiles": "CN1C=NC2=C1C(=O)N(C(=O)N2C)",
+        "top_k": 3
+    },
+    "compounds": [
+        {
+            "rank": 1,
+            "smiles": "CN1C=NC2=C1C(=O)NC(=O)N2C",
+            "name": "Compound_5429",
+            "cid": "5429",
+            "similarity": 1,
+            "explanation": null,
+            "image_url": "https://unsteady-chlorine-imaginary.ngrok-free.dev/static/images/6096554304416497818.png"
+        },
+        {
+            "rank": 2,
+            "smiles": "CN1C=NC2=C1C(=O)N(C(=O)N2C)C",
+            "name": "Compound_2519",
+            "cid": "2519",
+            "similarity": 0.9922,
+            "explanation": null,
+            "image_url": "https://unsteady-chlorine-imaginary.ngrok-free.dev/static/images/3925926930136341582.png"
+        },
+        {
+            "rank": 3,
+            "smiles": "CN1C=NC2=C1C(=O)N(C(=O)N2)C",
+            "name": "Compound_4687",
+            "cid": "4687",
+            "similarity": 0.9922,
+            "explanation": null,
+            "image_url": "https://unsteady-chlorine-imaginary.ngrok-free.dev/static/images/5189886293630140187.png"
+        }
+    ],
+    "metadata": {
+        "total_results": 3,
+        "search_time_ms": 443.08,
+        "similarity_metric": "Tanimoto",
+        "fingerprint": "Morgan (2048, radius=2)",
+        "source": "retrieval"
+    }
 }
 ```
 
@@ -1211,88 +1247,41 @@ Content-Type: application/json
 **Response (202 Accepted):**
 ```json
 {
-  "success": true,
-  "job_id": "chem-rag-xyz-789",
-  "status": "pending",
-  "type": "full_rag",
-  "check_url": "/api/chemical-search/chem-rag-xyz-789/status"
-}
-```
-
-### Get Search Results
-
-```http
-GET /chemical-search/{job_id}/status
-Authorization: Bearer YOUR_ACCESS_TOKEN
-```
-
-**Response (200 OK - Processing):**
-```json
-{
-  "success": true,
-  "job_id": "chem-search-abc-123",
-  "status": "processing"
-}
-```
-
-**Response (200 OK - Completed):**
-```json
-{
-  "success": true,
-  "job_id": "chem-search-abc-123",
-  "status": "completed",
-  "query": {
-    "smiles": "CC(=O)Oc1ccccc1C(=O)O",
-    "top_k": 10
-  },
-  "compounds": [
-    {
-      "rank": 1,
-      "smiles": "CC(=O)Oc1ccccc1C(=O)O",
-      "name": "Aspirin",
-      "cid": 2244,
-      "similarity": 1.0,
-      "explanation": "This compound is aspirin itself, a salicylic acid acetyl ester...",
-      "image_url": "https://cdn.example.com/compounds/aspirin.png"
+    "success": true,
+    "query": {
+        "smiles": "C1=CC=C(C(=C1)C(=O)O)",
+        "top_k": 2
     },
-    {
-      "rank": 2,
-      "smiles": "CC(=O)Oc1ccccc1O",
-      "name": "2-Acetoxybenzoic acid phenyl ester",
-      "cid": 1234,
-      "similarity": 0.95,
-      "explanation": "Similar structural motif with acetyl group...",
-      "image_url": "https://cdn.example.com/compounds/1234.png"
+    "compounds": [
+        {
+            "rank": 1,
+            "smiles": "C1=CC=C(C=C1)C(=O)O",
+            "name": "Compound_243",
+            "cid": "243",
+            "similarity": 1,
+            "explanation": "These compounds are structurally identical, as indicated by the similarity score of 1.000. Both share the same core scaffold of a benzene ring (C1=CC=C(C=C1)) with a carboxylic acid group (C(=O)O) attached to it. The molecular formulas (C7H6O2) and heavy atom counts (9) are identical, confirming no atom substitutions or differences in structure. The only apparent difference is the SMILES representation, which is",
+            "image_url": "https://unsteady-chlorine-imaginary.ngrok-free.dev/static/images/2500971538592982398.png"
+        },
+        {
+            "rank": 2,
+            "smiles": "C1=CC=C(C=C1)[13C](=O)O",
+            "name": "Compound_19759",
+            "cid": "19759",
+            "similarity": 1,
+            "explanation": "These compounds are structurally identical, as indicated by the similarity score of 1.000. Both share the same core scaffold of a benzene ring (C1=CC=C(C=C1)) with a carboxylic acid group (C(=O)O) attached. The only difference is that the match compound has a ^13C isotope substitution at the carboxylic acid carbon, which does not alter the molecular structure or connectivity. Both compounds have the same molecular formula (C7H6O",
+            "image_url": "https://unsteady-chlorine-imaginary.ngrok-free.dev/static/images/8561718417946188610.png"
+        }
+    ],
+    "metadata": {
+        "total_results": 2,
+        "search_time_ms": 7975.89,
+        "similarity_metric": "Tanimoto",
+        "fingerprint": "Morgan (2048, radius=2)",
+        "source": "full_rag"
     }
-  ],
-  "metadata": {
-    "completed_at": "2026-05-29T12:32:15Z",
-    "search_time_ms": 145
-  }
 }
 ```
 
-### Get Compound Images
-
-```http
-GET /chemical-search/{job_id}/images
-Authorization: Bearer YOUR_ACCESS_TOKEN
-```
-
-**Response (200 OK):**
-```json
-{
-  "success": true,
-  "job_id": "chem-search-abc-123",
-  "image_urls": [
-    "https://cdn.example.com/compounds/aspirin.png",
-    "https://cdn.example.com/compounds/1234.png"
-  ],
-  "total_images": 2
-}
-```
-
----
 
 ## Docking API
 
