@@ -115,3 +115,37 @@ jobs:
       - name: Tear down
         if: always()
         run: docker compose down -v
+
+  docking-integration-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build and start stack
+        run: |
+          docker compose down -v 2>/dev/null || true
+          docker compose build --build-arg COMPOSER_DEV="" laravel
+          docker compose up -d laravel
+
+      - name: Verify RDKit, Vina, and Open Babel in container
+        run: |
+          echo "Verifying python3 import rdkit"
+          docker compose exec -T laravel python3 -c "import rdkit; print(rdkit.__version__)"
+          echo "Verifying vina --help"
+          docker compose exec -T laravel vina --help
+          echo "Verifying obabel -V"
+          docker compose exec -T laravel obabel -V
+
+      - name: Run Laravel Feature Tests
+        run: |
+          docker compose exec -T laravel php artisan test --filter=DockingSubmitTest
+
+      - name: Tear down
+        if: always()
+        run: docker compose down -v

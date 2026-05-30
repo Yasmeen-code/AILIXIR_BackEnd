@@ -10,16 +10,19 @@ WORKDIR /app
 RUN apk add --no-cache icu-dev libzip-dev oniguruma-dev \
     && docker-php-ext-install intl zip mbstring bcmath pcntl
 
+# Add build argument for composer dev dependencies
+ARG COMPOSER_DEV="--no-dev"
+
 COPY composer.json composer.lock ./
 RUN composer install \
-    --no-dev \
+    $COMPOSER_DEV \
     --no-interaction \
     --no-scripts \
     --prefer-dist \
     --optimize-autoloader
 
 COPY . .
-RUN composer dump-autoload --optimize --classmap-authoritative --no-dev
+RUN composer dump-autoload --optimize --classmap-authoritative $COMPOSER_DEV
 
 # ============================================================
 # Stage 2: Frontend assets (Vite)
@@ -38,19 +41,18 @@ COPY public ./public
 RUN npm run build
 
 # ============================================================
-# Stage 3: Runtime (PHP CLI on Alpine — artisan serve)
+# Stage 3: Runtime (PHP CLI on Debian — artisan serve)
 # ============================================================
-FROM php:8.3-cli-alpine AS runtime
+FROM php:8.3-cli AS runtime
 
-RUN apk add --no-cache \
-    icu-libs \
-    libzip \
-    oniguruma \
-    && apk add --no-cache --virtual .build-deps \
-    $PHPIZE_DEPS \
-    icu-dev \
+RUN apt-get update && apt-get install -y \
+    libicu-dev \
     libzip-dev \
-    oniguruma-dev \
+    libonig-dev \
+    wget \
+    bzip2 \
+    ca-certificates \
+    openbabel \
     && docker-php-ext-install \
     pdo_mysql \
     zip \
@@ -59,10 +61,33 @@ RUN apk add --no-cache \
     bcmath \
     opcache \
     pcntl \
-    && apk del .build-deps \
-    && rm -rf /var/cache/apk/*
+    && rm -rf /var/lib/apt/lists/*
 
 COPY docker/php/opcache.ini /usr/local/etc/php/conf.d/opcache.ini
+
+# Install Miniconda
+ENV CONDA_DIR=/opt/conda
+
+RUN wget --quiet https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O /tmp/miniconda.sh && \
+    /bin/bash /tmp/miniconda.sh -b -p $CONDA_DIR && \
+    rm /tmp/miniconda.sh
+
+ENV PATH=$CONDA_DIR/bin:$PATH
+
+# Accept Anaconda ToS (required in CI/Docker)
+RUN conda tos accept --override-channels --channel https://repo.anaconda.com/pkgs/main && \
+    conda tos accept --override-channels --channel https://repo.anaconda.com/pkgs/r
+
+# Create environment
+RUN conda create -y -p /var/www/html/vina_env -c conda-forge \
+    vina=1.2.5 \
+    python=3.10 \
+    pip
+
+# Install RDKit via pip to bypass Boost C++ solver compatibility conflicts
+RUN /var/www/html/vina_env/bin/pip install rdkit==2025.09.5
+
+ENV PATH=/var/www/html/vina_env/bin:$PATH
 
 WORKDIR /var/www/html
 
@@ -73,7 +98,7 @@ COPY docker/entrypoint.sh /usr/local/bin/entrypoint.sh
 COPY docker/laravel.env .env
 RUN chmod +x /usr/local/bin/entrypoint.sh \
     && mkdir -p storage/framework/{cache,sessions,views} storage/logs bootstrap/cache \
-    && chown -R www-data:www-data storage bootstrap/cache .env
+    && chown -R www-data:www-data storage bootstrap/cache .env /var/www/html/vina_env
 
 USER www-data
 
