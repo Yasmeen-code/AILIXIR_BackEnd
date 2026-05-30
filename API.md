@@ -239,27 +239,24 @@ POST /user/register
 Content-Type: application/json
 
 {
-  "name": "John Researcher",
-  "email": "john@pharmaai.io",
-  "password": "secure_password_123",
-  "password_confirmation": "secure_password_123"
+  "name": "Yasmeen Ahmed",
+  "email": "yasmeen@test.com",
+  "password": "password123",
+  "password_confirmation": "password123"
 }
 ```
 
 **Response (201 Created):**
 ```json
 {
-  "success": true,
-  "message": "Registration successful. Please verify your email.",
-  "user": {
-    "id": 1,
-    "name": "John Researcher",
-    "email": "john@pharmaai.io",
-    "email_verified_at": null
-  },
-  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+    "success": true,
+    "message": "Registered successfully. Please check your email for OTP verification code.",
+    "data": {
+        "email": "yasmeen@test.com"
+    }
 }
 ```
+---
 
 ### Login
 
@@ -268,25 +265,36 @@ POST /user/login
 Content-Type: application/json
 
 {
-  "email": "john@pharmaai.io",
-  "password": "secure_password_123"
+  "email": "yasmeen@test.com",
+  "password": "password123"
 }
 ```
 
 **Response (200 OK):**
 ```json
 {
-  "success": true,
-  "message": "Login successful",
-  "user": {
-    "id": 1,
-    "name": "John Researcher",
-    "email": "john@pharmaai.io",
-    "email_verified_at": "2026-05-29T10:00:00Z"
-  },
-  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+    "success": true,
+    "message": "Login successful",
+    "data": {
+        "token": "55|F4V06Yis3FcP35oGoEE2cwmNv3yTiVCpMEx9vYjya891dcb2",
+        "user": {
+            "id": 80,
+            "name": "yasmeen564",
+            "email": "salehyasmeen080@gmail.com",
+            "email_verified_at": null,
+            "last_otp_sent_at": null,
+            "role": "normal",
+            "created_at": "2026-05-25T00:21:51.000000Z",
+            "updated_at": "2026-05-30T00:02:06.000000Z",
+            "email_verification_otp_expires_at": null,
+            "is_verified": true,
+            "password_reset_otp_expires_at": null
+        }
+    }
 }
 ```
+
+---
 
 ### Verify Email
 
@@ -297,7 +305,7 @@ POST /user/verify-email
 Content-Type: application/json
 
 {
-  "email": "john@pharmaai.io",
+  "email": "yasmeen@test.com",
   "otp": "123456"
 }
 ```
@@ -305,10 +313,28 @@ Content-Type: application/json
 **Response (200 OK):**
 ```json
 {
-  "success": true,
-  "message": "Email verified successfully"
+    "success": true,
+    "message": "Email verified successfully",
+    "data": {
+        "token": "54|dxcTq6KRZQfOESfbKcqEoXV4znbkU8IKCND1nX2H085c2309",
+        "user": {
+            "id": 80,
+            "name": "yasmeen564",
+            "email": "salehyasmeen080@gmail.com",
+            "email_verified_at": null,
+            "last_otp_sent_at": null,
+            "role": "normal",
+            "created_at": "2026-05-25T00:21:51.000000Z",
+            "updated_at": "2026-05-30T00:02:06.000000Z",
+            "email_verification_otp_expires_at": null,
+            "is_verified": true,
+            "password_reset_otp_expires_at": null
+        }
+    }
 }
 ```
+
+---
 
 ### Resend Verification Email
 
@@ -317,9 +343,22 @@ POST /user/resend-verification
 Content-Type: application/json
 
 {
-  "email": "john@pharmaai.io"
+  "email": "yasmeen@test.com"
 }
 ```
+
+**Response (200 OK):**
+```json
+{
+    "success": true,
+    "message": "OTP resent successfully",
+    "data": {
+        "email": "yasmeen111@example.com"
+    }
+}
+```
+
+---
 
 ### Forgot Password
 
@@ -328,17 +367,22 @@ POST /user/forgot-password
 Content-Type: application/json
 
 {
-  "email": "john@pharmaai.io"
+  "email": "yasmeen@test.com"
 }
 ```
 
 **Response (200 OK):**
 ```json
 {
-  "success": true,
-  "message": "Password reset OTP sent to email"
+    "success": true,
+    "message": "OTP sent successfully",
+    "data": {
+        "email": "salehyasmeen080@gmail.com"
+    }
 }
 ```
+
+---
 
 ### Reset Password
 
@@ -347,23 +391,22 @@ POST /user/reset-password
 Content-Type: application/json
 
 {
-  "email": "john@pharmaai.io",
+  "email": "yasmeen@test.com",
   "otp": "123456",
-  "password": "new_secure_password",
-  "password_confirmation": "new_secure_password"
+  "password": "new_password123",
+  "password_confirmation": "new_password123"
 }
 ```
 
-### Google OAuth
-
-```http
-POST /user/auth/google
-Content-Type: application/json
-
+**Response (200 OK):**
+```json
 {
-  "token": "google_id_token_jwt"
+  "success": true,
+  "message": "Password reset successfully"
 }
 ```
+
+---
 
 ### Logout
 
@@ -379,7 +422,7 @@ Authorization: Bearer YOUR_ACCESS_TOKEN
   "message": "Logged out successfully"
 }
 ```
-
+'''
 ---
 
 ## 🤖 AI Integration Endpoints
@@ -702,12 +745,12 @@ Authorization: Bearer YOUR_ACCESS_TOKEN
 **Response (200 OK):**
 ```json
 {
-  "success": true,
-  "data": {
-    "thread_id": "aa761d2c-ecbc-4da0-abe4-189c2d77eede",
-    "id": 1,
-    "created_at": "2026-05-29T12:00:00Z"
-  }
+    "success": true,
+    "data": {
+        "thread_id": "3a148307-b97f-4910-88db-03eca6477419",
+        "id": 2,
+        "created_at": "2026-05-25T18:34:15.000000Z"
+    }
 }
 ```
 
@@ -730,16 +773,23 @@ Authorization: Bearer YOUR_ACCESS_TOKEN
 **Response (200 OK):**
 ```json
 {
-  "success": true,
-  "data": [
-    {
-      "id": 1,
-      "thread_id": "aa761d2c-ecbc-4da0-abe4-189c2d77eede",
-      "title": "New Conversation",
-      "last_used_at": "2026-05-29T12:30:00Z",
-      "created_at": "2026-05-29T12:00:00Z"
-    }
-  ]
+    "success": true,
+    "data": [
+        {
+            "id": 2,
+            "thread_id": "3a148307-b97f-4910-88db-03eca6477419",
+            "title": "New Conversation",
+            "last_used_at": "2026-05-25T18:34:15.000000Z",
+            "created_at": "2026-05-25T18:34:15.000000Z"
+        },
+        {
+            "id": 1,
+            "thread_id": "0455ef45-faa0-4e82-b808-db1c574ad175",
+            "title": "New Conversation",
+            "last_used_at": "2026-05-25T18:21:23.000000Z",
+            "created_at": "2026-05-24T14:54:10.000000Z"
+        }
+    ]
 }
 ```
 
