@@ -16,7 +16,6 @@ class MdFileController extends BaseController
         if (!$mdFile) {
             return response()->json(['message' => 'No data found'], 404);
         }
-
         return response()->json([
             'experiment' => $mdFile->experiment_name,
             'description' => $mdFile->description,
