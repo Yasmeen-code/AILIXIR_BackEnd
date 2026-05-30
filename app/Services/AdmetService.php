@@ -13,6 +13,9 @@ class AdmetService
 {
     protected string $queueKey = 'admet_batch_queue';
     protected string $lockKey = 'admet_batch_lock';
+    protected int $batchSize = 100;
+    protected int $singleBatchLimit = 6;
+    protected int $timeout = 120;
 
     protected function parseSmiles(string $input): array
     {
@@ -23,20 +26,52 @@ class AdmetService
         $decoded = json_decode($input, true);
         if (is_array($decoded)) {
             $result = array_filter(array_map('trim', $decoded));
-            return array_slice(array_values($result), 0, 6);
+            return array_slice(array_values($result), 0, $this->singleBatchLimit);
         }
 
         $input = preg_replace('/[;|\\t\\n\\r\\\\\\/:\\-_ ]+/', ',', $input);
-
         $smiles = explode(',', $input);
         $smiles = array_map('trim', $smiles);
-        $smiles = array_filter($smiles, function ($value) {
-            return $value !== '' && $value !== null;
-        });
-
+        $smiles = array_filter($smiles, fn($value) => $value !== '' && $value !== null);
         $smiles = array_values(array_unique($smiles));
 
-        return array_slice($smiles, 0, 6);
+        return array_slice($smiles, 0, $this->singleBatchLimit);
+    }
+
+    protected function parseFileContent(string $content, string $extension): array
+    {
+        $lines = explode("\n", $content);
+        $smilesList = [];
+
+        foreach ($lines as $line) {
+            $line = trim($line);
+            if (empty($line) || str_starts_with($line, '#')) continue;
+
+            if ($extension === 'csv') {
+                if (str_contains(strtolower($line), 'smiles')) continue;
+                $row = str_getcsv($line);
+                $smiles = trim($row[0] ?? '');
+            } else {
+                $smiles = $line;
+            }
+
+            if (!empty($smiles)) {
+                $smilesList[] = $smiles;
+            }
+        }
+
+        return array_slice(array_values(array_unique($smilesList)), 0, $this->batchSize);
+    }
+
+    public function predictFromFile(string $fileContent, string $extension): array
+    {
+        $smilesList = $this->parseFileContent($fileContent, $extension);
+
+        if (empty($smilesList)) {
+            throw new \Exception('No valid SMILES found in the uploaded file');
+        }
+
+        return $this->processSmilesList($smilesList, $extension);
     }
 
     public function predictBatchFromString(string $input)
@@ -57,7 +92,159 @@ class AdmetService
 
         $this->tryProcessBatch();
 
-        $timeout = 30;
+        return $this->waitForResult($requestId);
+    }
+
+    public function predictSingle(string $smiles)
+    {
+        $existing = Admet::where('smiles', $smiles)
+            ->where('user_id', Auth::id())
+            ->first();
+
+        if ($existing) {
+            return $this->formatResult($existing, $smiles);
+        }
+
+        return $this->predictBatchFromString($smiles);
+    }
+
+    protected function processSmilesList(array $smilesList, ?string $fileType = null): array
+    {
+        [$dbResults, $missingSmiles] = $this->getExistingPredictions($smilesList);
+
+        $apiResults = [];
+        if (!empty($missingSmiles)) {
+            $apiResults = $this->fetchFromApi($missingSmiles);
+        }
+
+        $result = [
+            'total_processed' => count($dbResults) + count($apiResults),
+            'total_smiles' => count($smilesList),
+            'results' => array_merge($dbResults, $apiResults)
+        ];
+
+        if ($fileType) {
+            $result['file_type'] = $fileType;
+        }
+
+        return $result;
+    }
+
+    protected function getExistingPredictions(array $smilesList): array
+    {
+        $dbResults = [];
+        $missingSmiles = [];
+
+        foreach ($smilesList as $smiles) {
+            $existing = Admet::where('smiles', $smiles)
+                ->where('user_id', Auth::id())
+                ->first();
+
+            if ($existing) {
+                $dbResults[] = array_merge($this->formatResult($existing, $smiles), ['source' => 'database']);
+            } else {
+                $missingSmiles[] = $smiles;
+            }
+        }
+
+        return [$dbResults, $missingSmiles];
+    }
+
+    protected function fetchFromApi(array $smilesList): array
+    {
+        if (empty($smilesList)) {
+            return [];
+        }
+        try {
+            $response = Http::timeout($this->timeout)->post(
+                config('services.ai.admet_url') . '/predict/batch',
+                ['smiles_list' => $smilesList]
+            );
+
+            if (!$response->successful()) {
+                \Log::error('API request failed', [
+                    'status' => $response->status(),
+                    'body' => $response->body()
+                ]);
+                return $this->createErrorResults($smilesList, 'API request failed: ' . $response->status());
+            }
+
+            $data = $response->json();
+            return $this->saveApiResults($data, $smilesList);
+        } catch (\Exception $e) {
+            \Log::error('API exception', ['error' => $e->getMessage()]);
+            return $this->createErrorResults($smilesList, $e->getMessage());
+        }
+    }
+
+    protected function saveApiResults(array $data, array $smilesList): array
+    {
+        $results = [];
+
+        if (isset($data['results']) && is_array($data['results'])) {
+            foreach ($data['results'] as $index => $result) {
+                if (!isset($smilesList[$index])) continue;
+
+                $smiles = $smilesList[$index];
+                $predictions = $result['predictions'] ?? $result;
+
+                $admet = $this->saveToDatabase($smiles, $predictions);
+                $results[] = array_merge($this->formatResult($admet, $smiles), ['source' => 'api']);
+            }
+        } else {
+            \Log::warning('Unexpected API response format', ['data' => $data]);
+            return $this->createErrorResults($smilesList, 'Invalid response format from API');
+        }
+
+        return $results;
+    }
+
+    protected function saveToDatabase(string $smiles, array $predictions): Admet
+    {
+        return Admet::updateOrCreate(
+            [
+                'smiles' => $smiles,
+                'user_id' => Auth::id()
+            ],
+            [
+                'absorption' => $predictions['Absorption'] ?? $predictions['absorption'] ?? null,
+                'distribution' => $predictions['Distribution'] ?? $predictions['distribution'] ?? null,
+                'metabolism' => $predictions['Metabolism'] ?? $predictions['metabolism'] ?? null,
+                'excretion' => $predictions['Excretion'] ?? $predictions['excretion'] ?? null,
+                'toxicity' => $predictions['Toxicity'] ?? $predictions['toxicity'] ?? null,
+            ]
+        );
+    }
+
+    protected function createErrorResults(array $smilesList, string $error): array
+    {
+        $errors = [];
+        foreach ($smilesList as $smiles) {
+            $errors[] = [
+                'smiles' => $smiles,
+                'error' => $error,
+                'source' => 'error'
+            ];
+        }
+        return $errors;
+    }
+
+    protected function formatResult(Admet $admet, string $smiles): array
+    {
+        return [
+            'smiles' => $smiles,
+            'absorption' => (float) ($admet->absorption ?? 0),
+            'distribution' => (float) ($admet->distribution ?? 0),
+            'metabolism' => (float) ($admet->metabolism ?? 0),
+            'excretion' => (float) ($admet->excretion ?? 0),
+            'toxicity' => (float) ($admet->toxicity ?? 0),
+        ];
+    }
+
+    // ==================== نظام قائمة الانتظار ====================
+
+    protected function waitForResult(string $requestId, int $timeout = 30): array
+    {
         $start = microtime(true);
 
         while (true) {
@@ -76,7 +263,7 @@ class AdmetService
         }
     }
 
-    protected function tryProcessBatch()
+    protected function tryProcessBatch(): void
     {
         $lock = Cache::lock($this->lockKey, 60);
 
@@ -90,10 +277,9 @@ class AdmetService
         }
     }
 
-    protected function processBatch()
+    protected function processBatch(): void
     {
         $requests = [];
-
         while (($item = Redis::lpop($this->queueKey)) !== null) {
             $requests[] = json_decode($item, true);
         }
@@ -102,6 +288,47 @@ class AdmetService
             return;
         }
 
+        [$allSmiles, $smilesToRequestMap] = $this->buildRequestMap($requests);
+
+        if (empty($allSmiles)) {
+            return;
+        }
+
+        try {
+            $response = Http::timeout($this->timeout)->post(
+                config('services.ai.admet_url') . '/predict/batch',
+                ['smiles_list' => $allSmiles]
+            );
+
+            if (!$response->successful()) {
+                throw new \Exception('Batch request failed: ' . $response->body());
+            }
+
+            $data = $response->json();
+            $apiResults = $data['results'] ?? $data['predictions'] ?? [];
+
+            $resultsPerRequest = $this->distributeBatchResults($apiResults, $smilesToRequestMap);
+
+            foreach ($resultsPerRequest as $requestId => $requestResults) {
+                Cache::put("admet_result_$requestId", $requestResults, 60);
+            }
+
+            $this->handleMissingRequests($requests, $resultsPerRequest);
+        } catch (\Exception $e) {
+            \Log::error('ADMET batch processing failed: ' . $e->getMessage());
+
+            foreach ($requests as $req) {
+                Cache::put("admet_result_{$req['id']}", [
+                    'error' => 'Batch processing failed: ' . $e->getMessage()
+                ], 60);
+            }
+
+            throw $e;
+        }
+    }
+
+    protected function buildRequestMap(array $requests): array
+    {
         $smilesToRequestMap = [];
         $allSmiles = [];
 
@@ -119,153 +346,39 @@ class AdmetService
             }
         }
 
-        if (empty($allSmiles)) {
-            return;
-        }
-
-        try {
-            $response = Http::timeout(120)->post(
-                config('services.ai.admet_url') . '/predict/batch',
-                ['smiles_list' => $allSmiles]
-            );
-
-            if (!$response->successful()) {
-                throw new \Exception('Batch request failed: ' . $response->body());
-            }
-
-            $json = $response->json();
-            $results = $json['results'] ?? [];
-
-            $resultsPerRequest = [];
-
-            foreach ($results as $resultIndex => $result) {
-                if (!isset($smilesToRequestMap[$resultIndex])) {
-                    continue;
-                }
-
-                $map = $smilesToRequestMap[$resultIndex];
-                $requestId = $map['request_id'];
-                $smiles = $map['smiles'];
-                $predictions = $result['predictions'] ?? [];
-
-                try {
-                    $admet = Admet::updateOrCreate(
-                        [
-                            'smiles' => $smiles,
-                            'user_id' => $map['user_id']
-                        ],
-                        [
-                            'absorption' => $predictions['Absorption'] ?? null,
-                            'distribution' => $predictions['Distribution'] ?? null,
-                            'metabolism' => $predictions['Metabolism'] ?? null,
-                            'excretion' => $predictions['Excretion'] ?? null,
-                            'toxicity' => $predictions['Toxicity'] ?? null,
-                        ]
-                    );
-
-                    if (!isset($resultsPerRequest[$requestId])) {
-                        $resultsPerRequest[$requestId] = [];
-                    }
-
-                    $resultsPerRequest[$requestId][] = [
-                        'smiles' => $smiles,
-                        'absorption' => (float) $admet->absorption,
-                        'distribution' => (float) $admet->distribution,
-                        'metabolism' => (float) $admet->metabolism,
-                        'excretion' => (float) $admet->excretion,
-                        'toxicity' => (float) $admet->toxicity,
-                    ];
-                } catch (\Exception $e) {
-                    \Log::error('Failed to save ADMET result for SMILES: ' . $smiles, [
-                        'error' => $e->getMessage(),
-                        'user_id' => $map['user_id']
-                    ]);
-
-                    if (!isset($resultsPerRequest[$requestId])) {
-                        $resultsPerRequest[$requestId] = [];
-                    }
-
-                    $resultsPerRequest[$requestId][] = [
-                        'smiles' => $smiles,
-                        'error' => 'Failed to save to database: ' . $e->getMessage(),
-                        'predictions' => $predictions
-                    ];
-                }
-            }
-
-            foreach ($smilesToRequestMap as $index => $map) {
-                $found = false;
-                foreach ($results as $resultIndex => $result) {
-                    if ($resultIndex == $index) {
-                        $found = true;
-                        break;
-                    }
-                }
-
-                if (!$found) {
-                    $requestId = $map['request_id'];
-
-                    if (!isset($resultsPerRequest[$requestId])) {
-                        $resultsPerRequest[$requestId] = [];
-                    }
-
-                    $resultsPerRequest[$requestId][] = [
-                        'smiles' => $map['smiles'],
-                        'error' => 'No prediction received from AI service',
-                        'absorption' => null,
-                        'distribution' => null,
-                        'metabolism' => null,
-                        'excretion' => null,
-                        'toxicity' => null,
-                    ];
-                }
-            }
-
-            foreach ($resultsPerRequest as $requestId => $results) {
-                Cache::put("admet_result_$requestId", $results, 60);
-            }
-
-            foreach ($requests as $req) {
-                if (!isset($resultsPerRequest[$req['id']])) {
-                    Cache::put("admet_result_{$req['id']}", [
-                        'error' => 'No predictions received for any SMILES',
-                        'smiles_list' => $req['smiles_list']
-                    ], 60);
-                }
-            }
-        } catch (\Exception $e) {
-            \Log::error('ADMET batch processing failed: ' . $e->getMessage(), [
-                'trace' => $e->getTraceAsString()
-            ]);
-
-            foreach ($requests as $req) {
-                Cache::put("admet_result_{$req['id']}", [
-                    'error' => 'Batch processing failed: ' . $e->getMessage()
-                ], 60);
-            }
-
-            throw $e;
-        }
+        return [$allSmiles, $smilesToRequestMap];
     }
 
-    public function predictSingle(string $smiles)
+    protected function distributeBatchResults(array $apiResults, array $smilesToRequestMap): array
     {
-        $existing = Admet::where('smiles', $smiles)
-            ->where('user_id', Auth::id())
-            ->first();
+        $resultsPerRequest = [];
 
-        if ($existing) {
-            return [
-                'smiles' => $existing->smiles,
-                'absorption' => (float) $existing->absorption,
-                'distribution' => (float) $existing->distribution,
-                'metabolism' => (float) $existing->metabolism,
-                'excretion' => (float) $existing->excretion,
-                'toxicity' => (float) $existing->toxicity,
-            ];
+        foreach ($apiResults as $resultIndex => $result) {
+            if (!isset($smilesToRequestMap[$resultIndex])) {
+                continue;
+            }
+
+            $map = $smilesToRequestMap[$resultIndex];
+            $requestId = $map['request_id'];
+            $predictions = $result['predictions'] ?? $result;
+
+            $admet = $this->saveToDatabase($map['smiles'], $predictions);
+            $resultsPerRequest[$requestId][] = $this->formatResult($admet, $map['smiles']);
         }
 
-        return $this->predictBatchFromString($smiles);
+        return $resultsPerRequest;
+    }
+
+    protected function handleMissingRequests(array $requests, array $resultsPerRequest): void
+    {
+        foreach ($requests as $req) {
+            if (!isset($resultsPerRequest[$req['id']])) {
+                Cache::put("admet_result_{$req['id']}", [
+                    'error' => 'No predictions received for any SMILES',
+                    'smiles_list' => $req['smiles_list']
+                ], 60);
+            }
+        }
     }
 
     public function getBatchStatus(string $requestId)
@@ -273,17 +386,19 @@ class AdmetService
         return Cache::get("admet_result_$requestId");
     }
 
-    public function clearOldResults(int $olderThanMinutes = 60)
+    public function clearOldResults(int $olderThanMinutes = 60): void
     {
-        $pattern = 'admet_result_*';
-        $keys = Redis::keys($pattern);
+        $keys = Redis::keys('admet_result_*');
+
+        if (empty($keys)) {
+            return;
+        }
 
         foreach ($keys as $key) {
             $ttl = Redis::ttl($key);
-            if ($ttl > 0 && $ttl < ($olderThanMinutes * 60)) {
-                continue;
+            if ($ttl < 0 || $ttl > ($olderThanMinutes * 60)) {
+                Redis::del($key);
             }
-            Redis::del($key);
         }
     }
 }
