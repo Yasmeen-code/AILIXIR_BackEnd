@@ -127,6 +127,12 @@ Route::prefix('simulations')->middleware('auth:sanctum')->group(function () {
     Route::delete('/{id}/delete', [SimulationController::class, 'destroy']);
 });
 
+// ==================== CHEMICAL SEARCH ====================
+Route::middleware('auth:sanctum')->prefix('chemical-search')->group(function () {
+    Route::post('/', [ChemicalSearchController::class, 'store']);
+    Route::post('/full-rag', [ChemicalSearchController::class, 'fullRag']);
+});
+
 // ==================== AI Agent ====================
 Route::get('chemistry/health', [ChemistryController::class, 'health']);
 

@@ -9,29 +9,32 @@ use Illuminate\Support\Facades\Log;
 
 class ChemicalSearchService
 {
-    public function search(ChemicalSearchJob $job): array
+    public function search(string $smiles, int $topK, int $userId): array
     {
-        return $this->callAiService($job, '/search/retrieval-only');
+        return $this->callAiService($smiles, $topK, $userId, '/search/retrieval-only', false);
     }
 
-    public function fullRag(ChemicalSearchJob $job): array
+    public function fullRag(string $smiles, int $topK, int $userId): array
     {
-        return $this->callAiService($job, '/search/full-rag', true);
+        return $this->callAiService($smiles, $topK, $userId, '/search/full-rag', true);
     }
 
-    private function callAiService(ChemicalSearchJob $job, string $endpoint, bool $includeReason = false): array
-    {
+    private function callAiService(
+        string $smiles,
+        int $topK,
+        int $userId,
+        string $endpoint,
+        bool $includeReason
+    ): array {
         $url = config('services.chemical_ai.url') . $endpoint;
         $startTime = microtime(true);
 
         try {
-            $job->update(['status' => 'processing', 'started_at' => now()]);
-
             $response = Http::withOptions([
                 'verify' => false,
             ])->timeout(120)->post($url, [
-                'smiles' => $job->query_smiles,
-                'top_k' => $job->top_k,
+                'smiles' => $smiles,
+                'top_k' => $topK,
             ]);
 
             if (!$response->successful()) {
@@ -41,7 +44,26 @@ class ChemicalSearchService
             $data = $response->json();
             $searchTimeMs = round((microtime(true) - $startTime) * 1000, 2);
 
-            $job->update([
+            $compounds = [];
+            foreach ($data['results'] ?? [] as $index => $result) {
+                $compounds[] = [
+                    'rank' => $index + 1,
+                    'smiles' => $result['smiles'],
+                    'name' => $result['name'] ?? null,
+                    'cid' => $result['cid'] ?? null,
+                    'similarity' => isset($result['similarity_score'])
+                        ? round((float)$result['similarity_score'], 4)
+                        : null,
+                    'explanation' => $includeReason ? ($result['explanation'] ?? null) : null,
+                    'image_url' => $result['image'] ?? null,
+                ];
+            }
+
+            // Optional: Save to DB for history (بدون job status)
+            $job = ChemicalSearchJob::create([
+                'user_id' => $userId,
+                'query_smiles' => $smiles,
+                'top_k' => $topK,
                 'status' => 'completed',
                 'results' => $data['results'] ?? [],
                 'image_urls' => array_column($data['results'] ?? [], 'image'),
@@ -52,38 +74,33 @@ class ChemicalSearchService
                     'fingerprint' => 'Morgan (2048, radius=2)',
                     'source' => $includeReason ? 'full_rag' : 'retrieval',
                 ],
+                'started_at' => now(),
                 'completed_at' => now(),
             ]);
 
-            foreach ($data['results'] ?? [] as $index => $result) {
+            // Save compounds if you still want DB records
+            foreach ($compounds as $compoundData) {
                 ChemicalCompound::create([
                     'job_id' => $job->id,
-                    'rank' => $index + 1,
-                    'smiles' => $result['smiles'],
-                    'name' => $result['name'] ?? null,
-                    'cid' => $result['cid'] ?? null,
-                    'similarity' => isset($result['similarity_score'])
-                        ? round((float)$result['similarity_score'], 4)
-                        : null,
-                    'explanation' => $includeReason ? ($result['explanation'] ?? null) : null,
-                    'image_url' => $result['image'] ?? null,
+                    ...$compoundData,
                 ]);
             }
 
-            return ['success' => true, 'job_id' => $job->id];
+            return [
+                'success' => true,
+                'compounds' => $compounds,
+                'metadata' => $job->metadata,
+            ];
         } catch (\Exception $e) {
             Log::error('Chemical Search Failed', [
-                'job_id' => $job->id,
+                'smiles' => $smiles,
                 'error' => $e->getMessage(),
             ]);
 
-            $job->update([
-                'status' => 'failed',
-                'error_message' => $e->getMessage(),
-                'completed_at' => now(),
-            ]);
-
-            return ['success' => false, 'error' => $e->getMessage()];
+            return [
+                'success' => false,
+                'error' => $e->getMessage(),
+            ];
         }
     }
 }

@@ -2,9 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
-use App\Http\Controllers\Controller;
 use App\Http\Requests\ChemicalSearchRequest;
-use App\Models\ChemicalSearchJob;
 use App\Services\ChemicalSearchService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
@@ -17,127 +15,65 @@ class ChemicalSearchController extends BaseController
 
     /**
      * POST /api/chemical-search
-     * Retrieval Only
+     * Retrieval Only - Synchronous
      */
     public function store(ChemicalSearchRequest $request): JsonResponse
     {
         $user = Auth::user();
 
-        $job = ChemicalSearchJob::create([
-            'user_id' => $user->id,
-            'query_smiles' => $request->validated('smiles'),
-            'top_k' => $request->input('top_k', 5),
-            'status' => 'pending',
-        ]);
+        $result = $this->searchService->search(
+            smiles: $request->validated('smiles'),
+            topK: $request->input('top_k', 5),
+            userId: $user->id
+        );
 
-        dispatch(function () use ($job) {
-            app(ChemicalSearchService::class)->search($job);
-        })->onQueue('chemical-search');
+        if (!$result['success']) {
+            return response()->json([
+                'success' => false,
+                'message' => $result['error'] ?? 'Search failed',
+            ], 500);
+        }
 
         return response()->json([
             'success' => true,
-            'job_id' => $job->id,
-            'status' => 'pending',
-            'check_url' => url("/api/chemical-search/{$job->id}/status"),
-        ], 202);
+            'query' => [
+                'smiles' => $request->validated('smiles'),
+                'top_k' => $request->input('top_k', 5),
+            ],
+            'compounds' => $result['compounds'],
+            'metadata' => $result['metadata'],
+        ]);
     }
 
     /**
      * POST /api/chemical-search/full-rag
+     * Full RAG - Synchronous
      */
     public function fullRag(ChemicalSearchRequest $request): JsonResponse
     {
         $user = Auth::user();
 
-        $job = ChemicalSearchJob::create([
-            'user_id' => $user->id,
-            'query_smiles' => $request->validated('smiles'),
-            'top_k' => $request->input('top_k', 5),
-            'status' => 'pending',
-        ]);
+        $result = $this->searchService->fullRag(
+            smiles: $request->validated('smiles'),
+            topK: $request->input('top_k', 5),
+            userId: $user->id
+        );
 
-        dispatch(function () use ($job) {
-            app(ChemicalSearchService::class)->fullRag($job);
-        })->onQueue('chemical-search');
-
-        return response()->json([
-            'success' => true,
-            'job_id' => $job->id,
-            'status' => 'pending',
-            'type' => 'full_rag',
-            'check_url' => url("/api/chemical-search/{$job->id}/status"),
-        ], 202);
-    }
-
-    /**
-     * GET /api/chemical-search/{id}/status
-     */
-    public function status(int $id): JsonResponse
-    {
-        $job = ChemicalSearchJob::with('compounds')->find($id);
-
-        if (!$job) {
-            return response()->json(['success' => false, 'message' => 'Not found'], 404);
-        }
-
-        if ($job->status === 'failed') {
+        if (!$result['success']) {
             return response()->json([
                 'success' => false,
-                'job_id' => $job->id,
-                'status' => 'failed',
-                'error' => $job->error_message,
-            ]);
-        }
-
-        if (in_array($job->status, ['pending', 'processing'])) {
-            return response()->json([
-                'success' => true,
-                'job_id' => $job->id,
-                'status' => $job->status,
-            ]);
+                'message' => $result['error'] ?? 'Search failed',
+            ], 500);
         }
 
         return response()->json([
             'success' => true,
-            'job_id' => $job->id,
-            'status' => 'completed',
             'query' => [
-                'smiles' => $job->query_smiles,
-                'top_k' => $job->top_k,
+                'smiles' => $request->validated('smiles'),
+                'top_k' => $request->input('top_k', 5),
             ],
-            'compounds' => $job->compounds->map(function ($compound) {
-                return [
-                    'rank' => $compound->rank,
-                    'smiles' => $compound->smiles,
-                    'name' => $compound->name,
-                    'cid' => $compound->cid,
-                    'similarity' => $compound->similarity,
-                    'explanation' => $compound->explanation,
-                    'image_url' => $compound->image_url,
-                ];
-            }),
-            'metadata' => $job->metadata,
-        ]);
-    }
-    /**
-     * GET /api/chemical-search/{id}/images
-     */
-    public function images(int $id): JsonResponse
-    {
-        $job = ChemicalSearchJob::where('user_id', Auth::id())->find($id);
-
-        if (!$job || $job->status !== 'completed') {
-            return response()->json([
-                'success' => false,
-                'message' => 'Not found or not completed'
-            ], 404);
-        }
-
-        return response()->json([
-            'success' => true,
-            'job_id' => $job->id,
-            'image_urls' => $job->image_urls,
-            'total_images' => count($job->image_urls ?? []),
+            'compounds' => $result['compounds'],
+            'metadata' => $result['metadata'],
         ]);
     }
 }
