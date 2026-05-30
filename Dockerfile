@@ -78,7 +78,8 @@ RUN conda tos accept --override-channels --channel https://repo.anaconda.com/pkg
 # Create environment
 RUN conda create -y -p /var/www/html/vina_env -c conda-forge \
     vina=1.2.5 \
-    python=3.10
+    python=3.10 \
+    pip
 
 # Install RDKit via pip to bypass Boost C++ solver compatibility conflicts
 RUN /var/www/html/vina_env/bin/pip install rdkit==2025.09.5
