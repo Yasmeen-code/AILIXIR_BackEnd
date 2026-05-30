@@ -36,26 +36,31 @@ jobs:
 
       - name: Seed verified test user
         run: |
-          echo "=== Creating verified test user via database seeder ==="
-          docker compose exec -T laravel php artisan tinker --execute="
-              use App\Models\User;
-              use Illuminate\Support\Facades\Hash;
+          echo "=== Creating verified test user via PHP script ==="
+          docker compose exec -T laravel php -r "
+          require 'vendor/autoload.php';
+          \$app = require_once 'bootstrap/app.php';
+          \$kernel = \$app->make(Illuminate\Contracts\Console\Kernel::class);
+          \$kernel->bootstrap();
 
-              \$user = User::firstOrCreate(
-                  ['email' => 'salehyasmeen080@gmail.com'],
-                  [
-                      'name' => 'Test User',
-                      'password' => Hash::make('123456789'),
-                      'role' => 'normal',
-                      'is_verified' => true,
-                      'email_verified_at' => now(),
-                      'created_at' => now(),
-                      'updated_at' => now()
-                  ]
-              );
-              echo 'User ID: ' . \$user->id . PHP_EOL;
-              echo 'Email: ' . \$user->email . PHP_EOL;
-              echo 'Verified: ' . (\$user->is_verified ? 'YES' : 'NO') . PHP_EOL;
+          use App\Models\User;
+          use Illuminate\Support\Facades\Hash;
+
+          \$user = User::firstOrCreate(
+              ['email' => 'salehyasmeen080@gmail.com'],
+              [
+                  'name' => 'Test User',
+                  'password' => Hash::make('123456789'),
+                  'role' => 'normal',
+                  'is_verified' => true,
+                  'email_verified_at' => now(),
+                  'created_at' => now(),
+                  'updated_at' => now()
+              ]
+          );
+          echo 'User ID: ' . \$user->id . PHP_EOL;
+          echo 'Email: ' . \$user->email . PHP_EOL;
+          echo 'Verified: ' . (\$user->is_verified ? 'YES' : 'NO') . PHP_EOL;
           "
 
       - name: Login and get Bearer token
@@ -234,26 +239,31 @@ jobs:
 
       - name: Seed verified test user
         run: |
-          echo "=== Creating verified test user via database seeder ==="
-          docker compose exec -T laravel php artisan tinker --execute="
-              use App\Models\User;
-              use Illuminate\Support\Facades\Hash;
+          echo "=== Creating verified test user via PHP script ==="
+          docker compose exec -T laravel php -r "
+          require 'vendor/autoload.php';
+          \$app = require_once 'bootstrap/app.php';
+          \$kernel = \$app->make(Illuminate\Contracts\Console\Kernel::class);
+          \$kernel->bootstrap();
 
-              \$user = User::firstOrCreate(
-                  ['email' => 'salehyasmeen080@gmail.com'],
-                  [
-                      'name' => 'Test User',
-                      'password' => Hash::make('123456789'),
-                      'role' => 'normal',
-                      'is_verified' => true,
-                      'email_verified_at' => now(),
-                      'created_at' => now(),
-                      'updated_at' => now()
-                  ]
-              );
-              echo 'User ID: ' . \$user->id . PHP_EOL;
-              echo 'Email: ' . \$user->email . PHP_EOL;
-              echo 'Verified: ' . (\$user->is_verified ? 'YES' : 'NO') . PHP_EOL;
+          use App\Models\User;
+          use Illuminate\Support\Facades\Hash;
+
+          \$user = User::firstOrCreate(
+              ['email' => 'salehyasmeen080@gmail.com'],
+              [
+                  'name' => 'Test User',
+                  'password' => Hash::make('123456789'),
+                  'role' => 'normal',
+                  'is_verified' => true,
+                  'email_verified_at' => now(),
+                  'created_at' => now(),
+                  'updated_at' => now()
+              ]
+          );
+          echo 'User ID: ' . \$user->id . PHP_EOL;
+          echo 'Email: ' . \$user->email . PHP_EOL;
+          echo 'Verified: ' . (\$user->is_verified ? 'YES' : 'NO') . PHP_EOL;
           "
 
       - name: Login and get Bearer token
