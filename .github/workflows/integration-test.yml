@@ -130,7 +130,7 @@ jobs:
       - name: Build and start stack
         run: |
           docker compose down -v 2>/dev/null || true
-          docker compose build laravel
+          docker compose build --build-arg COMPOSER_DEV="" laravel
           docker compose up -d laravel
 
       - name: Verify RDKit, Vina, and Open Babel in container
