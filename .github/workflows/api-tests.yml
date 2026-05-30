@@ -25,14 +25,14 @@ jobs:
           python -m pip install --upgrade pip
           pip install pytest requests
 
-      - name: Run Auth API tests
+      - name: Run API tests
         env:
           BASE_URL: https://america-hyperlipemic-grazyna.ngrok-free.dev/api
           TEST_EMAIL: salehyasmeen080@gmail.com
           TEST_PASSWORD: 123456789
           TEST_NAME: yasmeen564
         run: |
-          pytest tests/test_auth.py -v --tb=short --junitxml=junit.xml
+          pytest tests/ -v --tb=short --junitxml=junit.xml
 
       - name: Upload test results
         uses: actions/upload-artifact@v4
