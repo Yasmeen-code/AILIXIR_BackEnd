@@ -29,14 +29,14 @@ def auth_base_url():
 @pytest.fixture(scope="session")
 def client():
     """Create a shared HTTP client for the test session."""
-    with httpx.Client(base_url=BASE_URL, timeout=30.0) as c:
+    with httpx.Client(base_url=BASE_URL, timeout=30.0, verify=False) as c:
         yield c
 
 
 @pytest.fixture(scope="session")
 def auth_client():
     """Create an HTTP client for auth endpoints."""
-    with httpx.Client(base_url=AUTH_BASE_URL, timeout=30.0) as c:
+    with httpx.Client(base_url=AUTH_BASE_URL, timeout=30.0, verify=False) as c:
         yield c
 
 
