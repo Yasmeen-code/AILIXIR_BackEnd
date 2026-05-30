@@ -1,0 +1,21 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+
+class ScreeningResult extends Model
+{
+    protected $fillable = ['user_id', 'input', 'output', 'status'];
+
+    protected $casts = [
+        'input'  => 'array',
+        'output' => 'array',
+    ];
+
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class);
+    }
+}

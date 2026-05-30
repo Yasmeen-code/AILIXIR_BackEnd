@@ -25,7 +25,6 @@ class OtpService
         $user->{$columns['expires']} = now()->addMinutes(self::OTP_EXPIRATION_MINUTES);
         $user->save();
 
-        // إرسال الإيميل مباشرة
         try {
             Log::info("Sending OTP to: {$user->email}, Type: {$type}, OTP: {$otp}");
             $user->notify(new SendOtpNotification($otp, $type));
@@ -55,7 +54,6 @@ class OtpService
             throw new \Exception('OTP expired');
         }
 
-        // مسح OTP بعد الاستخدام الناجح
         $user->{$columns['otp']} = null;
         $user->{$columns['expires']} = null;
         $user->save();
@@ -86,8 +84,10 @@ class OtpService
 
         if ($user->$otpExpiresField && now()->lt($user->$otpExpiresField)) {
             $secondsRemaining = now()->diffInSeconds($user->$otpExpiresField);
+            $timeText = $this->formatRemainingTime((int) $secondsRemaining);
+
             throw ValidationException::withMessages([
-                'otp' => "Please wait {$secondsRemaining} seconds before requesting a new OTP."
+                'otp' => "Please wait {$timeText} before requesting a new OTP."
             ]);
         }
 
@@ -103,7 +103,6 @@ class OtpService
      */
     public function resetPasswordWithOtp(User $user, string $inputOtp, string $newPassword): void
     {
-        // ✅ استخدمي verifyOtp بدلاً من validateOtp
         $this->verifyOtp($user, 'password_reset', $inputOtp);
 
         $user->update([
@@ -129,5 +128,43 @@ class OtpService
             ],
             default => throw new InvalidArgumentException("Invalid OTP type: {$type}"),
         };
+    }
+
+    /**
+     * Check if user can resend OTP or still has active one
+     * 
+     * @return array ['can_resend' => bool, 'remaining_seconds' => int|null]
+     */
+    public function canResendOtp(User $user, string $type): array
+    {
+        $columns = $this->getOtpColumns($type);
+        $expiresField = $columns['expires'];
+
+        if (!$user->$expiresField || now()->gte($user->$expiresField)) {
+            return ['can_resend' => true, 'remaining_seconds' => null];
+        }
+
+        $remainingSeconds = now()->diffInSeconds($user->$expiresField);
+
+        return ['can_resend' => false, 'remaining_seconds' => $remainingSeconds];
+    }
+
+    /**
+     * Format remaining time to human readable string
+     */
+    public function formatRemainingTime(int $seconds): string
+    {
+        if ($seconds >= 3600) {
+            $hours = ceil($seconds / 3600);
+            return "{$hours} " . ($hours === 1 ? 'hour' : 'hours');
+        }
+
+        if ($seconds >= 60) {
+            $minutes = ceil($seconds / 60);
+            return "{$minutes} " . ($minutes === 1 ? 'minute' : 'minutes');
+        }
+
+        $seconds = (int) $seconds;
+        return "{$seconds} " . ($seconds === 1 ? 'second' : 'seconds');
     }
 }

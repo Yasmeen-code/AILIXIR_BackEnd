@@ -3,12 +3,15 @@
 use App\Http\Controllers\Api\AiController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\AwardController;
+use App\Http\Controllers\Api\ConvertSmilesController;
 use App\Http\Controllers\Api\DockingController;
 use App\Http\Controllers\Api\NewsController;
 use App\Http\Controllers\Api\PasswordResetController;
+use App\Http\Controllers\Api\ScreeningController;
 use App\Http\Controllers\Api\SimulationController;
 use App\Http\Controllers\Api\ScientistController;
 use App\Http\Controllers\Api\UserController;
+use App\Http\Controllers\Api\AdmetController;
 use Cloudinary\Cloudinary;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -16,6 +19,7 @@ use App\Http\Controllers\Api\OtpController;
 use App\Http\Controllers\Api\EmailVerificationController;
 use App\Http\Controllers\Api\MdFileController;
 use App\Http\Controllers\Api\ChemicalSearchController;
+use App\Http\Controllers\Api\ChemistryController;
 use App\Http\Controllers\Api\AiServicesIntegrationController;
 
 // ==================== AI INTEGRATION (Docker / CI) ====================
@@ -77,10 +81,30 @@ Route::middleware('auth:sanctum')->group(function () {
 // ====================DOCKING====================
 
 Route::middleware('auth:sanctum')->prefix('docking')->group(function () {
+    Route::get('history', [DockingController::class, 'history']);
     Route::post('submit', [DockingController::class, 'submit']);
-    Route::post('convert-smiles', [DockingController::class, 'convertSmiles']);
-    Route::get('status/{id}', [DockingController::class, 'status']);
+    Route::get('{id}', [DockingController::class, 'status']);
     Route::get('download/{id}', [DockingController::class, 'download']);
+});
+
+// ====================CONVERT SMILES====================
+
+Route::middleware('auth:sanctum')->prefix('convert-smiles')->group(function () {
+    Route::get('history', [ConvertSmilesController::class, 'history']);
+    Route::post('convert', [ConvertSmilesController::class, 'convert']);
+    Route::get('download/{id}', [ConvertSmilesController::class, 'download']);
+});
+
+// ==================== DRUG REPURPOSING / SCREENING ====================
+
+Route::prefix('drug-repurposing')->middleware('auth:sanctum')->group(function () {
+    Route::get('targets/history',   [ScreeningController::class, 'historyTargets']);
+    Route::get('targets/{id}', [ScreeningController::class, 'statusTargets'])->whereNumber('id');
+    Route::get('targets/{disease_name}', [ScreeningController::class, 'targets']);
+
+    Route::get('screen/history', [ScreeningController::class, 'historyScreening']);
+    Route::get('screen/{id}', [ScreeningController::class, 'statusScreening'])->whereNumber('id');
+    Route::post('screen', [ScreeningController::class, 'screen']);
 });
 
 // ==================== AI JOBS ====================
@@ -92,6 +116,55 @@ Route::middleware('auth:sanctum')->prefix('ai')->group(function () {
     Route::get('/download/full/{job:job_id}', [AiController::class, 'downloadFull']);
     Route::get('/history', [AiController::class, 'history']);
 });
+
+// ==================== SIMULATIONS ====================
+
+Route::prefix('simulations')->middleware('auth:sanctum')->group(function () {
+    Route::post('/run', [SimulationController::class, 'run']);
+    Route::get('/index', [SimulationController::class, 'index']);
+    Route::get('/{id}/status', [SimulationController::class, 'status']);
+    Route::delete('/{id}/delete', [SimulationController::class, 'destroy']);
+});
+
+// ==================== AI Agent ====================
+Route::get('chemistry/health', [ChemistryController::class, 'health']);
+
+Route::middleware('auth:sanctum')->group(function () {
+
+    Route::prefix('chemistry')->group(function () {
+        // Threads
+        Route::post('thread', [ChemistryController::class, 'createThread']);
+        Route::get('threads', [ChemistryController::class, 'listThreads']);
+
+        // Chat
+        Route::post('chat', [ChemistryController::class, 'chat']);
+
+        // Analysis
+        Route::post('analyze/smiles', [ChemistryController::class, 'analyzeSmiles']);
+        Route::post('analyze/compare', [ChemistryController::class, 'compare']);
+        Route::post('analyze/docking', [ChemistryController::class, 'docking']);
+
+        // CSV Batch
+        Route::post('csv/upload', [ChemistryController::class, 'uploadCsv']);
+        Route::get('csv/status/{job_id}', [ChemistryController::class, 'csvStatus']);
+        Route::get('csv/results/{job_id}', [ChemistryController::class, 'csvResults']);
+        Route::get('csv/jobs', [ChemistryController::class, 'listJobs']);
+        Route::delete('csv/jobs/{job_id}', [ChemistryController::class, 'deleteJob']);
+
+        // User History
+        Route::get('history', [ChemistryController::class, 'userHistory']);
+    });
+});
+
+
+
+
+
+
+
+// ==================== ADMET PREDICTION ====================
+Route::middleware('auth:sanctum')->post('/admet/predict', [AdmetController::class, 'predict']);
+
 
 // cloudinary file upload test route
 

@@ -30,17 +30,14 @@ class EmailVerificationController extends BaseController
         $user = User::where('email', $request->email)->first();
 
         try {
-            // ✅ استخدمي verifyOtp بدلاً من validateOtp
             $this->otpService->verifyOtp($user, 'email_verification', $request->otp);
 
-            // تحديث حالة التحقق ومسح OTP
             $user->update([
                 'is_verified' => true,
                 'email_verification_otp' => null,
                 'email_verification_otp_expires_at' => null,
             ]);
 
-            // إنشاء token
             $token = $user->createToken('auth_token')->plainTextToken;
 
             return response()->json([

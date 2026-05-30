@@ -24,13 +24,12 @@ class AuthController extends BaseController
         $this->otpService = $otpService;
     }
 
-    /** ---------------- Register (إرسال OTP للتحقق) ---------------- */
+    /** ---------------- Register ---------------- */
 
     public function register(RegisterRequest $request)
     {
         $user = $this->userService->registerUser($request->validated());
 
-        // إرسال OTP للتحقق من البريد
         $this->otpService->sendOtp($user, 'email_verification');
 
         return $this->successResponse(
@@ -39,7 +38,6 @@ class AuthController extends BaseController
         );
     }
 
-    /** ---------------- Login العادي (بدون OTP) ---------------- */
 
     public function login(LoginRequest $request)
     {
@@ -55,13 +53,12 @@ class AuthController extends BaseController
         ]);
     }
 
-    /** ---------------- Forgot Password (إرسال OTP لإعادة التعيين) ---------------- */
+    /** ---------------- Forgot Password ---------------- */
 
     public function forgotPassword(CheckEmailRequest $request)
     {
         $user = User::where('email', $request->email)->first();
 
-        // إرسال OTP لإعادة تعيين كلمة المرور
         $this->otpService->sendOtp($user, 'password_reset');
 
         return $this->successResponse(
@@ -70,7 +67,7 @@ class AuthController extends BaseController
         );
     }
 
-    /** ---------------- Resend OTP (إعادة إرسال) ---------------- */
+    /** ---------------- Resend OTP ---------------- */
 
     public function resendOtp(Request $request)
     {

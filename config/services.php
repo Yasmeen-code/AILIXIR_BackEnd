@@ -13,6 +13,11 @@ return [
     | a conventional file to locate the various service credentials.
     |
     */
+    #AI agent
+    'chemistry' => [
+        'base_url' => env('CHEMISTRY_API_BASE_URL', 'https://bronchial-carpentry-football.ngrok-free.dev'),
+        'timeout' => env('CHEMISTRY_API_TIMEOUT', 60),
+    ],
 
     'chemical_ai' => [
         'url' => env('CHEMICAL_AI_URL', 'http://chemical-rag:5000'),
@@ -54,6 +59,12 @@ return [
     ],
     'ai' => [
         'url' => env('AI_SERVICE_URL'),
+        'admet_url' => env('AI_ADEMT_SERVICE_URL'),
+        'jwt_secret' => env('JWT_SECRET'),
+    ],
+
+    'screening' => [
+        'url' => env('SCREENING_SERVICE_URL', 'http://localhost:8000/api/v1'),
     ],
 
 ];

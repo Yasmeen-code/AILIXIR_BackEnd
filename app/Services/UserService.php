@@ -39,7 +39,12 @@ class UserService
         }
 
         if (!$user->is_verified) {
-            $this->otpService->resendOtp($user, 'email_verification');
+            $otpCheck = $this->otpService->canResendOtp($user, 'email_verification');
+
+            if ($otpCheck['can_resend']) {
+                $this->otpService->resendOtp($user, 'email_verification');
+            }
+
             return ['error' => 'Email not verified. OTP sent again.', 'code' => 403];
         }
 

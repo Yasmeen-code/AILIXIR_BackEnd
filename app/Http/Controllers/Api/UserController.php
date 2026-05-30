@@ -24,12 +24,24 @@ class UserController extends BaseController
         $user = $request->user()->load('researcher');
 
         return $this->successResponse('Profile retrieved', [
-            'id' => $user->id,
-            'name' => $user->name,
-            'email' => $user->email,
-            'role' => $user->role,
-            'researcher' => $user->researcher,
-            'photo' => $user->photo,
+            'results' => [
+                [
+                    'id' => $user->id,
+                    'name' => $user->name,
+                    'email' => $user->email,
+                    'role' => $user->role,
+                    'researcher' => $user->researcher,
+                    'photo' => $user->photo,
+                ]
+            ],
+            'pagination' => [
+                'currentPage' => 1,
+                'totalPages' => 1,
+                'totalResults' => 1,
+                'perPage' => 1,
+                'hasNextPage' => false,
+                'hasPrevPage' => false
+            ]
         ]);
     }
 
@@ -41,6 +53,16 @@ class UserController extends BaseController
             $request
         );
 
-        return $this->successResponse('Profile updated successfully', $result);
+        return $this->successResponse('Profile updated successfully', [
+            'results' => [$result],
+            'pagination' => [
+                'currentPage' => 1,
+                'totalPages' => 1,
+                'totalResults' => 1,
+                'perPage' => 1,
+                'hasNextPage' => false,
+                'hasPrevPage' => false
+            ]
+        ]);
     }
 }

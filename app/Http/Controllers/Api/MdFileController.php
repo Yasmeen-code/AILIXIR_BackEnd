@@ -8,9 +8,7 @@ use Illuminate\Http\JsonResponse;
 
 class MdFileController extends BaseController
 {
-    /**
-     * جلب كل الملفات
-     */
+
     public function index(): JsonResponse
     {
         $mdFile = MdFile::first();
@@ -38,9 +36,7 @@ class MdFileController extends BaseController
         ]);
     }
 
-    /**
-     * جلب ملف معين
-     */
+
     public function show(string $filename): JsonResponse
     {
         $mdFile = MdFile::first();
@@ -49,7 +45,6 @@ class MdFileController extends BaseController
             return response()->json(['message' => 'No data found'], 404);
         }
 
-        // فك الـ URL encoding للأسماء اللي فيها أقواس
         $decodedName = urldecode($filename);
 
         if (!$mdFile->hasFile($decodedName)) {
@@ -67,9 +62,7 @@ class MdFileController extends BaseController
         ]);
     }
 
-    /**
-     * جلب ملفات حسب النوع
-     */
+
     public function byType(string $type): JsonResponse
     {
         $mdFile = MdFile::first();

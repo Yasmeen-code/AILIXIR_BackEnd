@@ -15,6 +15,7 @@ class NewsController extends BaseController
     {
         $this->newsService = $newsService;
     }
+
     public function index(Request $request)
     {
         try {
@@ -54,7 +55,14 @@ class NewsController extends BaseController
 
             return $this->successResponse("Fetched {$articles->count()} new articles", [
                 'results' => $articles,
-                'pagination' => null
+                'pagination' => [
+                    'currentPage' => 1,
+                    'totalPages' => 1,
+                    'totalResults' => $articles->count(),
+                    'perPage' => $articles->count(),
+                    'hasNextPage' => false,
+                    'hasPrevPage' => false
+                ]
             ]);
         } catch (\Exception $e) {
             Log::error('Refresh error: ' . $e->getMessage());
@@ -74,10 +82,22 @@ class NewsController extends BaseController
             $saved = $this->newsService->saveArticle($user->id, $articleId);
 
             return $this->successResponse('Article saved successfully', [
-                'id' => $saved->id,
-                'user_id' => $saved->user_id,
-                'news_id' => $saved->news_id,
-                'created_at' => $saved->created_at,
+                'results' => [
+                    [
+                        'id' => $saved->id,
+                        'user_id' => $saved->user_id,
+                        'news_id' => $saved->news_id,
+                        'created_at' => $saved->created_at,
+                    ]
+                ],
+                'pagination' => [
+                    'currentPage' => 1,
+                    'totalPages' => 1,
+                    'totalResults' => 1,
+                    'perPage' => 1,
+                    'hasNextPage' => false,
+                    'hasPrevPage' => false
+                ]
             ]);
         } catch (\Exception $e) {
             Log::error('Save error: ' . $e->getMessage());
@@ -90,7 +110,17 @@ class NewsController extends BaseController
         try {
             $this->newsService->shareArticle($articleId);
 
-            return $this->successResponse('Article shared successfully');
+            return $this->successResponse('Article shared successfully', [
+                'results' => [],
+                'pagination' => [
+                    'currentPage' => 1,
+                    'totalPages' => 1,
+                    'totalResults' => 0,
+                    'perPage' => 0,
+                    'hasNextPage' => false,
+                    'hasPrevPage' => false
+                ]
+            ]);
         } catch (\Exception $e) {
             Log::error('Share error: ' . $e->getMessage());
             return $this->errorResponse($e->getMessage(), 500);
@@ -104,7 +134,14 @@ class NewsController extends BaseController
 
             return $this->successResponse('Categories retrieved successfully', [
                 'results' => $categories,
-                'pagination' => null
+                'pagination' => [
+                    'currentPage' => 1,
+                    'totalPages' => 1,
+                    'totalResults' => count($categories),
+                    'perPage' => count($categories),
+                    'hasNextPage' => false,
+                    'hasPrevPage' => false
+                ]
             ]);
         } catch (\Exception $e) {
             Log::error('Categories error: ' . $e->getMessage());
@@ -117,7 +154,17 @@ class NewsController extends BaseController
         try {
             \App\Models\News::truncate();
 
-            return $this->successResponse('All news deleted');
+            return $this->successResponse('All news deleted', [
+                'results' => [],
+                'pagination' => [
+                    'currentPage' => 1,
+                    'totalPages' => 1,
+                    'totalResults' => 0,
+                    'perPage' => 0,
+                    'hasNextPage' => false,
+                    'hasPrevPage' => false
+                ]
+            ]);
         } catch (\Exception $e) {
             Log::error('Clear error: ' . $e->getMessage());
             return $this->errorResponse($e->getMessage(), 500);
@@ -191,7 +238,17 @@ class NewsController extends BaseController
 
             $saved->delete();
 
-            return $this->successResponse('Article removed from saved');
+            return $this->successResponse('Article removed from saved', [
+                'results' => [],
+                'pagination' => [
+                    'currentPage' => 1,
+                    'totalPages' => 1,
+                    'totalResults' => 0,
+                    'perPage' => 0,
+                    'hasNextPage' => false,
+                    'hasPrevPage' => false
+                ]
+            ]);
         } catch (\Exception $e) {
             Log::error('Unsave error: ' . $e->getMessage());
             return $this->errorResponse($e->getMessage(), 500);

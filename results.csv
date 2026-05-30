@@ -1,0 +1,56 @@
+row,name,smiles,status,error,analysis
+1,Aspirin,CC(=O)Oc1ccccc1C(=O)O,success,,"Here's a complete analysis of the molecule CC(=O)Oc1ccccc1C(=O)O (Aspirin):
+
+**1. SMILES Validation:**
+*   **Valid SMILES:** Yes
+*   **Canonical SMILES:** CC(=O)Oc1ccccc1C(=O)O
+*   **Molecular Formula:** C9H8O4
+*   **Total Atoms:** 13 (Heavy: 13)
+*   **Bonds:** 13
+*   **Formal Charge:** 0
+
+**2. Molecular Properties:**
+*   **Molecular Weight (MW):** 180.16 Da (within the typical oral drug range of 160–500 Da)
+*   **LogP (lipophilicity):** 1.31 (within the typical drug range of -0.4–5.6)
+*   **H-bond Donors (HBD):** 1 (≤5 for oral drugs)
+*   **H-bond Acceptors (HBA):** 3 (≤10 for oral drugs)
+*   **TPSA (Topological Polar Surface Area):** 63.60 Å² (<140 Å² for oral absorption, <90 Å² for CNS)
+*   **Rotatable Bonds:** 2 (≤10 for oral drugs)
+*   **Total Rings:** 1 (Aromatic: 1)
+*   **QED (Quantitative Estimate of Drug-likeness):** 0.550 (moderately drug-like, >0.67 is ideal)
+*   **Fsp3 (fraction sp3 carbons):** 0.111 (low, >0.47 preferred for better oral bioavailability)
+
+**3. Drug-likeness Classification:**
+*   **Lipinski Rule of Five (Ro5):** **PASS** (no violations)
+    *   MW (180.16) ≤ 500
+    *   LogP (1.31) ≤ 5
+    *   HBD (1) ≤ 5
+    *   HBA (3) ≤ 10
+*   **Veber Rules (oral bioavailability):** **PASS**
+    *   Rotatable Bonds (2) ≤ 10
+    *   TPSA (63.60 Å²) ≤ 140
+*   **Lead-likeness:** **BORDERLINE** (MW=180.2 is outside the preferred 200–350 Da range for lead optimization)
+*   **Rule of Three (fragment-like):** **PASS**
+*   **QED score:** 0.550 → Moderately drug-like
+
+**4. ADMET Profile:**
+*   **Absorption:**
+    *   Predicted GI absorption: **High** (TPSA=63.6 Å²)
+    *   BBB penetration: **Likely penetrant** (TPSA < 90 Å² and LogP 1-3)
+    *   P-gp substrate risk: Low/Moderate
+*   **Distribution:**
+    *   LogP=1.31 → moderate/low lipophilicity
+    *   Plasma protein binding: likely moderate
+*   **Metabolism:**
+    *   CYP450 liability: elevated (aromatic rings present)
+    *   First-pass effect risk: moderate
+*   **Excretion:**
+    *   Renal clearance: likely
+*   **Toxicity Flags:**
+    *   No common structural alerts detected
+
+**Overall Summary:**
+The molecule (Aspirin) demonstrates excellent drug-likeness according to Lipinski's Rule of Five and Veber rules, suggesting good oral bioavailability. Its molecular weight is on the lower side for lead-likeness, but it passes the Rule of Three, indicating it could be a good starting point for fragment-based drug discovery. The ADMET profile is promising, with high predicted GI absorption and likely BBB penetration. There are no obvious toxicity alerts, though elevated CYP450 liability and moderate first-pass effect risk are noted, which is common for many drugs. The QED score of 0.550 indicates it is moderately drug-like."
+2,Ibuprofen,CC(C)Cc1ccc(cc1)C(C)C(=O)O,failed,"Error calling model 'gemini-2.5-flash' (RESOURCE_EXHAUSTED): 429 RESOURCE_EXHAUSTED. {'error': {'code': 429, 'message': 'You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. \n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 20, model: gemini-2.5-flash\nPlease retry in 42.975370591s.', 'status': 'RESOURCE_EXHAUSTED', 'details': [{'@type': 'type.googleapis.com/google.rpc.Help', 'links': [{'description': 'Learn more about Gemini API quotas', 'url': 'https://ai.google.dev/gemini-api/docs/rate-limits'}]}, {'@type': 'type.googleapis.com/google.rpc.QuotaFailure', 'violations': [{'quotaMetric': 'generativelanguage.googleapis.com/generate_content_free_tier_requests', 'quotaId': 'GenerateRequestsPerDayPerProjectPerModel-FreeTier', 'quotaDimensions': {'location': 'global', 'model': 'gemini-2.5-flash'}, 'quotaValue': '20'}]}, {'@type': 'type.googleapis.com/google.rpc.RetryInfo', 'retryDelay': '42s'}]}}",
+3,Caffeine,Cn1cnc2c1c(=O)n(c(=O)n2C)C,failed,"Error calling model 'gemini-2.5-flash' (RESOURCE_EXHAUSTED): 429 RESOURCE_EXHAUSTED. {'error': {'code': 429, 'message': 'You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. \n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 20, model: gemini-2.5-flash\nPlease retry in 23.934837849s.', 'status': 'RESOURCE_EXHAUSTED', 'details': [{'@type': 'type.googleapis.com/google.rpc.Help', 'links': [{'description': 'Learn more about Gemini API quotas', 'url': 'https://ai.google.dev/gemini-api/docs/rate-limits'}]}, {'@type': 'type.googleapis.com/google.rpc.QuotaFailure', 'violations': [{'quotaMetric': 'generativelanguage.googleapis.com/generate_content_free_tier_requests', 'quotaId': 'GenerateRequestsPerDayPerProjectPerModel-FreeTier', 'quotaDimensions': {'location': 'global', 'model': 'gemini-2.5-flash'}, 'quotaValue': '20'}]}, {'@type': 'type.googleapis.com/google.rpc.RetryInfo', 'retryDelay': '23s'}]}}",
+4,Paracetamol,CC(=O)Nc1ccc(O)cc1,failed,"Error calling model 'gemini-2.5-flash' (RESOURCE_EXHAUSTED): 429 RESOURCE_EXHAUSTED. {'error': {'code': 429, 'message': 'You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. \n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 20, model: gemini-2.5-flash\nPlease retry in 5.020438574s.', 'status': 'RESOURCE_EXHAUSTED', 'details': [{'@type': 'type.googleapis.com/google.rpc.Help', 'links': [{'description': 'Learn more about Gemini API quotas', 'url': 'https://ai.google.dev/gemini-api/docs/rate-limits'}]}, {'@type': 'type.googleapis.com/google.rpc.QuotaFailure', 'violations': [{'quotaMetric': 'generativelanguage.googleapis.com/generate_content_free_tier_requests', 'quotaId': 'GenerateRequestsPerDayPerProjectPerModel-FreeTier', 'quotaDimensions': {'location': 'global', 'model': 'gemini-2.5-flash'}, 'quotaValue': '20'}]}, {'@type': 'type.googleapis.com/google.rpc.RetryInfo', 'retryDelay': '5s'}]}}",

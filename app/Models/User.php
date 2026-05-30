@@ -7,6 +7,7 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
 use App\Models\Researcher;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class User extends Authenticatable
 {
@@ -22,6 +23,8 @@ class User extends Authenticatable
         'is_verified',
         'password_reset_otp',
         'password_reset_otp_expires_at',
+        'last_otp_sent_at',
+
     ];
     protected $hidden = [
         'password',
@@ -38,6 +41,8 @@ class User extends Authenticatable
             'email_verification_otp_expires_at' => 'datetime',
             'password_reset_otp_expires_at' => 'datetime',
             'is_verified' => 'boolean',
+            'last_otp_sent_at' => 'datetime',
+
         ];
     }
 
@@ -77,7 +82,7 @@ class User extends Authenticatable
             'password_reset_otp_expires_at' => null,
         ]);
     }
-  
+
     public function simulations()
     {
         return $this->hasMany(Simulation::class);
@@ -86,5 +91,24 @@ class User extends Authenticatable
     public function aiJobs()
     {
         return $this->hasMany(AiJob::class);
+    }
+
+    public function admets()
+    {
+        return $this->hasMany(Admet::class);
+    }
+    public function chemistryThreads(): HasMany
+    {
+        return $this->hasMany(ChemistryThread::class);
+    }
+
+    public function chemistryAnalyses(): HasMany
+    {
+        return $this->hasMany(ChemistryAnalysis::class);
+    }
+
+    public function chemistryCsvJobs(): HasMany
+    {
+        return $this->hasMany(ChemistryCsvJob::class);
     }
 }
