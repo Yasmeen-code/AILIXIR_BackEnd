@@ -34,30 +34,29 @@ jobs:
           # Run fresh migrations to ensure clean database state
           docker compose exec -T laravel php artisan migrate:fresh --force
 
-      - name: Show service status
-        if: always()
-        run: docker compose ps -a
-
-      - name: Wait for Laravel API
+      - name: Seed verified test user
         run: |
-          for i in $(seq 1 60); do
-            if curl -sf http://localhost:8080/ > /dev/null 2>&1; then
-              echo "Laravel is up"
-              exit 0
-            fi
-            echo "Waiting for Laravel ($i/60)..."
-            sleep 5
-          done
-          docker compose logs laravel
-          exit 1
+          echo "=== Creating verified test user via database seeder ==="
+          docker compose exec -T laravel php artisan tinker --execute="
+              use App\Models\User;
+              use Illuminate\Support\Facades\Hash;
 
-      - name: Debug - Check Laravel routes
-        run: |
-          echo "=== Checking if /api/user/login exists ==="
-          curl -v http://localhost:8080/api/user/login 2>&1 | head -30
-          echo ""
-          echo "=== Laravel routes ==="
-          docker compose exec -T laravel php artisan route:list | grep login || echo "No login route found"
+              \$user = User::firstOrCreate(
+                  ['email' => 'salehyasmeen080@gmail.com'],
+                  [
+                      'name' => 'Test User',
+                      'password' => Hash::make('123456789'),
+                      'role' => 'normal',
+                      'is_verified' => true,
+                      'email_verified_at' => now(),
+                      'created_at' => now(),
+                      'updated_at' => now()
+                  ]
+              );
+              echo 'User ID: ' . \$user->id . PHP_EOL;
+              echo 'Email: ' . \$user->email . PHP_EOL;
+              echo 'Verified: ' . (\$user->is_verified ? 'YES' : 'NO') . PHP_EOL;
+          "
 
       - name: Login and get Bearer token
         run: |
@@ -86,14 +85,33 @@ jobs:
           if not data.get("success"):
               print("Login failed:", json.dumps(data, indent=2))
               sys.exit(1)
+
           token = data.get("data", {}).get("token")
           if not token:
               print("No token in response:", json.dumps(data, indent=2))
               sys.exit(1)
+
           with open("token.txt", "w") as f:
               f.write(token)
           print("Login OK - token saved")
           PY
+
+      - name: Show service status
+        if: always()
+        run: docker compose ps -a
+
+      - name: Wait for Laravel API
+        run: |
+          for i in $(seq 1 60); do
+            if curl -sf http://localhost:8080/ > /dev/null 2>&1; then
+              echo "Laravel is up"
+              exit 0
+            fi
+            echo "Waiting for Laravel ($i/60)..."
+            sleep 5
+          done
+          docker compose logs laravel
+          exit 1
 
       - name: Test aggregated AI health via Laravel
         run: |
@@ -214,30 +232,29 @@ jobs:
           # Run fresh migrations to ensure clean database state
           docker compose exec -T laravel php artisan migrate:fresh --force
 
-      - name: Show service status
-        if: always()
-        run: docker compose ps -a
-
-      - name: Wait for Laravel API
+      - name: Seed verified test user
         run: |
-          for i in $(seq 1 60); do
-            if curl -sf http://localhost:8080/ > /dev/null 2>&1; then
-              echo "Laravel is up"
-              exit 0
-            fi
-            echo "Waiting for Laravel ($i/60)..."
-            sleep 5
-          done
-          docker compose logs laravel
-          exit 1
+          echo "=== Creating verified test user via database seeder ==="
+          docker compose exec -T laravel php artisan tinker --execute="
+              use App\Models\User;
+              use Illuminate\Support\Facades\Hash;
 
-      - name: Debug - Check Laravel routes
-        run: |
-          echo "=== Checking if /api/user/login exists ==="
-          curl -v http://localhost:8080/api/user/login 2>&1 | head -30
-          echo ""
-          echo "=== Laravel routes ==="
-          docker compose exec -T laravel php artisan route:list | grep login || echo "No login route found"
+              \$user = User::firstOrCreate(
+                  ['email' => 'salehyasmeen080@gmail.com'],
+                  [
+                      'name' => 'Test User',
+                      'password' => Hash::make('123456789'),
+                      'role' => 'normal',
+                      'is_verified' => true,
+                      'email_verified_at' => now(),
+                      'created_at' => now(),
+                      'updated_at' => now()
+                  ]
+              );
+              echo 'User ID: ' . \$user->id . PHP_EOL;
+              echo 'Email: ' . \$user->email . PHP_EOL;
+              echo 'Verified: ' . (\$user->is_verified ? 'YES' : 'NO') . PHP_EOL;
+          "
 
       - name: Login and get Bearer token
         run: |
@@ -266,14 +283,33 @@ jobs:
           if not data.get("success"):
               print("Login failed:", json.dumps(data, indent=2))
               sys.exit(1)
+
           token = data.get("data", {}).get("token")
           if not token:
               print("No token in response:", json.dumps(data, indent=2))
               sys.exit(1)
+
           with open("token.txt", "w") as f:
               f.write(token)
           print("Login OK - token saved")
           PY
+
+      - name: Show service status
+        if: always()
+        run: docker compose ps -a
+
+      - name: Wait for Laravel API
+        run: |
+          for i in $(seq 1 60); do
+            if curl -sf http://localhost:8080/ > /dev/null 2>&1; then
+              echo "Laravel is up"
+              exit 0
+            fi
+            echo "Waiting for Laravel ($i/60)..."
+            sleep 5
+          done
+          docker compose logs laravel
+          exit 1
 
       - name: Test retrieval-only chemical search
         run: |
