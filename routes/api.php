@@ -21,6 +21,7 @@ use App\Http\Controllers\Api\MdFileController;
 use App\Http\Controllers\Api\ChemicalSearchController;
 use App\Http\Controllers\Api\ChemistryController;
 use App\Http\Controllers\Api\AiServicesIntegrationController;
+use App\Http\Controllers\DockingTestController;
 
 // ==================== AI INTEGRATION (Docker / CI) ====================
 if (config('app.enable_ai_integration_routes')) {
@@ -205,4 +206,9 @@ Route::post('/upload-file', function (Request $request) {
             'error' => $e->getMessage(),
         ], 500);
     }
+});
+
+// ==================== DOCKING CI TEST ROUTES ====================
+Route::middleware('auth:sanctum')->group(function () {
+    Route::post('/docking/submit', [DockingTestController::class, 'testDockingSubmit']);
 });
