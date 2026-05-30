@@ -51,10 +51,30 @@ jobs:
           docker compose logs laravel
           exit 1
 
+      - name: Login and get Bearer token
+        run: |
+          echo "POST /api/login"
+          curl -sf -X POST http://localhost:8080/api/login             -H "Content-Type: application/json"             -d '{"email":"salehyasmeen080@gmail.com","password":"123456789"}' | tee login.json
+          python3 - <<'PY'
+          import json, sys
+          data = json.load(open("login.json"))
+          if not data.get("success"):
+              print("Login failed:", json.dumps(data, indent=2))
+              sys.exit(1)
+          token = data.get("token") or data.get("data", {}).get("token")
+          if not token:
+              print("No token in response:", json.dumps(data, indent=2))
+              sys.exit(1)
+          with open("token.txt", "w") as f:
+              f.write(token)
+          print("Login OK - token saved")
+          PY
+
       - name: Test aggregated AI health via Laravel
         run: |
+          TOKEN=$(cat token.txt)
           echo "GET /api/ai-services/health"
-          curl -sf http://localhost:8080/api/ai-services/health | tee health.json
+          curl -sf http://localhost:8080/api/ai-services/health             -H "Authorization: Bearer $TOKEN" | tee health.json
           python3 - <<'PY'
           import json, sys
           data = json.load(open("health.json"))
@@ -66,10 +86,9 @@ jobs:
 
       - name: Test ADMET proxy via Laravel
         run: |
+          TOKEN=$(cat token.txt)
           echo "POST /api/ai-services/test/admet"
-          curl -sf -X POST http://localhost:8080/api/ai-services/test/admet \
-            -H "Content-Type: application/json" \
-            -d '{"smiles":"c1ccccc1"}' | tee admet.json
+          curl -sf -X POST http://localhost:8080/api/ai-services/test/admet             -H "Authorization: Bearer $TOKEN"             -H "Content-Type: application/json"             -d '{"smiles":"c1ccccc1"}' | tee admet.json
           python3 - <<'PY'
           import json, sys
           data = json.load(open("admet.json"))
@@ -81,10 +100,9 @@ jobs:
 
       - name: Test Chemical RAG proxy via Laravel
         run: |
+          TOKEN=$(cat token.txt)
           echo "POST /api/ai-services/test/chemical-search"
-          curl -sf -X POST http://localhost:8080/api/ai-services/test/chemical-search \
-            -H "Content-Type: application/json" \
-            -d '{"smiles":"CCO","top_k":3}' | tee chemical.json
+          curl -sf -X POST http://localhost:8080/api/ai-services/test/chemical-search             -H "Authorization: Bearer $TOKEN"             -H "Content-Type: application/json"             -d '{"smiles":"CCO","top_k":3}' | tee chemical.json
           python3 - <<'PY'
           import json, sys
           data = json.load(open("chemical.json"))
@@ -96,8 +114,9 @@ jobs:
 
       - name: Test Drug Repurposing proxy via Laravel
         run: |
+          TOKEN=$(cat token.txt)
           echo "GET /api/ai-services/test/drug-repurposing"
-          curl -sf http://localhost:8080/api/ai-services/test/drug-repurposing | tee drug.json
+          curl -sf http://localhost:8080/api/ai-services/test/drug-repurposing             -H "Authorization: Bearer $TOKEN" | tee drug.json
           python3 - <<'PY'
           import json, sys
           data = json.load(open("drug.json"))
@@ -187,12 +206,30 @@ jobs:
           docker compose logs laravel
           exit 1
 
+      - name: Login and get Bearer token
+        run: |
+          echo "POST /api/login"
+          curl -sf -X POST http://localhost:8080/api/login             -H "Content-Type: application/json"             -d '{"email":"salehyasmeen080@gmail.com","password":"123456789"}' | tee login.json
+          python3 - <<'PY'
+          import json, sys
+          data = json.load(open("login.json"))
+          if not data.get("success"):
+              print("Login failed:", json.dumps(data, indent=2))
+              sys.exit(1)
+          token = data.get("token") or data.get("data", {}).get("token")
+          if not token:
+              print("No token in response:", json.dumps(data, indent=2))
+              sys.exit(1)
+          with open("token.txt", "w") as f:
+              f.write(token)
+          print("Login OK - token saved")
+          PY
+
       - name: Test retrieval-only chemical search
         run: |
+          TOKEN=$(cat token.txt)
           echo "POST /api/chemical-search (retrieval-only)"
-          curl -sf -X POST http://localhost:8080/api/chemical-search \
-            -H "Content-Type: application/json" \
-            -d '{"smiles":"CC(=O)Oc1ccccc1C(=O)O","top_k":10}' | tee chemical_search.json
+          curl -sf -X POST http://localhost:8080/api/chemical-search             -H "Authorization: Bearer $TOKEN"             -H "Content-Type: application/json"             -d '{"smiles":"CC(=O)Oc1ccccc1C(=O)O","top_k":10}' | tee chemical_search.json
           python3 - <<'PY'
           import json, sys
           data = json.load(open("chemical_search.json"))
@@ -210,10 +247,9 @@ jobs:
 
       - name: Test full RAG chemical search
         run: |
+          TOKEN=$(cat token.txt)
           echo "POST /api/chemical-search/full-rag"
-          curl -sf -X POST http://localhost:8080/api/chemical-search/full-rag \
-            -H "Content-Type: application/json" \
-            -d '{"smiles":"CC(=O)Oc1ccccc1C(=O)O","top_k":5}' | tee chemical_rag.json
+          curl -sf -X POST http://localhost:8080/api/chemical-search/full-rag             -H "Authorization: Bearer $TOKEN"             -H "Content-Type: application/json"             -d '{"smiles":"CC(=O)Oc1ccccc1C(=O)O","top_k":5}' | tee chemical_rag.json
           python3 - <<'PY'
           import json, sys
           data = json.load(open("chemical_rag.json"))
