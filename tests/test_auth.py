@@ -1,3 +1,5 @@
+import os
+
 """
 AILIXIR Authentication API Tests
 =================================
