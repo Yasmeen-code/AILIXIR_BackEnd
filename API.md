@@ -20,6 +20,7 @@ Complete API specification for AILIXIR-Backend, including all endpoints, authent
 - [AI Agent Endpoints](#ai-agent-endpoints)
 - [Chemical Search Endpoints](#chemical-search-endpoints)
 - [Docking API](#docking-api)
+- [Drug Repurposing / Screening API](#drug-repurposing--screening-api)
 - [Convert SMILES API](#convert-smiles-api)
 - [User Management Endpoints](#user-management-endpoints)
 - [Awards & Scientists Endpoints](#awards--scientists-endpoints)
@@ -1424,6 +1425,267 @@ If the job is not completed, the `results` block may be omitted.
 - Returns a file download for the completed docking result.
 - Content disposition filename: `docking_result_{id}.pdbqt`
 
+
+---
+
+## 💊 Drug Repurposing / Screening API
+
+### GET `/api/drug-repurposing/targets/{disease_name}`
+
+- Auth required
+- Path parameter:
+  - `disease_name` (string)
+- This route creates a new target lookup job for the requested disease.
+
+#### Success response
+
+```json
+{
+  "success": true,
+  "message": "Target lookup queued successfully",
+  "data": {
+    "job_id": 3,
+    "status": "pending"
+  }
+}
+```
+
+---
+
+### GET `/api/drug-repurposing/targets/{id}`
+
+- Auth required
+- Path parameter:
+  - `id` (integer)
+- Returns details for a specific target lookup job.
+
+#### Success response
+
+```json
+{
+  "success": true,
+  "message": "Target lookup status retrieved successfully",
+  "data": {
+    "job_id": 3,
+    "status": "completed",
+    "input": {
+      "disease_name": "COVID-19"
+    },
+    "output": {
+      "disease": "COVID-19",
+      "disease_id": "MONDO_0100096",
+      "total_targets": 10,
+      "targets": [
+        {
+          "symbol": "ACE2",
+          "name": "angiotensin converting enzyme 2",
+          "association_score": 0.6925739512122528,
+          "uniprot_id": "Q9BYF1",
+          "pdb_ids": ["1R42", "1R4I", "2AJF"]
+        }
+      ]
+    },
+    "created_at": "2026-04-21T..."
+  }
+}
+```
+
+---
+
+### GET `/api/drug-repurposing/targets/history`
+
+- Auth required
+- Query parameters:
+  - `per_page` (integer, optional, default 15)
+
+#### Response
+
+```json
+{
+  "success": true,
+  "message": "Target lookup history retrieved successfully",
+  "data": {
+    "data": [
+      {
+        "id": 3,
+        "input": {
+          "disease_name": "COVID-19"
+        },
+        "output": {
+          "disease": "COVID-19",
+          "disease_id": "MONDO_0100096",
+          "total_targets": 10,
+          "targets": [
+            {
+              "symbol": "ACE2",
+              "name": "angiotensin converting enzyme 2",
+              "association_score": 0.6925739512122528,
+              "uniprot_id": "Q9BYF1",
+              "pdb_ids": ["1R42", "1R4I", "2AJF"]
+            }
+          ]
+        },
+        "status": "pending",
+        "created_at": "2026-04-21T..."
+      }
+    ],
+    "pagination": {
+      "current_page": 1,
+      "per_page": 15,
+      "total": 10,
+      "last_page": 1,
+      "has_more": false
+    }
+  }
+}
+```
+
+---
+
+### POST `/api/drug-repurposing/screen`
+
+- Auth required
+- Content type: `application/json`
+- Request body:
+  - `disease_name` (string, required)
+  - `known_drugs` (array of strings, optional)
+  - `top_k` (integer, optional, min 1, max 100)
+
+#### Example curl request
+
+```bash
+curl -X POST "http://localhost:8001/api/drug-repurposing/screen" \
+  -H "Authorization: Bearer {token}" \
+  -H "Content-Type: application/json" \
+  -d '{"disease_name":"Type 2 Diabetes","known_drugs":["Metformin","Insulin"],"top_k":1}'
+```
+
+#### Success response
+
+```json
+{
+  "success": true,
+  "message": "Screening queued successfully",
+  "data": {
+    "job_id": 6,
+    "status": "pending"
+  }
+}
+```
+
+#### Validation failure response
+
+```json
+{
+  "success": false,
+  "message": "Validation Error",
+  "data": {
+    "errors": {
+      "disease_name": ["The disease name field is required."]
+    }
+  }
+}
+```
+
+---
+
+### GET `/api/drug-repurposing/screen/{id}`
+
+- Auth required
+- Path parameter:
+  - `id` (integer)
+- Returns details for a specific screening job.
+
+#### Success response
+
+```json
+{
+  "success": true,
+  "message": "Screening status retrieved successfully",
+  "data": {
+    "job_id": 6,
+    "status": "completed",
+    "input": {
+      "disease_name": "Type 2 Diabetes",
+      "top_k": 1,
+      "known_drugs": ["Metformin", "Insulin"]
+    },
+    "output": {
+      "disease_name": "Type 2 Diabetes",
+      "total_targets_found": 10,
+      "total_drugs_screened": 667,
+      "total_pairs_evaluated": 500,
+      "top_candidates": [
+        {
+          "drug_name": "Drug_CHEMBL571",
+          "smiles": "CCN1CC(CCN2CCOCC2)C(c2ccccc2)(c2ccccc2)Cl=0",
+          "target_symbol": "HNF1A",
+          "uniprot_id": "N/A",
+          "binding_score": 37.2803,
+          "rank": 1,
+          "status": "Potential Discovery"
+        }
+      ]
+    },
+    "created_at": "2026-04-21T18:47:54.000000Z"
+  }
+}
+```
+
+---
+
+### GET `/api/drug-repurposing/screen/history`
+
+- Auth required
+- Query parameters:
+  - `per_page` (integer, optional, default 15)
+
+#### Response
+
+```json
+{
+  "success": true,
+  "message": "Screening history retrieved successfully",
+  "data": {
+    "data": [
+      {
+        "id": 5,
+        "input": {
+          "disease_name": "Type 2 Diabetes",
+          "top_k": 1,
+          "known_drugs": ["Metformin", "Insulin"]
+        },
+        "output": {
+          "disease_name": "Type 2 Diabetes",
+          "total_targets_found": 10,
+          "total_drugs_screened": 667,
+          "total_pairs_evaluated": 500,
+          "top_candidates": [
+            {
+              "drug_name": "Drug_CHEMBL571",
+              "smiles": "CCN1CC(CCN2CCOCC2)C(c2ccccc2)(c2ccccc2)Cl=0",
+              "target_symbol": "HNF1A",
+              "uniprot_id": "N/A",
+              "binding_score": 37.2803,
+              "rank": 1,
+              "status": "Potential Discovery"
+            }
+          ]
+        },
+        "status": "completed",
+        "created_at": "2026-04-21T17:36:29.000000Z"
+      }
+    ],
+    "pagination": {
+      "current_page": 2,
+      "per_page": 1,
+      "total": 6,
+      "last_page": 6,
+      "has_more": true
+    }
+  }
+}
+```
 
 ---
 
