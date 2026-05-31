@@ -16,6 +16,7 @@ services:
       DB_HOST: mysql
       CHEMICAL_AI_URL: http://chemical-rag:5000
       ADMET_AI_URL: http://admet:8000
+      AI_ADMET_SERVICE_URL: http://admet:8000
       DRUG_REPURPOSING_URL: http://drug-repurposing:8000
       AI_SERVICE_URL: http://drug-repurposing:8000
       AI_INTEGRATION_ROUTES_ENABLED: "true"
@@ -45,6 +46,7 @@ services:
       DB_HOST: mysql
       CHEMICAL_AI_URL: http://chemical-rag:5000
       ADMET_AI_URL: http://admet:8000
+      AI_ADMET_SERVICE_URL: http://admet:8000
       DRUG_REPURPOSING_URL: http://drug-repurposing:8000
     command: ["php", "artisan", "queue:work", "--sleep=3", "--tries=3", "--timeout=300"]
     depends_on:
