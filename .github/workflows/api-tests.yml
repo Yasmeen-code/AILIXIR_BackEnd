@@ -13,77 +13,26 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
 
-      - name: Create .env file for Docker
+      - name: Install dependencies
         run: |
-          cp docker/laravel.env .env
-          echo "APP_DEBUG=true" >> .env
-          echo "APP_ENV=testing" >> .env
-
-      - name: Start Docker containers
-        run: |
-          docker compose up -d --build
-
-      - name: Wait for services to be healthy
-        run: |
-          echo "Waiting for MySQL to be healthy..."
-          for i in {1..60}; do
-            if docker exec ailixir-mysql healthcheck.sh --connect --innodb_initialized > /dev/null 2>&1; then
-              echo "MySQL is healthy"
-              break
-            fi
-            echo "Attempt $i/60: MySQL not ready yet..."
-            sleep 5
-          done
-
-          echo "Waiting for Laravel API to be ready..."
-          for i in {1..60}; do
-            if docker exec ailixir-laravel curl -f http://127.0.0.1:8000 > /dev/null 2>&1; then
-              echo "Laravel API is ready"
-              break
-            fi
-            echo "Attempt $i/60: Laravel API not ready yet..."
-            sleep 3
-          done
-
-          echo "Waiting for ADMET service to be healthy..."
-          for i in {1..120}; do
-            if docker exec ailixir-admet python -c "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')" > /dev/null 2>&1; then
-              echo "ADMET service is healthy internally inside container"
-              echo "Waiting additional 10 seconds for service to fully initialize..."
-              sleep 10
-              break
-            fi
-            echo "Attempt $i/120: ADMET service not ready yet..."
-            sleep 5
-          done
-
-          echo "All services are up and running!"
-          docker compose ps
-
-      - name: Run database migrations
-        run: |
-          docker exec ailixir-laravel php artisan migrate --force
+          python -m pip install --upgrade pip
+          pip install pytest requests
 
       - name: Run API tests
         env:
-          BASE_URL: http://localhost:8080/api
-          TEST_EMAIL: test@example.com
-          TEST_PASSWORD: password123
-          TEST_NAME: testuser
+          BASE_URL: https://america-hyperlipemic-grazyna.ngrok-free.dev/api
+          TEST_EMAIL: salehyasmeen080@gmail.com
+          TEST_PASSWORD: 123456789
+          TEST_NAME: yasmeen564
         run: |
-          docker exec ailixir-laravel \
-            python -m pytest tests/ -v --tb=short --junitxml=junit.xml || true
-
-      - name: Copy test results from container
-        if: always()
-        run: |
-          docker cp ailixir-laravel:/var/www/html/junit.xml ./junit.xml || true
+          pytest tests/ -v --tb=short --junitxml=junit.xml
 
       - name: Upload test results
         uses: actions/upload-artifact@v4
@@ -97,25 +46,3 @@ jobs:
         with:
           paths: "junit.xml"
         if: always()
-
-      - name: Collect Docker logs
-        if: failure()
-        run: |
-          mkdir -p logs
-          docker compose logs laravel > logs/laravel.log
-          docker compose logs mysql > logs/mysql.log
-          docker compose logs admet > logs/admet.log
-          docker compose logs drug-repurposing > logs/drug-repurposing.log
-          docker compose logs chemical-rag > logs/chemical-rag.log
-
-      - name: Upload Docker logs
-        uses: actions/upload-artifact@v4
-        if: failure()
-        with:
-          name: docker-logs
-          path: logs/
-
-      - name: Cleanup Docker containers
-        if: always()
-        run: |
-          docker compose down -v

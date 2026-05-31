@@ -61,8 +61,6 @@ RUN apt-get update && apt-get install -y \
     bcmath \
     opcache \
     pcntl \
-    && pecl install redis \
-    && docker-php-ext-enable redis \
     && rm -rf /var/lib/apt/lists/*
 
 COPY docker/php/opcache.ini /usr/local/etc/php/conf.d/opcache.ini
@@ -88,10 +86,6 @@ RUN conda create -y -p /var/www/html/vina_env -c conda-forge \
 
 # Install RDKit via pip to bypass Boost C++ solver compatibility conflicts
 RUN /var/www/html/vina_env/bin/pip install rdkit==2025.09.5
-
-# Install testing and service dependencies from requirements.txt
-COPY requirements.txt /tmp/requirements.txt
-RUN /var/www/html/vina_env/bin/pip install -r /tmp/requirements.txt
 
 ENV PATH=/var/www/html/vina_env/bin:$PATH
 
