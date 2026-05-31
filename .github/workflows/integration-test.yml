@@ -132,18 +132,28 @@ jobs:
           print("All AI services healthy via Laravel")
           PY
 
-      - name: Test ADMET proxy via Laravel
+      - name: Test ADMET prediction via
         run: |
           TOKEN=$(cat token.txt)
-          echo "POST /api/ai-services/test/admet"
-          curl -sf -X POST http://localhost:8080/api/ai-services/test/admet             -H "Authorization: Bearer $TOKEN"             -H "Content-Type: application/json"             -d '{"smiles":"c1ccccc1"}' | tee admet.json
+          echo "POST /api/admet/predict"
+          curl -sf -X POST http://localhost:8080/api/admet/predict \
+            -H "Authorization: Bearer $TOKEN" \
+            -H "Content-Type: application/json" \
+            -d '{"smiles": "c1ccccc1, CCO, CCC"}' | tee admet.json
+
           python3 - <<'PY'
           import json, sys
           data = json.load(open("admet.json"))
           if not data.get("success"):
-              print("ADMET proxy test failed:", json.dumps(data, indent=2))
+              print("ADMET prediction test failed:", json.dumps(data, indent=2))
               sys.exit(1)
-          print("ADMET proxy OK")
+
+          results = data.get("data", {}).get("results", [])
+          if len(results) < 3:
+              print(f"Expected at least 3 results, got {len(results)}")
+              sys.exit(1)
+
+          print(f"ADMET prediction OK - {len(results)} compounds processed")
           PY
 
       - name: Test Chemical RAG proxy via Laravel

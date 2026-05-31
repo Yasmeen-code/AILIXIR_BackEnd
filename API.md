@@ -1,4 +1,3 @@
-
 content = '''# 📡 AILIXIR API Reference
 
 **Version:** 2.1 | **Last Updated:** May 29, 2026 | **Status:** Production Ready
@@ -41,6 +40,7 @@ AILIXIR provides a RESTful API for accessing all drug discovery services. The AP
 - **Versioning:** URL-based (`/api/v1/...`)
 
 **Key Features:**
+
 - Asynchronous job processing (long-running AI tasks)
 - Real-time health monitoring
 - User authentication and authorization
@@ -58,11 +58,11 @@ AILIXIR uses **Laravel Sanctum** for API authentication. Most endpoints require 
 
 ### Types of Tokens
 
-| Token Type | Purpose | Duration |
-|-----------|---------|----------|
-| **Access Token** | Query user data, submit jobs | Session-based |
-| **API Token** | Long-lived access (optional) | 365 days |
-| **Refresh Token** | Renew access after expiry | 14 days |
+| Token Type        | Purpose                      | Duration      |
+| ----------------- | ---------------------------- | ------------- |
+| **Access Token**  | Query user data, submit jobs | Session-based |
+| **API Token**     | Long-lived access (optional) | 365 days      |
+| **Refresh Token** | Renew access after expiry    | 14 days       |
 
 ### Authentication Header
 
@@ -151,14 +151,15 @@ Long-running operations return `202 Accepted` with job tracking URL:
 
 ```json
 {
-  "success": true,
-  "job_id": "abc-123-def",
-  "status": "pending",
-  "check_url": "/api/ai/status/abc-123-def"
+    "success": true,
+    "job_id": "abc-123-def",
+    "status": "pending",
+    "check_url": "/api/ai/status/abc-123-def"
 }
 ```
 
 **Check Status:**
+
 ```
 GET /api/ai/status/{job_id}
 ```
@@ -176,12 +177,13 @@ GET /health
 ```
 
 **Response (200 OK):**
+
 ```json
 {
-  "status": "healthy",
-  "timestamp": "2026-05-29T12:30:45Z",
-  "version": "2.0.0",
-  "uptime_seconds": 876543
+    "status": "healthy",
+    "timestamp": "2026-05-29T12:30:45Z",
+    "version": "2.0.0",
+    "uptime_seconds": 876543
 }
 ```
 
@@ -194,35 +196,36 @@ GET /ai-services/health
 ```
 
 **Response (200 OK):**
+
 ```json
 {
-  "success": true,
-  "services": {
-    "admet": {
-      "status": "healthy",
-      "http_status": 200,
-      "body": {
-        "status": "ready",
-        "model_version": "MPNN_CNN_BindingDB"
-      }
-    },
-    "drug_repurposing": {
-      "status": "healthy",
-      "http_status": 200,
-      "body": {
-        "status": "ready",
-        "model": "DeepPurpose v0.1.5"
-      }
-    },
-    "chemical_rag": {
-      "status": "healthy",
-      "http_status": 200,
-      "body": {
-        "status": "ready",
-        "index_size": 1000000
-      }
+    "success": true,
+    "services": {
+        "admet": {
+            "status": "healthy",
+            "http_status": 200,
+            "body": {
+                "status": "ready",
+                "model_version": "MPNN_CNN_BindingDB"
+            }
+        },
+        "drug_repurposing": {
+            "status": "healthy",
+            "http_status": 200,
+            "body": {
+                "status": "ready",
+                "model": "DeepPurpose v0.1.5"
+            }
+        },
+        "chemical_rag": {
+            "status": "healthy",
+            "http_status": 200,
+            "body": {
+                "status": "ready",
+                "index_size": 1000000
+            }
+        }
     }
-  }
 }
 ```
 
@@ -247,6 +250,7 @@ Content-Type: application/json
 ```
 
 **Response (201 Created):**
+
 ```json
 {
     "success": true,
@@ -256,6 +260,7 @@ Content-Type: application/json
     }
 }
 ```
+
 ---
 
 ### Login
@@ -271,6 +276,7 @@ Content-Type: application/json
 ```
 
 **Response (200 OK):**
+
 ```json
 {
     "success": true,
@@ -311,6 +317,7 @@ Content-Type: application/json
 ```
 
 **Response (200 OK):**
+
 ```json
 {
     "success": true,
@@ -348,6 +355,7 @@ Content-Type: application/json
 ```
 
 **Response (200 OK):**
+
 ```json
 {
     "success": true,
@@ -372,6 +380,7 @@ Content-Type: application/json
 ```
 
 **Response (200 OK):**
+
 ```json
 {
     "success": true,
@@ -399,10 +408,11 @@ Content-Type: application/json
 ```
 
 **Response (200 OK):**
+
 ```json
 {
-  "success": true,
-  "message": "Password reset successfully"
+    "success": true,
+    "message": "Password reset successfully"
 }
 ```
 
@@ -416,14 +426,15 @@ Authorization: Bearer YOUR_ACCESS_TOKEN
 ```
 
 **Response (200 OK):**
+
 ```json
 {
-  "success": true,
-  "message": "Logged out successfully"
+    "success": true,
+    "message": "Logged out successfully"
 }
 ```
-'''
----
+
+## '''
 
 ## 🤖 AI Integration Endpoints
 
@@ -444,22 +455,23 @@ Content-Type: application/json
 ```
 
 **Response (200 OK):**
+
 ```json
 {
-  "success": true,
-  "service": "admet",
-  "upstream_status": 200,
-  "data": {
-    "status": "success",
-    "predictions": {
-      "absorption": 0.78,
-      "distribution": 0.65,
-      "metabolism": 0.45,
-      "excretion": 0.82,
-      "toxicity": 0.12
-    },
-    "processing_time_ms": 234
-  }
+    "success": true,
+    "service": "admet",
+    "upstream_status": 200,
+    "data": {
+        "status": "success",
+        "predictions": {
+            "absorption": 0.78,
+            "distribution": 0.65,
+            "metabolism": 0.45,
+            "excretion": 0.82,
+            "toxicity": 0.12
+        },
+        "processing_time_ms": 234
+    }
 }
 ```
 
@@ -478,27 +490,28 @@ Content-Type: application/json
 ```
 
 **Response (200 OK):**
+
 ```json
 {
-  "success": true,
-  "service": "chemical_rag",
-  "upstream_status": 200,
-  "data": {
-    "query": {
-      "smiles": "CC(=O)Oc1ccccc1C(=O)O"
-    },
-    "results": [
-      {
-        "rank": 1,
-        "cid": 2244,
-        "name": "Aspirin",
-        "smiles": "CC(=O)Oc1ccccc1C(=O)O",
-        "similarity": 1.0,
-        "image_url": "https://..."
-      }
-    ],
-    "processing_time_ms": 145
-  }
+    "success": true,
+    "service": "chemical_rag",
+    "upstream_status": 200,
+    "data": {
+        "query": {
+            "smiles": "CC(=O)Oc1ccccc1C(=O)O"
+        },
+        "results": [
+            {
+                "rank": 1,
+                "cid": 2244,
+                "name": "Aspirin",
+                "smiles": "CC(=O)Oc1ccccc1C(=O)O",
+                "similarity": 1.0,
+                "image_url": "https://..."
+            }
+        ],
+        "processing_time_ms": 145
+    }
 }
 ```
 
@@ -512,26 +525,25 @@ Authorization: Bearer YOUR_ACCESS_TOKEN
 ```
 
 **Response (200 OK):**
+
 ```json
 {
-  "success": true,
-  "service": "drug_repurposing",
-  "health": {
-    "status": 200,
-    "body": {
-      "status": "healthy",
-      "model": "DeepPurpose",
-      "version": "0.1.5"
+    "success": true,
+    "service": "drug_repurposing",
+    "health": {
+        "status": 200,
+        "body": {
+            "status": "healthy",
+            "model": "DeepPurpose",
+            "version": "0.1.5"
+        }
+    },
+    "model_status": {
+        "status": 200,
+        "body": {
+            "available_models": ["MPNN_CNN_BindingDB"]
+        }
     }
-  },
-  "model_status": {
-    "status": 200,
-    "body": {
-      "available_models": [
-        "MPNN_CNN_BindingDB"
-      ]
-    }
-  }
 }
 ```
 
@@ -559,13 +571,14 @@ Content-Type: application/json
 ```
 
 **Response (202 Accepted):**
+
 ```json
 {
-  "success": true,
-  "job_id": "job-abc-123-def",
-  "status": "pending",
-  "created_at": "2026-05-29T12:30:45Z",
-  "check_url": "/api/ai/status/job-abc-123-def"
+    "success": true,
+    "job_id": "job-abc-123-def",
+    "status": "pending",
+    "created_at": "2026-05-29T12:30:45Z",
+    "check_url": "/api/ai/status/job-abc-123-def"
 }
 ```
 
@@ -577,44 +590,47 @@ Authorization: Bearer YOUR_ACCESS_TOKEN
 ```
 
 **Response (200 OK - Pending):**
+
 ```json
 {
-  "success": true,
-  "job_id": "job-abc-123-def",
-  "status": "processing",
-  "progress": 45,
-  "estimated_completion": "2026-05-29T12:35:00Z"
+    "success": true,
+    "job_id": "job-abc-123-def",
+    "status": "processing",
+    "progress": 45,
+    "estimated_completion": "2026-05-29T12:35:00Z"
 }
 ```
 
 **Response (200 OK - Completed):**
+
 ```json
 {
-  "success": true,
-  "job_id": "job-abc-123-def",
-  "status": "completed",
-  "results": {
-    "smiles": "CC(=O)Oc1ccccc1C(=O)O",
-    "predictions": {
-      "absorption": 0.78,
-      "distribution": 0.65,
-      "metabolism": 0.45,
-      "excretion": 0.82,
-      "toxicity": 0.12
-    }
-  },
-  "completed_at": "2026-05-29T12:32:15Z"
+    "success": true,
+    "job_id": "job-abc-123-def",
+    "status": "completed",
+    "results": {
+        "smiles": "CC(=O)Oc1ccccc1C(=O)O",
+        "predictions": {
+            "absorption": 0.78,
+            "distribution": 0.65,
+            "metabolism": 0.45,
+            "excretion": 0.82,
+            "toxicity": 0.12
+        }
+    },
+    "completed_at": "2026-05-29T12:32:15Z"
 }
 ```
 
 **Response (200 OK - Failed):**
+
 ```json
 {
-  "success": false,
-  "job_id": "job-abc-123-def",
-  "status": "failed",
-  "error": "Invalid SMILES string",
-  "failed_at": "2026-05-29T12:30:50Z"
+    "success": false,
+    "job_id": "job-abc-123-def",
+    "status": "failed",
+    "error": "Invalid SMILES string",
+    "failed_at": "2026-05-29T12:30:50Z"
 }
 ```
 
@@ -628,16 +644,17 @@ Authorization: Bearer YOUR_ACCESS_TOKEN
 ```
 
 **Response (200 OK):**
+
 ```json
 {
-  "success": true,
-  "job_id": "job-abc-123-def",
-  "status": "processing",
-  "preview": {
-    "processed_compounds": 50,
-    "total_compounds": 100,
-    "average_prediction_time_ms": 234
-  }
+    "success": true,
+    "job_id": "job-abc-123-def",
+    "status": "processing",
+    "preview": {
+        "processed_compounds": 50,
+        "total_compounds": 100,
+        "average_prediction_time_ms": 234
+    }
 }
 ```
 
@@ -651,6 +668,7 @@ Authorization: Bearer YOUR_ACCESS_TOKEN
 ```
 
 **Response (200 OK):**
+
 ```
 Content-Type: text/csv
 Content-Disposition: attachment; filename="results-top-100.csv"
@@ -670,6 +688,7 @@ Authorization: Bearer YOUR_ACCESS_TOKEN
 ```
 
 **Response (200 OK):**
+
 ```
 Content-Type: application/zip
 Content-Disposition: attachment; filename="results-full.zip"
@@ -687,30 +706,31 @@ Authorization: Bearer YOUR_ACCESS_TOKEN
 ```
 
 **Response (200 OK):**
+
 ```json
 {
-  "success": true,
-  "data": [
-    {
-      "id": "job-abc-123-def",
-      "job_type": "admet_prediction",
-      "status": "completed",
-      "created_at": "2026-05-29T12:00:00Z",
-      "completed_at": "2026-05-29T12:30:00Z",
-      "result_summary": {
-        "total_compounds": 100,
-        "average_absorption": 0.72
-      }
+    "success": true,
+    "data": [
+        {
+            "id": "job-abc-123-def",
+            "job_type": "admet_prediction",
+            "status": "completed",
+            "created_at": "2026-05-29T12:00:00Z",
+            "completed_at": "2026-05-29T12:30:00Z",
+            "result_summary": {
+                "total_compounds": 100,
+                "average_absorption": 0.72
+            }
+        }
+    ],
+    "meta": {
+        "pagination": {
+            "current_page": 1,
+            "per_page": 20,
+            "total": 42,
+            "last_page": 3
+        }
     }
-  ],
-  "meta": {
-    "pagination": {
-      "current_page": 1,
-      "per_page": 20,
-      "total": 42,
-      "last_page": 3
-    }
-  }
 }
 ```
 
@@ -723,6 +743,7 @@ AI-powered chemistry analysis agent with conversation memory. All endpoints requ
 **Base Path:** `/api/chemistry`
 
 **Capabilities:**
+
 - SMILES validation and property calculation
 - Drug-likeness classification (Lipinski Ro5, Veber, Lead-likeness)
 - ADMET profiling with structural toxicity alerts
@@ -743,6 +764,7 @@ Authorization: Bearer YOUR_ACCESS_TOKEN
 ```
 
 **Response (200 OK):**
+
 ```json
 {
     "success": true,
@@ -755,6 +777,7 @@ Authorization: Bearer YOUR_ACCESS_TOKEN
 ```
 
 **Notes:**
+
 - One thread_id per user session
 - Do not share thread IDs across different users
 - Pass the same thread_id across multiple calls to maintain conversation history
@@ -771,6 +794,7 @@ Authorization: Bearer YOUR_ACCESS_TOKEN
 ```
 
 **Response (200 OK):**
+
 ```json
 {
     "success": true,
@@ -811,24 +835,27 @@ Content-Type: application/json
 ```
 
 **Response (200 OK):**
+
 ```json
 {
-  "success": true,
-  "data": {
-    "reply": "Based on the analysis of CC(=O)Oc1ccccc1C(=O)O (Aspirin)...",
-    "thread_id": "aa761d2c-ecbc-4da0-abe4-189c2d77eede",
-    "processing_time_ms": 11888
-  }
+    "success": true,
+    "data": {
+        "reply": "Based on the analysis of CC(=O)Oc1ccccc1C(=O)O (Aspirin)...",
+        "thread_id": "aa761d2c-ecbc-4da0-abe4-189c2d77eede",
+        "processing_time_ms": 11888
+    }
 }
 ```
 
 **Example Messages:**
+
 - `"Is CC(=O)Oc1ccccc1C(=O)O a good drug candidate?"`
 - `"Compare aspirin and ibuprofen CC(C)Cc1ccc(cc1)C(C)C(=O)O"`
 - `"What are the toxicity concerns for this molecule?"` (follow-up)
 - `"Which molecule we discussed has the best CNS penetration?"` (follow-up)
 
 **Notes:**
+
 - `thread_id` is optional. Omit to start a fresh conversation automatically.
 - The agent remembers all prior messages on the same thread.
 - The agent automatically handles: SMILES validation, molecular property calculation, drug-likeness rules, ADMET profiling, docking ranking, and multi-molecule comparison.
@@ -851,24 +878,27 @@ Content-Type: application/json
 ```
 
 **Response (200 OK):**
+
 ```json
 {
-  "success": true,
-  "data": {
-    "reply": "Complete analysis text...",
-    "thread_id": "aa761d2c-ecbc-4da0-abe4-189c2d77eede",
-    "processing_time_ms": 5234
-  }
+    "success": true,
+    "data": {
+        "reply": "Complete analysis text...",
+        "thread_id": "aa761d2c-ecbc-4da0-abe4-189c2d77eede",
+        "processing_time_ms": 5234
+    }
 }
 ```
 
 **Pipeline Steps:**
+
 1. Validate SMILES
 2. Compute molecular properties (MW, LogP, HBD, HBA, TPSA, QED, Fsp3)
 3. Drug-likeness classification (Lipinski Ro5, Veber, Lead-likeness)
 4. ADMET profile with structural toxicity alerts
 
 **Notes:**
+
 - `smiles` field is required in JSON body
 - URL-encode special characters if sending via query string: `CC%28%3DO%29Oc1ccccc1C%28%3DO%29O`
 
@@ -894,18 +924,20 @@ Content-Type: application/json
 ```
 
 **Response (200 OK):**
+
 ```json
 {
-  "success": true,
-  "data": {
-    "reply": "Side-by-side property table and recommendation...",
-    "thread_id": "aa761d2c-ecbc-4da0-abe4-189c2d77eede",
-    "processing_time_ms": 23543
-  }
+    "success": true,
+    "data": {
+        "reply": "Side-by-side property table and recommendation...",
+        "thread_id": "aa761d2c-ecbc-4da0-abe4-189c2d77eede",
+        "processing_time_ms": 23543
+    }
 }
 ```
 
 **Agent Returns:**
+
 - Side-by-side property table (MW, LogP, HBD, HBA, TPSA, QED, Fsp3)
 - Drug-likeness pass/fail for each molecule
 - Named recommendation with justification
@@ -928,23 +960,26 @@ Content-Type: application/json
 ```
 
 **Docking Data Format:**
+
 ```
 SMILES | binding_affinity_kcal_mol | rmsd_angstrom | optional_notes
 ```
 
 **Response (200 OK):**
+
 ```json
 {
-  "success": true,
-  "data": {
-    "reply": "Top Pick: CC(C)Cc1ccc(cc1)C(C)C(=O)O...",
-    "thread_id": "aa761d2c-ecbc-4da0-abe4-189c2d77eede",
-    "processing_time_ms": 5392
-  }
+    "success": true,
+    "data": {
+        "reply": "Top Pick: CC(C)Cc1ccc(cc1)C(C)C(=O)O...",
+        "thread_id": "aa761d2c-ecbc-4da0-abe4-189c2d77eede",
+        "processing_time_ms": 5392
+    }
 }
 ```
 
 **Interpretation Rules:**
+
 - ΔG more negative = stronger binding
 - RMSD < 2 Å = reliable pose; > 2 Å = uncertain binding mode
 - Best candidate = strongest binder that also passes Lipinski Ro5
@@ -966,18 +1001,20 @@ analysis_type: full
 
 **Analysis Types:**
 
-| Type | What It Runs | Speed |
-|------|-------------|-------|
-| `full` | Properties + drug-likeness + ADMET | Slow |
-| `quick` | Lipinski pass/fail + QED only | Fast |
-| `admet` | ADMET profile only | Medium |
-| `classify` | Drug-likeness classification only | Fast |
+| Type       | What It Runs                       | Speed  |
+| ---------- | ---------------------------------- | ------ |
+| `full`     | Properties + drug-likeness + ADMET | Slow   |
+| `quick`    | Lipinski pass/fail + QED only      | Fast   |
+| `admet`    | ADMET profile only                 | Medium |
+| `classify` | Drug-likeness classification only  | Fast   |
 
 **Required CSV Columns:**
+
 - `smiles` — SMILES string (required)
 - `name` — compound name or ID (optional, auto-generated if missing)
 
 **Example CSV:**
+
 ```csv
 name,smiles
 Aspirin,CC(=O)Oc1ccccc1C(=O)O
@@ -986,15 +1023,16 @@ Caffeine,Cn1cnc2c1c(=O)n(c(=O)n2C)C
 ```
 
 **Response (200 OK):**
+
 ```json
 {
-  "success": true,
-  "data": {
-    "job_id": "0ec86cee-6ce8-4e91-95f4-ad807f7ee283",
-    "id": 1,
-    "status": "queued",
-    "total_rows": 4
-  }
+    "success": true,
+    "data": {
+        "job_id": "0ec86cee-6ce8-4e91-95f4-ad807f7ee283",
+        "id": 1,
+        "status": "queued",
+        "total_rows": 4
+    }
 }
 ```
 
@@ -1012,17 +1050,18 @@ Authorization: Bearer YOUR_ACCESS_TOKEN
 ```
 
 **Response (200 OK - Running):**
+
 ```json
 {
-  "success": true,
-  "data": {
-    "job_id": "0ec86cee-6ce8-4e91-95f4-ad807f7ee283",
-    "status": "running",
-    "total": 4,
-    "completed": 3,
-    "failed_rows": 2,
-    "progress_percent": 75
-  }
+    "success": true,
+    "data": {
+        "job_id": "0ec86cee-6ce8-4e91-95f4-ad807f7ee283",
+        "status": "running",
+        "total": 4,
+        "completed": 3,
+        "failed_rows": 2,
+        "progress_percent": 75
+    }
 }
 ```
 
@@ -1048,6 +1087,7 @@ Authorization: Bearer YOUR_ACCESS_TOKEN
 ```
 
 **Response (200 OK):**
+
 ```
 Content-Type: text/csv
 Content-Disposition: attachment; filename="results_{job_id}.csv"
@@ -1058,6 +1098,7 @@ row,name,smiles,status,error,analysis
 ```
 
 **Output CSV Columns:**
+
 - `row` — original row number in the uploaded file
 - `name` — compound name
 - `smiles` — input SMILES string
@@ -1075,23 +1116,24 @@ Authorization: Bearer YOUR_ACCESS_TOKEN
 ```
 
 **Response (200 OK):**
+
 ```json
 {
-  "success": true,
-  "data": [
-    {
-      "id": 1,
-      "job_id": "0ec86cee-6ce8-4e91-95f4-ad807f7ee283",
-      "filename": "molecules.csv",
-      "analysis_type": "full",
-      "status": "done",
-      "total_rows": 4,
-      "completed_rows": 4,
-      "failed_rows": 3,
-      "progress_percent": 100,
-      "created_at": "2026-05-29T12:00:00Z"
-    }
-  ]
+    "success": true,
+    "data": [
+        {
+            "id": 1,
+            "job_id": "0ec86cee-6ce8-4e91-95f4-ad807f7ee283",
+            "filename": "molecules.csv",
+            "analysis_type": "full",
+            "status": "done",
+            "total_rows": 4,
+            "completed_rows": 4,
+            "failed_rows": 3,
+            "progress_percent": 100,
+            "created_at": "2026-05-29T12:00:00Z"
+        }
+    ]
 }
 ```
 
@@ -1107,14 +1149,16 @@ Authorization: Bearer YOUR_ACCESS_TOKEN
 ```
 
 **Response (200 OK):**
+
 ```json
 {
-  "success": true,
-  "message": "Job deleted successfully"
+    "success": true,
+    "message": "Job deleted successfully"
 }
 ```
 
 **Notes:**
+
 - Call this after successfully downloading results to keep memory usage low
 - Trying to delete a non-existent job returns 404
 
@@ -1131,35 +1175,36 @@ Authorization: Bearer YOUR_ACCESS_TOKEN
 
 **Query Parameters:**
 
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `type` | string | Filter: `smiles`, `compare`, `docking`, `chat` |
-| `page` | integer | Page number |
+| Parameter | Type    | Description                                    |
+| --------- | ------- | ---------------------------------------------- |
+| `type`    | string  | Filter: `smiles`, `compare`, `docking`, `chat` |
+| `page`    | integer | Page number                                    |
 
 **Response (200 OK):**
+
 ```json
 {
-  "success": true,
-  "data": {
-    "current_page": 1,
-    "data": [
-      {
-        "id": 1,
-        "type": "smiles",
-        "input_data": "CC(=O)Oc1ccccc1C(=O)O",
-        "response": "Analysis text...",
-        "status": "success",
-        "created_at": "2026-05-29T12:00:00Z",
-        "thread": {
-          "id": 1,
-          "thread_id": "aa761d2c-ecbc-4da0-abe4-189c2d77eede",
-          "title": "New Conversation"
-        }
-      }
-    ],
-    "per_page": 20,
-    "total": 42
-  }
+    "success": true,
+    "data": {
+        "current_page": 1,
+        "data": [
+            {
+                "id": 1,
+                "type": "smiles",
+                "input_data": "CC(=O)Oc1ccccc1C(=O)O",
+                "response": "Analysis text...",
+                "status": "success",
+                "created_at": "2026-05-29T12:00:00Z",
+                "thread": {
+                    "id": 1,
+                    "thread_id": "aa761d2c-ecbc-4da0-abe4-189c2d77eede",
+                    "title": "New Conversation"
+                }
+            }
+        ],
+        "per_page": 20,
+        "total": 42
+    }
 }
 ```
 
@@ -1183,6 +1228,7 @@ Content-Type: application/json
 ```
 
 **Response (202 Accepted):**
+
 ```json
 {
     "success": true,
@@ -1245,6 +1291,7 @@ Content-Type: application/json
 ```
 
 **Response (202 Accepted):**
+
 ```json
 {
     "success": true,
@@ -1282,7 +1329,6 @@ Content-Type: application/json
 }
 ```
 
-
 ## Docking API
 
 ### POST `/api/docking/submit`
@@ -1290,22 +1336,27 @@ Content-Type: application/json
 - Auth required
 - Content type: `multipart/form-data`
 - Required fields:
-  - `protein_name` (string)
-  - `protein_file` (file)
-  - `center_x` (numeric)
-  - `center_y` (numeric)
-  - `center_z` (numeric)
-  - `box_size_x` (numeric)
-  - `box_size_y` (numeric)
-  - `box_size_z` (numeric)
-### VERY IMPORTANT  
-### Optional fields:   
-  - `ligand_name` (string)
-  - `exhaustiveness` (integer)
-  - `n_poses` (integer)
+    - `protein_name` (string)
+    - `protein_file` (file)
+    - `center_x` (numeric)
+    - `center_y` (numeric)
+    - `center_z` (numeric)
+    - `box_size_x` (numeric)
+    - `box_size_y` (numeric)
+    - `box_size_z` (numeric)
+
+### VERY IMPORTANT
+
+### Optional fields:
+
+- `ligand_name` (string)
+- `exhaustiveness` (integer)
+- `n_poses` (integer)
+
 ### Must include exactly one of:
-  - `ligand_file` (file)
-  - `ligand_smiles` (string) 
+
+- `ligand_file` (file)
+- `ligand_smiles` (string)
 
 #### Example curl request
 
@@ -1330,15 +1381,14 @@ curl -X POST "{base_url}/api/docking/submit" \\
 
 ```json
 {
-  "success": true,
-  "message": "Docking Job Successfully Queued",
-  "data": {
-    "job_id": 123,
-    "status": "pending"
-  }
+    "success": true,
+    "message": "Docking Job Successfully Queued",
+    "data": {
+        "job_id": 123,
+        "status": "pending"
+    }
 }
 ```
-
 
 ---
 
@@ -1346,32 +1396,31 @@ curl -X POST "{base_url}/api/docking/submit" \\
 
 - Auth required
 - Path parameter:
-  - `id` (integer)
+    - `id` (integer)
 
 #### Success response (pending or completed)
 
 ```json
 {
-  "success": true,
-  "message": "Job details retrieved successfully",
-  "data": {
-    "job_id": 14,
-    "status": "completed",
-    "inputs": {
-      "protein": "EGFR",
-      "ligand": "Erlotinib"
-    },
-    "created_at": "2026-04-21T18:29:45+00:00",
-    "results": {
-      "vina_scores": [0, 0.001, 0.002],
-      "download_url": "{base_url}/api/docking/download/{job_id}"
+    "success": true,
+    "message": "Job details retrieved successfully",
+    "data": {
+        "job_id": 14,
+        "status": "completed",
+        "inputs": {
+            "protein": "EGFR",
+            "ligand": "Erlotinib"
+        },
+        "created_at": "2026-04-21T18:29:45+00:00",
+        "results": {
+            "vina_scores": [0, 0.001, 0.002],
+            "download_url": "{base_url}/api/docking/download/{job_id}"
+        }
     }
-  }
 }
 ```
 
 If the job is not completed, the `results` block may be omitted.
-
 
 ---
 
@@ -1379,38 +1428,38 @@ If the job is not completed, the `results` block may be omitted.
 
 - Auth required
 - Query parameters:
-  - `per_page` (integer, optional, default 15)
+    - `per_page` (integer, optional, default 15)
 
 #### Response
 
 ```json
 {
-  "success": true,
-  "message": "Docking history retrieved successfully",
-  "data": {
-    "data": [
-      {
-        "job_id": 14,
-        "status": "completed",
-        "inputs": {
-          "protein": "EGFR",
-          "ligand": "Erlotinib"
-        },
-        "created_at": "2026-04-21T18:29:45+00:00",
-        "results": {
-          "vina_scores": [0, 0.001, 0.002],
-          "download_url": "{base_url}/api/docking/download/{job_id}"
+    "success": true,
+    "message": "Docking history retrieved successfully",
+    "data": {
+        "data": [
+            {
+                "job_id": 14,
+                "status": "completed",
+                "inputs": {
+                    "protein": "EGFR",
+                    "ligand": "Erlotinib"
+                },
+                "created_at": "2026-04-21T18:29:45+00:00",
+                "results": {
+                    "vina_scores": [0, 0.001, 0.002],
+                    "download_url": "{base_url}/api/docking/download/{job_id}"
+                }
+            }
+        ],
+        "pagination": {
+            "current_page": 1,
+            "per_page": 2,
+            "total": 3,
+            "last_page": 2,
+            "has_more": true
         }
-      }
-    ],
-    "pagination": {
-      "current_page": 1,
-      "per_page": 2,
-      "total": 3,
-      "last_page": 2,
-      "has_more": true
     }
-  }
 }
 ```
 
@@ -1420,10 +1469,9 @@ If the job is not completed, the `results` block may be omitted.
 
 - Auth required
 - Path parameter:
-  - `id` (integer)
+    - `id` (integer)
 - Returns a file download for the completed docking result.
 - Content disposition filename: `docking_result_{id}.pdbqt`
-
 
 ---
 
@@ -1433,34 +1481,34 @@ If the job is not completed, the `results` block may be omitted.
 
 - Auth required
 - Query parameters:
-  - `per_page` (integer, optional, default 15)
+    - `per_page` (integer, optional, default 15)
 
 #### Response
 
 ```json
 {
-  "success": true,
-  "message": "Conversion history retrieved successfully",
-  "data": {
-    "items": [
-      {
-        "job_id": 16,
-        "status": "completed",
-        "smiles": "CCN1CC(CCN2CCOCC2)C(c2ccccc2)(c2ccccc2)Cl=0",
-        "created_at": "2026-04-21T18:43:58+00:00",
-        "results": {
-          "download_url": "{base_url}/api/convert-smiles/download/{job_id}"
+    "success": true,
+    "message": "Conversion history retrieved successfully",
+    "data": {
+        "items": [
+            {
+                "job_id": 16,
+                "status": "completed",
+                "smiles": "CCN1CC(CCN2CCOCC2)C(c2ccccc2)(c2ccccc2)Cl=0",
+                "created_at": "2026-04-21T18:43:58+00:00",
+                "results": {
+                    "download_url": "{base_url}/api/convert-smiles/download/{job_id}"
+                }
+            }
+        ],
+        "pagination": {
+            "current_page": 1,
+            "per_page": 3,
+            "total": 13,
+            "last_page": 5,
+            "has_more": true
         }
-      }
-    ],
-    "pagination": {
-      "current_page": 1,
-      "per_page": 3,
-      "total": 13,
-      "last_page": 5,
-      "has_more": true
     }
-  }
 }
 ```
 
@@ -1471,7 +1519,7 @@ If the job is not completed, the `results` block may be omitted.
 - Auth required
 - Content type: `application/json`
 - Request body:
-  - `ligand_smiles` (string, required)
+    - `ligand_smiles` (string, required)
 
 #### Example curl request
 
@@ -1486,16 +1534,15 @@ curl -X POST "{base_url}/api/convert-smiles/convert" \\
 
 ```json
 {
-  "success": true,
-  "message": "SMILES converted to PDBQT successfully",
-  "data": {
-    "job_id": 16,
-    "download_url": "{base_url}/api/convert-smiles/download/{job_id}",
-    "smiles": "CCN1CC(CCN2CCOCC2)C(c2ccccc2)(c2ccccc2)Cl=0"
-  }
+    "success": true,
+    "message": "SMILES converted to PDBQT successfully",
+    "data": {
+        "job_id": 16,
+        "download_url": "{base_url}/api/convert-smiles/download/{job_id}",
+        "smiles": "CCN1CC(CCN2CCOCC2)C(c2ccccc2)(c2ccccc2)Cl=0"
+    }
 }
 ```
-
 
 ---
 
@@ -1503,11 +1550,9 @@ curl -X POST "{base_url}/api/convert-smiles/convert" \\
 
 - Auth required
 - Path parameter:
-  - `id` (integer)
+    - `id` (integer)
 - Returns a file download for the converted PDBQT.
 - Content disposition filename: `converted_ligand_{id}.pdbqt`
-
-
 
 ---
 
@@ -1521,21 +1566,22 @@ Authorization: Bearer YOUR_ACCESS_TOKEN
 ```
 
 **Response (200 OK):**
+
 ```json
 {
-  "success": true,
-  "user": {
-    "id": 1,
-    "name": "John Researcher",
-    "email": "john@pharmaai.io",
-    "email_verified_at": "2026-05-29T10:00:00Z",
-    "profile": {
-      "institution": "MIT",
-      "research_focus": "drug_discovery",
-      "bio": "Computational chemist..."
-    },
-    "created_at": "2026-05-01T00:00:00Z"
-  }
+    "success": true,
+    "user": {
+        "id": 1,
+        "name": "John Researcher",
+        "email": "john@pharmaai.io",
+        "email_verified_at": "2026-05-29T10:00:00Z",
+        "profile": {
+            "institution": "MIT",
+            "research_focus": "drug_discovery",
+            "bio": "Computational chemist..."
+        },
+        "created_at": "2026-05-01T00:00:00Z"
+    }
 }
 ```
 
@@ -1557,6 +1603,7 @@ Content-Type: application/json
 ```
 
 **Response (200 OK):**
+
 ```json
 {
   "success": true,
@@ -1567,7 +1614,6 @@ Content-Type: application/json
 
 ---
 
-
 ## 🏆 Awards & Scientists Endpoints
 
 ### List Awards
@@ -1577,44 +1623,45 @@ GET /awards?page=1&per_page=10
 ```
 
 **Response (200 OK):**
+
 ```json
 {
-  "success": true,
-  "message": "Awards retrieved successfully",
-  "data": {
-    "results": [
-      {
-        "id": 1,
-        "name": "Nobel Prize in Physiology or Medicine",
-        "category": "Medicine",
-        "images": ["https://..."],
-        "short_description": "The Nobel Prize in Physiology or Medicine is the world's most prestigious award...",
-        "scientists_count": 9,
-        "scientists": [
-          {
-            "id": 14,
-            "name": "Alexander Fleming",
-            "nationality": "British",
-            "birth_year": null,
-            "death_year": null,
-            "field": "Microbiology",
-            "images": ["https://..."],
-            "bio": null,
-            "short_bio": null,
-            "impact": null
-          }
-        ]
-      }
-    ],
-    "pagination": {
-      "currentPage": 1,
-      "totalPages": 1,
-      "totalResults": 10,
-      "perPage": 10,
-      "hasNextPage": false,
-      "hasPrevPage": false
+    "success": true,
+    "message": "Awards retrieved successfully",
+    "data": {
+        "results": [
+            {
+                "id": 1,
+                "name": "Nobel Prize in Physiology or Medicine",
+                "category": "Medicine",
+                "images": ["https://..."],
+                "short_description": "The Nobel Prize in Physiology or Medicine is the world's most prestigious award...",
+                "scientists_count": 9,
+                "scientists": [
+                    {
+                        "id": 14,
+                        "name": "Alexander Fleming",
+                        "nationality": "British",
+                        "birth_year": null,
+                        "death_year": null,
+                        "field": "Microbiology",
+                        "images": ["https://..."],
+                        "bio": null,
+                        "short_bio": null,
+                        "impact": null
+                    }
+                ]
+            }
+        ],
+        "pagination": {
+            "currentPage": 1,
+            "totalPages": 1,
+            "totalResults": 10,
+            "perPage": 10,
+            "hasNextPage": false,
+            "hasPrevPage": false
+        }
     }
-  }
 }
 ```
 
@@ -1629,31 +1676,32 @@ GET /awards/{award_id}
 **Example:** `GET /awards/2`
 
 **Response (200 OK):**
+
 ```json
 {
-  "success": true,
-  "message": "Award retrieved successfully",
-  "data": {
-    "id": 2,
-    "name": "Lasker Award",
-    "category": "Medical Research",
-    "images": ["https://..."],
-    "short_description": "The Lasker Award is often called the 'American Nobel Prize'...",
-    "scientists": [
-      {
-        "id": 17,
-        "name": "Tu Youyou",
-        "nationality": "Chinese",
-        "birth_year": null,
-        "death_year": null,
-        "field": "Pharmaceutical Chemistry",
+    "success": true,
+    "message": "Award retrieved successfully",
+    "data": {
+        "id": 2,
+        "name": "Lasker Award",
+        "category": "Medical Research",
         "images": ["https://..."],
-        "bio": null,
-        "short_bio": null,
-        "impact": null
-      }
-    ]
-  }
+        "short_description": "The Lasker Award is often called the 'American Nobel Prize'...",
+        "scientists": [
+            {
+                "id": 17,
+                "name": "Tu Youyou",
+                "nationality": "Chinese",
+                "birth_year": null,
+                "death_year": null,
+                "field": "Pharmaceutical Chemistry",
+                "images": ["https://..."],
+                "bio": null,
+                "short_bio": null,
+                "impact": null
+            }
+        ]
+    }
 }
 ```
 
@@ -1668,24 +1716,25 @@ GET /awards/{award_id}/scientists
 **Example:** `GET /awards/2/scientists`
 
 **Response (200 OK):**
+
 ```json
 {
-  "success": true,
-  "message": "Scientists retrieved successfully",
-  "data": [
-    {
-      "id": 17,
-      "name": "Tu Youyou",
-      "nationality": "Chinese",
-      "birth_year": null,
-      "death_year": null,
-      "field": "Pharmaceutical Chemistry",
-      "images": ["https://..."],
-      "bio": null,
-      "short_bio": null,
-      "impact": null
-    }
-  ]
+    "success": true,
+    "message": "Scientists retrieved successfully",
+    "data": [
+        {
+            "id": 17,
+            "name": "Tu Youyou",
+            "nationality": "Chinese",
+            "birth_year": null,
+            "death_year": null,
+            "field": "Pharmaceutical Chemistry",
+            "images": ["https://..."],
+            "bio": null,
+            "short_bio": null,
+            "impact": null
+        }
+    ]
 }
 ```
 
@@ -1698,34 +1747,35 @@ GET /scientists?page=1&per_page=50
 ```
 
 **Response (200 OK):**
+
 ```json
 {
-  "success": true,
-  "message": "Scientists retrieved successfully",
-  "data": {
-    "results": [
-      {
-        "id": 14,
-        "name": "Alexander Fleming",
-        "nationality": "British",
-        "birth_year": null,
-        "death_year": null,
-        "field": "Microbiology",
-        "images": ["https://..."],
-        "bio": null,
-        "short_bio": null,
-        "impact": null
-      }
-    ],
-    "pagination": {
-      "currentPage": 1,
-      "totalPages": 1,
-      "totalResults": 24,
-      "perPage": 50,
-      "hasNextPage": false,
-      "hasPrevPage": false
+    "success": true,
+    "message": "Scientists retrieved successfully",
+    "data": {
+        "results": [
+            {
+                "id": 14,
+                "name": "Alexander Fleming",
+                "nationality": "British",
+                "birth_year": null,
+                "death_year": null,
+                "field": "Microbiology",
+                "images": ["https://..."],
+                "bio": null,
+                "short_bio": null,
+                "impact": null
+            }
+        ],
+        "pagination": {
+            "currentPage": 1,
+            "totalPages": 1,
+            "totalResults": 24,
+            "perPage": 50,
+            "hasNextPage": false,
+            "hasPrevPage": false
+        }
     }
-  }
 }
 ```
 
@@ -1738,29 +1788,30 @@ GET /scientists/{scientist_id}
 ```
 
 **Response (200 OK):**
+
 ```json
 {
-  "success": true,
-  "message": "Scientist retrieved successfully",
-  "data": {
-    "id": 14,
-    "name": "Alexander Fleming",
-    "nationality": "British",
-    "birth_year": null,
-    "death_year": null,
-    "field": "Microbiology",
-    "images": ["https://..."],
-    "bio": "Full biography text...",
-    "short_bio": "Short biography...",
-    "impact": "Scientific impact description...",
-    "awards": [
-      {
-        "id": 1,
-        "name": "Nobel Prize in Physiology or Medicine",
-        "year": 1945
-      }
-    ]
-  }
+    "success": true,
+    "message": "Scientist retrieved successfully",
+    "data": {
+        "id": 14,
+        "name": "Alexander Fleming",
+        "nationality": "British",
+        "birth_year": null,
+        "death_year": null,
+        "field": "Microbiology",
+        "images": ["https://..."],
+        "bio": "Full biography text...",
+        "short_bio": "Short biography...",
+        "impact": "Scientific impact description...",
+        "awards": [
+            {
+                "id": 1,
+                "name": "Nobel Prize in Physiology or Medicine",
+                "year": 1945
+            }
+        ]
+    }
 }
 ```
 
@@ -1773,19 +1824,20 @@ GET /scientists/{scientist_id}/awards
 ```
 
 **Response (200 OK):**
+
 ```json
 {
-  "success": true,
-  "message": "Awards retrieved successfully",
-  "data": [
-    {
-      "id": 1,
-      "name": "Nobel Prize in Physiology or Medicine",
-      "category": "Medicine",
-      "year": 1945,
-      "images": ["https://..."]
-    }
-  ]
+    "success": true,
+    "message": "Awards retrieved successfully",
+    "data": [
+        {
+            "id": 1,
+            "name": "Nobel Prize in Physiology or Medicine",
+            "category": "Medicine",
+            "year": 1945,
+            "images": ["https://..."]
+        }
+    ]
 }
 ```
 
@@ -1801,30 +1853,31 @@ Authorization: Bearer YOUR_ACCESS_TOKEN
 ```
 
 **Response (200 OK):**
+
 ```json
 {
-  "success": true,
-  "message": "Articles retrieved successfully",
-  "data": {
-    "results": [
-      {
-        "id": 13,
-        "title": "AAPS National Biotechnology Conference",
-        "summary": "11 May 2026 - 14 May 2026 - All Day Sheraton San Diego...",
-        "source": "European Pharmaceutical Review",
-        "url": "https://...",
-        "published_at": "2026-05-11T07:00:00+00:00"
-      }
-    ],
-    "pagination": {
-      "currentPage": 1,
-      "totalPages": 44,
-      "totalResults": 434,
-      "perPage": 10,
-      "hasNextPage": true,
-      "hasPrevPage": false
+    "success": true,
+    "message": "Articles retrieved successfully",
+    "data": {
+        "results": [
+            {
+                "id": 13,
+                "title": "AAPS National Biotechnology Conference",
+                "summary": "11 May 2026 - 14 May 2026 - All Day Sheraton San Diego...",
+                "source": "European Pharmaceutical Review",
+                "url": "https://...",
+                "published_at": "2026-05-11T07:00:00+00:00"
+            }
+        ],
+        "pagination": {
+            "currentPage": 1,
+            "totalPages": 44,
+            "totalResults": 434,
+            "perPage": 10,
+            "hasNextPage": true,
+            "hasPrevPage": false
+        }
     }
-  }
 }
 ```
 
@@ -1838,30 +1891,31 @@ Authorization: Bearer YOUR_ACCESS_TOKEN
 ```
 
 **Response (200 OK):**
+
 ```json
 {
-  "success": true,
-  "message": "Articles retrieved successfully",
-  "data": {
-    "results": [
-      {
-        "id": 21,
-        "title": "EU kicks off one-year pilot to expedite multinational trials",
-        "summary": "The European Union unveiled details of a pilot project...",
-        "source": "Endpoints News",
-        "url": "https://...",
-        "published_at": "2026-01-23T19:24:15+00:00"
-      }
-    ],
-    "pagination": {
-      "currentPage": 24,
-      "totalPages": 44,
-      "totalResults": 434,
-      "perPage": 10,
-      "hasNextPage": true,
-      "hasPrevPage": true
+    "success": true,
+    "message": "Articles retrieved successfully",
+    "data": {
+        "results": [
+            {
+                "id": 21,
+                "title": "EU kicks off one-year pilot to expedite multinational trials",
+                "summary": "The European Union unveiled details of a pilot project...",
+                "source": "Endpoints News",
+                "url": "https://...",
+                "published_at": "2026-01-23T19:24:15+00:00"
+            }
+        ],
+        "pagination": {
+            "currentPage": 24,
+            "totalPages": 44,
+            "totalResults": 434,
+            "perPage": 10,
+            "hasNextPage": true,
+            "hasPrevPage": true
+        }
     }
-  }
 }
 ```
 
@@ -1875,14 +1929,15 @@ Authorization: Bearer YOUR_ACCESS_TOKEN
 ```
 
 **Response (200 OK):**
+
 ```json
 {
-  "success": true,
-  "message": "News refreshed successfully",
-  "data": {
-    "new_articles": 5,
-    "total_articles": 439
-  }
+    "success": true,
+    "message": "News refreshed successfully",
+    "data": {
+        "new_articles": 5,
+        "total_articles": 439
+    }
 }
 ```
 
@@ -1896,18 +1951,19 @@ Authorization: Bearer YOUR_ACCESS_TOKEN
 ```
 
 **Response (200 OK):**
+
 ```json
 {
-  "success": true,
-  "message": "Categories retrieved successfully",
-  "data": [
-    "chemistry",
-    "pharma",
-    "biotech",
-    "medicine",
-    "research",
-    "clinical_trials"
-  ]
+    "success": true,
+    "message": "Categories retrieved successfully",
+    "data": [
+        "chemistry",
+        "pharma",
+        "biotech",
+        "medicine",
+        "research",
+        "clinical_trials"
+    ]
 }
 ```
 
@@ -1921,16 +1977,17 @@ Authorization: Bearer YOUR_ACCESS_TOKEN
 ```
 
 **Response (200 OK):**
+
 ```json
 {
-  "success": true,
-  "message": "Article saved successfully",
-  "data": {
-    "saved_article_id": 123,
-    "article_id": 13,
-    "title": "AAPS National Biotechnology Conference",
-    "saved_at": "2026-05-29T12:00:00Z"
-  }
+    "success": true,
+    "message": "Article saved successfully",
+    "data": {
+        "saved_article_id": 123,
+        "article_id": 13,
+        "title": "AAPS National Biotechnology Conference",
+        "saved_at": "2026-05-29T12:00:00Z"
+    }
 }
 ```
 
@@ -1950,16 +2007,17 @@ Content-Type: application/json
 ```
 
 **Response (200 OK):**
+
 ```json
 {
-  "success": true,
-  "message": "Article shared successfully",
-  "data": {
-    "share_id": 456,
-    "article_id": 13,
-    "shared_with": "colleague@pharmaai.io",
-    "shared_at": "2026-05-29T12:00:00Z"
-  }
+    "success": true,
+    "message": "Article shared successfully",
+    "data": {
+        "share_id": 456,
+        "article_id": 13,
+        "shared_with": "colleague@pharmaai.io",
+        "shared_at": "2026-05-29T12:00:00Z"
+    }
 }
 ```
 
@@ -1973,30 +2031,31 @@ Authorization: Bearer YOUR_ACCESS_TOKEN
 ```
 
 **Response (200 OK):**
+
 ```json
 {
-  "success": true,
-  "message": "Saved articles retrieved successfully",
-  "data": {
-    "results": [
-      {
-        "id": 123,
-        "article_id": 13,
-        "title": "AAPS National Biotechnology Conference",
-        "summary": "11 May 2026 - 14 May 2026...",
-        "source": "European Pharmaceutical Review",
-        "saved_at": "2026-05-29T12:00:00Z"
-      }
-    ],
-    "pagination": {
-      "currentPage": 1,
-      "totalPages": 1,
-      "totalResults": 5,
-      "perPage": 10,
-      "hasNextPage": false,
-      "hasPrevPage": false
+    "success": true,
+    "message": "Saved articles retrieved successfully",
+    "data": {
+        "results": [
+            {
+                "id": 123,
+                "article_id": 13,
+                "title": "AAPS National Biotechnology Conference",
+                "summary": "11 May 2026 - 14 May 2026...",
+                "source": "European Pharmaceutical Review",
+                "saved_at": "2026-05-29T12:00:00Z"
+            }
+        ],
+        "pagination": {
+            "currentPage": 1,
+            "totalPages": 1,
+            "totalResults": 5,
+            "perPage": 10,
+            "hasNextPage": false,
+            "hasPrevPage": false
+        }
     }
-  }
 }
 ```
 
@@ -2010,12 +2069,83 @@ Authorization: Bearer YOUR_ACCESS_TOKEN
 ```
 
 **Response (200 OK):**
+
 ```json
 {
-  "success": true,
-  "message": "Article unsaved successfully"
+    "success": true,
+    "message": "Article unsaved successfully"
 }
 ```
+
+'''
+
+## 🧪 ADMET Prediction Endpoint
+
+### POST `/api/admet/predict`
+
+Predict ADMET properties for chemical compounds from SMILES strings or file uploads.
+
+**Authentication:** Bearer token required
+
+**Input Options:**
+
+| Option   | Type   | Description                                |
+| -------- | ------ | ------------------------------------------ |
+| `smiles` | string | Comma-separated SMILES strings (max 6)     |
+| `file`   | file   | CSV or TXT file with SMILES (max 100 rows) |
+
+**Example 1: JSON Input**
+
+```bash
+curl -X POST /api/admet/predict \\
+  -H "Authorization: Bearer {token}" \\
+  -H "Content-Type: application/json" \\
+  -d '{"smiles": "c1ccccc1, CCO, CCC"}'
+```
+
+**Example 2: File Upload Input (CSV or TXT)**
+
+```bash
+curl -X POST /api/admet/predict \\
+  -H "Authorization: Bearer {token}" \\
+  -F "file=@/path/to/file.csv"
+```
+
+**Response (200 OK):**
+
+```json
+{
+    "success": true,
+    "message": "ADMET predictions generated successfully",
+    "data": [
+        {
+            "smiles": "c1ccccc1",
+            "absorption": -2.9907076358795166,
+            "distribution": 0.8750113248825073,
+            "metabolism": -0.11453431844711304,
+            "excretion": 7.360866546630859,
+            "toxicity": 0.8492187261581421
+        },
+        {
+            "smiles": "CCO",
+            "absorption": -3.7663559913635254,
+            "distribution": 0.8921501040458679,
+            "metabolism": -0.2787337601184845,
+            "excretion": 20.92142677307129,
+            "toxicity": -0.6471661329269409
+        },
+        {
+            "smiles": "CCC",
+            "absorption": -3.09336519241333,
+            "distribution": 1.2096238136291504,
+            "metabolism": -0.17122718691825867,
+            "excretion": 20.524127960205078,
+            "toxicity": -0.25303196907043457
+        }
+    ]
+}
+```
+
 '''
 
 ## ❌ Error Handling
@@ -2038,36 +2168,36 @@ All errors follow this standard format:
 
 ### HTTP Status Codes
 
-| Code | Meaning | Example |
-|------|---------|---------|
-| **200** | OK | Request successful |
-| **201** | Created | Resource created |
-| **202** | Accepted | Async job queued |
-| **400** | Bad Request | Invalid parameters |
-| **401** | Unauthorized | Missing/invalid token |
-| **403** | Forbidden | Insufficient permissions |
-| **404** | Not Found | Resource not found |
-| **422** | Unprocessable | Validation failed |
-| **429** | Too Many Requests | Rate limit exceeded |
-| **500** | Server Error | Internal error |
-| **502** | Bad Gateway | Upstream service down |
-| **503** | Service Unavailable | System maintenance |
+| Code    | Meaning             | Example                  |
+| ------- | ------------------- | ------------------------ |
+| **200** | OK                  | Request successful       |
+| **201** | Created             | Resource created         |
+| **202** | Accepted            | Async job queued         |
+| **400** | Bad Request         | Invalid parameters       |
+| **401** | Unauthorized        | Missing/invalid token    |
+| **403** | Forbidden           | Insufficient permissions |
+| **404** | Not Found           | Resource not found       |
+| **422** | Unprocessable       | Validation failed        |
+| **429** | Too Many Requests   | Rate limit exceeded      |
+| **500** | Server Error        | Internal error           |
+| **502** | Bad Gateway         | Upstream service down    |
+| **503** | Service Unavailable | System maintenance       |
 
 ### Common Error Codes
 
-| Code | Description |
-|------|-------------|
-| `INVALID_SMILES` | Given SMILES string is invalid |
-| `JOB_NOT_FOUND` | Job ID doesn't exist |
-| `SERVICE_UNAVAILABLE` | AI service not responding |
-| `AUTHENTICATION_FAILED` | Invalid credentials |
-| `INSUFFICIENT_QUOTA` | User quota exceeded |
-| `UNSUPPORTED_OPERATION` | Feature not available |
-| `QUOTA_EXCEEDED` | LLM API daily quota reached |
-| `THREAD_NOT_FOUND` | Thread ID doesn't exist or unauthorized |
-| `JOB_NOT_COMPLETE` | Results requested before job completion |
-| `CSV_TOO_LARGE` | Exceeds 100 row limit |
-| `MISSING_SMILES` | smiles field not provided |
+| Code                    | Description                             |
+| ----------------------- | --------------------------------------- |
+| `INVALID_SMILES`        | Given SMILES string is invalid          |
+| `JOB_NOT_FOUND`         | Job ID doesn't exist                    |
+| `SERVICE_UNAVAILABLE`   | AI service not responding               |
+| `AUTHENTICATION_FAILED` | Invalid credentials                     |
+| `INSUFFICIENT_QUOTA`    | User quota exceeded                     |
+| `UNSUPPORTED_OPERATION` | Feature not available                   |
+| `QUOTA_EXCEEDED`        | LLM API daily quota reached             |
+| `THREAD_NOT_FOUND`      | Thread ID doesn't exist or unauthorized |
+| `JOB_NOT_COMPLETE`      | Results requested before job completion |
+| `CSV_TOO_LARGE`         | Exceeds 100 row limit                   |
+| `MISSING_SMILES`        | smiles field not provided               |
 
 ### Example Error Response
 
@@ -2102,23 +2232,23 @@ X-RateLimit-Reset: 1716954645
 
 ### Limits by Endpoint Category
 
-| Category | Limit | Window |
-|----------|-------|--------|
-| **Auth** | 10 requests | 15 minutes |
-| **AI Jobs** | 100 requests | 1 hour |
-| **Search** | 500 requests | 1 hour |
-| **General** | 1000 requests | 1 hour |
+| Category    | Limit         | Window     |
+| ----------- | ------------- | ---------- |
+| **Auth**    | 10 requests   | 15 minutes |
+| **AI Jobs** | 100 requests  | 1 hour     |
+| **Search**  | 500 requests  | 1 hour     |
+| **General** | 1000 requests | 1 hour     |
 
 ### AI Agent Rate Limits
 
-| Endpoint | Limit | Window |
-|----------|-------|--------|
-| `/chat` | 20 requests | Per day (upstream quota) |
-| `/analyze/smiles` | 20 requests | Per day (upstream quota) |
-| `/analyze/compare` | 20 requests | Per day (upstream quota) |
-| `/analyze/docking` | 20 requests | Per day (upstream quota) |
-| `/csv/upload` | 10 uploads | Per day |
-| All others | 1000 requests | 1 hour |
+| Endpoint           | Limit         | Window                   |
+| ------------------ | ------------- | ------------------------ |
+| `/chat`            | 20 requests   | Per day (upstream quota) |
+| `/analyze/smiles`  | 20 requests   | Per day (upstream quota) |
+| `/analyze/compare` | 20 requests   | Per day (upstream quota) |
+| `/analyze/docking` | 20 requests   | Per day (upstream quota) |
+| `/csv/upload`      | 10 uploads    | Per day                  |
+| All others         | 1000 requests | 1 hour                   |
 
 **Note:** AI-powered endpoints are limited by upstream Google Gemini free tier (20 requests/day). Use `analysis_type: quick` to reduce consumption.
 
@@ -2128,10 +2258,10 @@ When rate limited (HTTP 429):
 
 ```json
 {
-  "success": false,
-  "message": "Rate limit exceeded",
-  "retry_after": 120,
-  "error_code": "RATE_LIMIT_EXCEEDED"
+    "success": false,
+    "message": "Rate limit exceeded",
+    "retry_after": 120,
+    "error_code": "RATE_LIMIT_EXCEEDED"
 }
 ```
 
@@ -2165,9 +2295,9 @@ echo "2. Waiting for results..."
 while true; do
   STATUS_RESPONSE=$(curl -s -X GET "$BASE_URL/ai/status/$JOB_ID" \\
     -H "Authorization: Bearer $TOKEN")
-  
+
   STATUS=$(echo $STATUS_RESPONSE | jq -r '.status')
-  
+
   if [ "$STATUS" == "completed" ]; then
     echo "Job completed!"
     echo $STATUS_RESPONSE | jq '.results'
@@ -2206,35 +2336,35 @@ class AILIXIRClient:
             "Authorization": f"Bearer {token}",
             "Content-Type": "application/json"
         }
-    
+
     def search_similar_compounds(self, smiles, top_k=10, use_rag=True):
         """Search for compounds similar to query SMILES"""
-        
+
         endpoint = "full-rag" if use_rag else "retrieval-only"
         url = f"{self.base_url}/chemical-search/{endpoint}"
-        
+
         response = requests.post(url, headers=self.headers, json={
             "smiles": smiles,
             "top_k": top_k
         })
-        
+
         if response.status_code != 202:
             raise Exception(f"Failed to submit search: {response.text}")
-        
+
         job_id = response.json()["job_id"]
         print(f"Search submitted: {job_id}")
-        
+
         # Poll for results
         while True:
             status_url = f"{self.base_url}/chemical-search/{job_id}/status"
             status_response = requests.get(status_url, headers=self.headers)
             status_data = status_response.json()
-            
+
             if status_data["status"] == "completed":
                 return status_data["compounds"]
             elif status_data["status"] == "failed":
                 raise Exception(f"Search failed: {status_data.get('error')}")
-            
+
             print(f"Status: {status_data['status']}, waiting...")
             time.sleep(2)
 
@@ -2252,35 +2382,37 @@ for compound in results:
 
 ```javascript
 // Node.js / JavaScript example
-const axios = require('axios');
+const axios = require("axios");
 
 async function checkSystemHealth() {
-  const baseURL = 'http://localhost:8080/api';
-  
-  try {
-    // Check overall system
-    const healthResponse = await axios.get(`${baseURL}/health`);
-    console.log('System Health:', healthResponse.data);
-    
-    // Check all AI services
-    const servicesResponse = await axios.get(`${baseURL}/ai-services/health`);
-    
-    const allHealthy = servicesResponse.data.success;
-    const services = servicesResponse.data.services;
-    
-    console.log('\\nAI Services Status:');
-    Object.entries(services).forEach(([name, status]) => {
-      const indicator = status.status === 'healthy' ? '✓' : '✗';
-      console.log(`${indicator} ${name}: ${status.status}`);
-    });
-    
-    return {
-      healthy: allHealthy,
-      timestamp: new Date()
-    };
-  } catch (error) {
-    console.error('Health check failed:', error.message);
-  }
+    const baseURL = "http://localhost:8080/api";
+
+    try {
+        // Check overall system
+        const healthResponse = await axios.get(`${baseURL}/health`);
+        console.log("System Health:", healthResponse.data);
+
+        // Check all AI services
+        const servicesResponse = await axios.get(
+            `${baseURL}/ai-services/health`,
+        );
+
+        const allHealthy = servicesResponse.data.success;
+        const services = servicesResponse.data.services;
+
+        console.log("\\nAI Services Status:");
+        Object.entries(services).forEach(([name, status]) => {
+            const indicator = status.status === "healthy" ? "✓" : "✗";
+            console.log(`${indicator} ${name}: ${status.status}`);
+        });
+
+        return {
+            healthy: allHealthy,
+            timestamp: new Date(),
+        };
+    } catch (error) {
+        console.error("Health check failed:", error.message);
+    }
 }
 
 // Run every 60 seconds
@@ -2395,7 +2527,7 @@ For API issues or questions:
 '''
 
 with open('/mnt/agents/output/AILIXIR_API_Reference_v2.1.md', 'w', encoding='utf-8') as f:
-    f.write(content)
+f.write(content)
 
 print("File saved successfully!")
 print(f"Total lines: {len(content.splitlines())}")
