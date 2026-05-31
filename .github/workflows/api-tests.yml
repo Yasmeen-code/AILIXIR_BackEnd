@@ -52,13 +52,15 @@ jobs:
           done
 
           echo "Waiting for ADMET service to be healthy..."
-          for i in {1..60}; do
+          for i in {1..120}; do
             if docker exec ailixir-admet python -c "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')" > /dev/null 2>&1; then
-              echo "ADMET service is healthy"
+              echo "ADMET service is healthy internally inside container"
+              echo "Waiting additional 10 seconds for service to fully initialize..."
+              sleep 10
               break
             fi
-            echo "Attempt $i/60: ADMET service not ready yet..."
-            sleep 3
+            echo "Attempt $i/120: ADMET service not ready yet..."
+            sleep 5
           done
 
           echo "All services are up and running!"

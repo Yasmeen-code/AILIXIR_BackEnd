@@ -121,16 +121,20 @@ jobs:
       - name: Wait for ADMET Service to be Healthy
         run: |
           echo "Waiting for ADMET service to be healthy..."
-          for i in $(seq 1 60); do
+          for i in $(seq 1 120); do
             if curl -sf http://localhost:8002/health > /dev/null 2>&1; then
               echo "ADMET service is healthy and responding on port 8002"
+              echo "Waiting additional 10 seconds for service to fully initialize..."
+              sleep 10
               exit 0
             fi
             if docker exec ailixir-admet python -c "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')" > /dev/null 2>&1; then
               echo "ADMET service is healthy internally inside container"
+              echo "Waiting additional 10 seconds for service to fully initialize..."
+              sleep 10
               exit 0
             fi
-            echo "Attempt $i/60: ADMET service not ready yet..."
+            echo "Attempt $i/120: ADMET service not ready yet..."
             sleep 5
           done
           echo "ADMET service failed to become healthy in time"
