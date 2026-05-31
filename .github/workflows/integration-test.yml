@@ -136,14 +136,31 @@ jobs:
         run: |
           TOKEN=$(cat token.txt)
           echo "POST /api/admet/predict"
-          curl -sf -X POST http://localhost:8080/api/admet/predict \
+          HTTP_CODE=$(curl -s -o admet.json -w "%{http_code}" -X POST http://localhost:8080/api/admet/predict \
             -H "Authorization: Bearer $TOKEN" \
             -H "Content-Type: application/json" \
-            -d '{"smiles": "c1ccccc1, CCO, CCC"}' | tee admet.json
+            -d '{"smiles": "c1ccccc1, CCO, CCC"}')
+          
+          echo "HTTP Status: $HTTP_CODE"
+          cat admet.json
+          echo ""
+          
+          if [ "$HTTP_CODE" != "200" ]; then
+            echo "ADMET prediction request failed with HTTP $HTTP_CODE"
+            docker compose logs laravel
+            exit 1
+          fi
 
           python3 - <<'PY'
           import json, sys
-          data = json.load(open("admet.json"))
+          try:
+              data = json.load(open("admet.json"))
+          except json.JSONDecodeError as e:
+              print("Invalid JSON response:", e)
+              with open("admet.json") as f:
+                  print("Raw response:", f.read())
+              sys.exit(1)
+          
           if not data.get("success"):
               print("ADMET prediction test failed:", json.dumps(data, indent=2))
               sys.exit(1)
