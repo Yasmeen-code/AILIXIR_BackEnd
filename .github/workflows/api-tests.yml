@@ -13,7 +13,8 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -26,7 +27,7 @@ jobs:
 
       - name: Start Docker containers
         run: |
-          docker-compose up -d --build
+          docker compose up -d --build
 
       - name: Wait for services to be healthy
         run: |
@@ -61,7 +62,7 @@ jobs:
           done
 
           echo "All services are up and running!"
-          docker-compose ps
+          docker compose ps
 
       - name: Run database migrations
         run: |
@@ -99,11 +100,11 @@ jobs:
         if: failure()
         run: |
           mkdir -p logs
-          docker-compose logs laravel > logs/laravel.log
-          docker-compose logs mysql > logs/mysql.log
-          docker-compose logs admet > logs/admet.log
-          docker-compose logs drug-repurposing > logs/drug-repurposing.log
-          docker-compose logs chemical-rag > logs/chemical-rag.log
+          docker compose logs laravel > logs/laravel.log
+          docker compose logs mysql > logs/mysql.log
+          docker compose logs admet > logs/admet.log
+          docker compose logs drug-repurposing > logs/drug-repurposing.log
+          docker compose logs chemical-rag > logs/chemical-rag.log
 
       - name: Upload Docker logs
         uses: actions/upload-artifact@v4
@@ -115,4 +116,4 @@ jobs:
       - name: Cleanup Docker containers
         if: always()
         run: |
-          docker-compose down -v
+          docker compose down -v
