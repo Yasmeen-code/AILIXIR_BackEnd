@@ -15,9 +15,9 @@ use App\Http\Controllers\Api\AdmetController;
 use Cloudinary\Cloudinary;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\Api\OtpController;
+// use App\Http\Controllers\Api\OtpController;
 use App\Http\Controllers\Api\EmailVerificationController;
-use App\Http\Controllers\Api\MdFileController;
+// use App\Http\Controllers\Api\MdFileController;
 use App\Http\Controllers\Api\ChemicalSearchController;
 use App\Http\Controllers\Api\ChemistryController;
 use App\Http\Controllers\Api\AiServicesIntegrationController;
@@ -164,13 +164,13 @@ Route::middleware('auth:sanctum')->group(function () {
 });
 
 
-
-
-
-
-
 // ==================== ADMET PREDICTION ====================
 Route::middleware('auth:sanctum')->post('/admet/predict', [AdmetController::class, 'predict']);
+
+
+
+
+
 
 
 // cloudinary file upload test route
