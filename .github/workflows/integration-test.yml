@@ -121,23 +121,24 @@ jobs:
       - name: Wait for ADMET Service to be Healthy
         run: |
           echo "Waiting for ADMET service to be healthy..."
-          for i in $(seq 1 180); do
-            # Check external port
+          for i in $(seq 1 120); do
+
             if curl -sf http://localhost:8002/health > /dev/null 2>&1; then
-              echo "ADMET service responding on port 8002"
-              sleep 30  # Extended wait for full initialization
+              echo "ADMET service is healthy and responding on port 8002"
+              echo "Waiting additional 20 seconds for service to fully initialize..."
+              sleep 20
               exit 0
             fi
-            # Check internal port from Laravel container
-            if docker compose exec -T laravel curl -sf http://ailixir-admet:8000/health > /dev/null 2>&1; then
-              echo "ADMET service healthy internally"
-              sleep 30  # Extended wait for full initialization
+            if docker exec ailixir-admet python -c "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')" > /dev/null 2>&1; then
+              echo "ADMET service is healthy internally inside container"
+              echo "Waiting additional 20 seconds for service to fully initialize..."
+              sleep 20
               exit 0
             fi
-            echo "Attempt $i/180: ADMET service not ready yet..."
+            echo "Attempt $i/120: ADMET service not ready yet..."
             sleep 5
           done
-          echo "ADMET service failed to become healthy"
+          echo "ADMET service failed to become healthy in time"
           docker compose logs admet
           exit 1
 
@@ -166,18 +167,9 @@ jobs:
           }
           echo "ADMET service connectivity verified"
 
-      - name: Test ADMET prediction via Laravel
+      - name: Test ADMET prediction via
         run: |
           TOKEN=$(cat token.txt)
-
-          # Verify connectivity first
-          echo "Checking ADMET connectivity from Laravel..."
-          docker compose exec -T laravel curl -v http://ailixir-admet:8000/health || {
-            echo "ADMET not reachable from Laravel!"
-            docker compose logs admet
-            docker compose logs laravel
-            exit 1
-          }
 
           echo "POST /api/admet/predict"
           HTTP_CODE=$(curl -s -o admet.json -w "%{http_code}" -X POST http://localhost:8080/api/admet/predict \
@@ -192,7 +184,6 @@ jobs:
           if [ "$HTTP_CODE" != "200" ]; then
             echo "ADMET prediction request failed with HTTP $HTTP_CODE"
             docker compose logs laravel
-            docker compose logs admet
             exit 1
           fi
 
