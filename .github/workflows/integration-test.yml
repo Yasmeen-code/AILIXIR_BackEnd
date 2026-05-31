@@ -124,14 +124,14 @@ jobs:
           for i in $(seq 1 120); do
             if curl -sf http://localhost:8002/health > /dev/null 2>&1; then
               echo "ADMET service is healthy and responding on port 8002"
-              echo "Waiting additional 10 seconds for service to fully initialize..."
-              sleep 10
+              echo "Waiting additional 20 seconds for service to fully initialize..."
+              sleep 20
               exit 0
             fi
             if docker exec ailixir-admet python -c "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')" > /dev/null 2>&1; then
               echo "ADMET service is healthy internally inside container"
-              echo "Waiting additional 10 seconds for service to fully initialize..."
-              sleep 10
+              echo "Waiting additional 20 seconds for service to fully initialize..."
+              sleep 20
               exit 0
             fi
             echo "Attempt $i/120: ADMET service not ready yet..."
@@ -155,6 +155,17 @@ jobs:
           print("All AI services healthy via Laravel")
           PY
 
+      - name: Verify ADMET service connectivity from Laravel
+        run: |
+          echo "Verifying ADMET service is reachable from Laravel container..."
+          docker compose exec -T laravel curl -sf http://ailixir-admet:8000/health > /dev/null || {
+            echo "ADMET service not reachable from Laravel container"
+            docker compose logs admet
+            docker compose logs laravel
+            exit 1
+          }
+          echo "ADMET service connectivity verified"
+
       - name: Test ADMET prediction via
         run: |
           TOKEN=$(cat token.txt)
@@ -163,11 +174,11 @@ jobs:
             -H "Authorization: Bearer $TOKEN" \
             -H "Content-Type: application/json" \
             -d '{"smiles": "c1ccccc1, CCO, CCC"}')
-          
+
           echo "HTTP Status: $HTTP_CODE"
           cat admet.json
           echo ""
-          
+
           if [ "$HTTP_CODE" != "200" ]; then
             echo "ADMET prediction request failed with HTTP $HTTP_CODE"
             docker compose logs laravel
@@ -183,7 +194,7 @@ jobs:
               with open("admet.json") as f:
                   print("Raw response:", f.read())
               sys.exit(1)
-          
+
           if not data.get("success"):
               print("ADMET prediction test failed:", json.dumps(data, indent=2))
               sys.exit(1)
