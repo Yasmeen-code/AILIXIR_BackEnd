@@ -5,14 +5,10 @@ namespace App\Services;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Http;
-use Illuminate\Support\Facades\Redis;
-use Illuminate\Support\Str;
 use App\Models\Admet;
 
 class AdmetService
 {
-    protected string $queueKey = 'admet_batch_queue';
-    protected string $lockKey = 'admet_batch_lock';
     protected int $batchSize = 100;
     protected int $singleBatchLimit = 6;
     protected int $timeout = 120;
@@ -82,17 +78,8 @@ class AdmetService
             throw new \Exception('No valid SMILES provided');
         }
 
-        $requestId = Str::uuid()->toString();
-
-        Redis::rpush($this->queueKey, json_encode([
-            'id' => $requestId,
-            'smiles_list' => $smilesList,
-            'user_id' => Auth::id(),
-        ]));
-
-        $this->tryProcessBatch();
-
-        return $this->waitForResult($requestId);
+        // Fully synchronous: get database results + fetch missing from API
+        return $this->processSmilesList($smilesList);
     }
 
     public function predictSingle(string $smiles)
