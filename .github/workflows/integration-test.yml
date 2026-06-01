@@ -66,7 +66,9 @@ jobs:
       - name: Login and get Bearer token
         run: |
           echo "POST /api/user/login"
-          HTTP_CODE=$(curl -s -o login.json -w "%{http_code}" -X POST http://localhost:8080/api/user/login             -H "Content-Type: application/json"             -d '{"email":"salehyasmeen080@gmail.com","password":"123456789"}')
+          HTTP_CODE=$(curl -s -o login.json -w "%{http_code}" -X POST http://localhost:8080/api/user/login \
+            -H "Content-Type: application/json" \
+            -d '{"email":"salehyasmeen080@gmail.com","password":"123456789"}')
           echo "HTTP Status: $HTTP_CODE"
           cat login.json
           echo ""
@@ -145,7 +147,8 @@ jobs:
         run: |
           TOKEN=$(cat token.txt)
           echo "GET /api/ai-services/health"
-          curl -sf http://localhost:8080/api/ai-services/health             -H "Authorization: Bearer $TOKEN" | tee health.json
+          curl -sf http://localhost:8080/api/ai-services/health \
+            -H "Authorization: Bearer $TOKEN" | tee health.json
           python3 - <<'PY'
           import json, sys
           data = json.load(open("health.json"))
@@ -200,7 +203,13 @@ jobs:
         run: |
           TOKEN=$(cat token.txt)
           echo "POST /api/ai-services/test/chemical-search"
-          curl -sf -X POST http://localhost:8080/api/ai-services/test/chemical-search             -H "Authorization: Bearer $TOKEN"             -H "Content-Type: application/json"             -d '{"smiles":"CCO","top_k":3}' | tee chemical.json
+          HTTP_CODE=$(curl -s -o chemical.json -w "%{http_code}" -X POST http://localhost:8080/api/ai-services/test/chemical-search \
+            -H "Authorization: Bearer $TOKEN" \
+            -H "Content-Type: application/json" \
+            -d '{"query": "malaria drug"}')
+          echo "HTTP Status: $HTTP_CODE"
+          cat chemical.json
+          echo ""
           python3 - <<'PY'
           import json, sys
           data = json.load(open("chemical.json"))
@@ -214,7 +223,11 @@ jobs:
         run: |
           TOKEN=$(cat token.txt)
           echo "GET /api/ai-services/test/drug-repurposing"
-          curl -sf http://localhost:8080/api/ai-services/test/drug-repurposing             -H "Authorization: Bearer $TOKEN" | tee drug.json
+          HTTP_CODE=$(curl -s -o drug.json -w "%{http_code}" http://localhost:8080/api/ai-services/test/drug-repurposing \
+            -H "Authorization: Bearer $TOKEN")
+          echo "HTTP Status: $HTTP_CODE"
+          cat drug.json
+          echo ""
           python3 - <<'PY'
           import json, sys
           data = json.load(open("drug.json"))
@@ -319,7 +332,9 @@ jobs:
       - name: Login and get Bearer token
         run: |
           echo "POST /api/user/login"
-          HTTP_CODE=$(curl -s -o login.json -w "%{http_code}" -X POST http://localhost:8080/api/user/login             -H "Content-Type: application/json"             -d '{"email":"salehyasmeen080@gmail.com","password":"123456789"}')
+          HTTP_CODE=$(curl -s -o login.json -w "%{http_code}" -X POST http://localhost:8080/api/user/login \
+            -H "Content-Type: application/json" \
+            -d '{"email":"salehyasmeen080@gmail.com","password":"123456789"}')
           echo "HTTP Status: $HTTP_CODE"
           cat login.json
           echo ""
@@ -375,7 +390,13 @@ jobs:
         run: |
           TOKEN=$(cat token.txt)
           echo "POST /api/chemical-search (retrieval-only)"
-          curl -sf -X POST http://localhost:8080/api/chemical-search             -H "Authorization: Bearer $TOKEN"             -H "Content-Type: application/json"             -d '{"smiles":"CC(=O)Oc1ccccc1C(=O)O","top_k":10}' | tee chemical_search.json
+          HTTP_CODE=$(curl -s -o chemical_search.json -w "%{http_code}" -X POST http://localhost:8080/api/chemical-search \
+            -H "Authorization: Bearer $TOKEN" \
+            -H "Content-Type: application/json" \
+            -d '{"smiles":"CC(=O)O"}')
+          echo "HTTP Status: $HTTP_CODE"
+          cat chemical_search.json
+          echo ""
           python3 - <<'PY'
           import json, sys
           data = json.load(open("chemical_search.json"))
@@ -395,7 +416,13 @@ jobs:
         run: |
           TOKEN=$(cat token.txt)
           echo "POST /api/chemical-search/full-rag"
-          curl -sf -X POST http://localhost:8080/api/chemical-search/full-rag             -H "Authorization: Bearer $TOKEN"             -H "Content-Type: application/json"             -d '{"smiles":"CC(=O)Oc1ccccc1C(=O)O","top_k":5}' | tee chemical_rag.json
+          HTTP_CODE=$(curl -s -o chemical_rag.json -w "%{http_code}" -X POST http://localhost:8080/api/chemical-search/full-rag \
+            -H "Authorization: Bearer $TOKEN" \
+            -H "Content-Type: application/json" \
+            -d '{"smiles":"CC(=O)O"}')
+          echo "HTTP Status: $HTTP_CODE"
+          cat chemical_rag.json
+          echo ""
           python3 - <<'PY'
           import json, sys
           data = json.load(open("chemical_rag.json"))
