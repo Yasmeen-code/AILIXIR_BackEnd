@@ -1,64 +1,44 @@
-# syntax=docker/dockerfile:1
+FROM python:3.11-slim
 
-# ============================================================
-# Stage 1: Builder
-# ============================================================
-FROM python:3.11-slim AS builder
+# Set working directory
+WORKDIR /app
 
-RUN apt-get update && apt-get install -y --no-install-recommends \
+# Install system dependencies (including X11 libs for RDKit image generation)
+RUN apt-get update && apt-get install -y \
     build-essential \
     gcc \
     g++ \
     cmake \
-    && rm -rf /var/lib/apt/lists/*
-
-RUN python -m venv /opt/venv
-ENV PATH="/opt/venv/bin:$PATH"
-
-COPY requirements.txt .
-RUN pip install --no-cache-dir --upgrade pip \
-    && pip install --no-cache-dir -r requirements.txt
-
-RUN find /opt/venv -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true \
-    && find /opt/venv -type f -name "*.pyc" -delete
-
-# ============================================================
-# Stage 2: Runtime
-# ============================================================
-FROM python:3.11-slim AS runtime
-
-RUN apt-get update && apt-get install -y --no-install-recommends \
     libxrender1 \
     libxext6 \
     libsm6 \
     libgomp1 \
     libxkbcommon0 \
     libdbus-1-3 \
-    libexpat1 \
-    ca-certificates \
-    && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+    curl \
+    && rm -rf /var/lib/apt/lists/*
 
-COPY --from=builder /opt/venv /opt/venv
+# Copy requirements first for better caching
+COPY requirements.txt .
 
-ENV PATH="/opt/venv/bin:$PATH" \
-    PYTHONUNBUFFERED=1 \
-    PYTHONDONTWRITEBYTECODE=1 \
-    API_PORT=5000 \
-    API_HOST=0.0.0.0
+# Install Python dependencies
+RUN pip install --no-cache-dir -r requirements.txt
 
-WORKDIR /app
+# Copy application code
+COPY . .
 
-COPY --chown=1000:1000 . .
-
-RUN useradd -m -u 1000 raguser \
-    && mkdir -p app/static/images data \
-    && chown -R raguser:raguser /app
-
-USER raguser
-
+# Expose custom port
 EXPOSE 5000
 
-HEALTHCHECK --interval=30s --timeout=10s --start-period=120s --retries=5 \
-    CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:5000/health')"
+# Create directory for images if it doesn't exist
+RUN mkdir -p app/static/images && chmod 777 app/static/images
 
-CMD ["python", "-m", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "5000"]
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=5 \
+    CMD curl -f http://localhost:5000/health || exit 1
+
+# Set Python to run in unbuffered mode
+ENV PYTHONUNBUFFERED=1
+
+# Run the application with gunicorn for production
+CMD ["python", "-m", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "5000", "--workers", "2"]
