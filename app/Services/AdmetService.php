@@ -170,7 +170,10 @@ class AdmetService
             }
 
             $data = $response->json();
-            return $this->saveApiResults($data, $smilesList);
+            
+            // Handle both direct results array and wrapped results object
+            $results_data = isset($data['results']) ? $data : ['results' => $data];
+            return $this->saveApiResults($results_data, $smilesList);
         } catch (\Exception $e) {
             \Log::error('ADMET API exception', ['error' => $e->getMessage()]);
             return $this->createErrorResults($smilesList, $e->getMessage());
@@ -187,8 +190,11 @@ class AdmetService
 
                 $smiles = $smilesList[$index];
 
+                // Handle PredictionResponse objects from ADMET API
+                $predictions_data = $result['predictions'] ?? $result;
+                
                 // Skip invalid SMILES that the Python service rejected
-                if (!empty($result['error']) || empty($result['predictions'])) {
+                if (!empty($result['error']) || empty($predictions_data)) {
                     $results[] = [
                         'smiles' => $smiles,
                         'error'  => $result['error'] ?? 'No predictions returned',
@@ -197,8 +203,7 @@ class AdmetService
                     continue;
                 }
 
-                $predictions = $result['predictions'];
-                $admet = $this->saveToDatabase($smiles, $predictions);
+                $admet = $this->saveToDatabase($smiles, $predictions_data);
                 $results[] = array_merge($this->formatResult($admet, $smiles), ['source' => 'api']);
             }
         } else {
