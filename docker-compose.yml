@@ -48,7 +48,8 @@ services:
       ADMET_AI_URL: http://admet:8000
       AI_ADMET_SERVICE_URL: http://admet:8000
       DRUG_REPURPOSING_URL: http://drug-repurposing:8000
-    command: ["php", "artisan", "queue:work", "--sleep=3", "--tries=3", "--timeout=300"]
+    # Wait for Laravel to complete migrations before starting queue
+    command: sh -c "sleep 30 && php artisan queue:work --sleep=3 --tries=3 --timeout=300"
     depends_on:
       mysql:
         condition: service_healthy
@@ -59,7 +60,7 @@ services:
       interval: 30s
       timeout: 10s
       retries: 5
-      start_period: 60s
+      start_period: 90s
     networks:
       - ailixir
 
