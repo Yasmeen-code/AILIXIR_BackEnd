@@ -13,7 +13,6 @@ storage/framework/sessions/*
 storage/framework/views/*
 bootstrap/cache/*
 .phpunit.result.cache
-ai_apps
 *.md
 Homestead.json
 Homestead.yaml
