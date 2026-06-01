@@ -5,14 +5,10 @@ namespace App\Services;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Http;
-use Illuminate\Support\Facades\Redis;
-use Illuminate\Support\Str;
 use App\Models\Admet;
 
 class AdmetService
 {
-    protected string $queueKey = 'admet_batch_queue';
-    protected string $lockKey = 'admet_batch_lock';
     protected int $batchSize = 100;
     protected int $singleBatchLimit = 6;
     protected int $timeout = 120;
@@ -82,17 +78,8 @@ class AdmetService
             throw new \Exception('No valid SMILES provided');
         }
 
-        $requestId = Str::uuid()->toString();
-
-        Redis::rpush($this->queueKey, json_encode([
-            'id' => $requestId,
-            'smiles_list' => $smilesList,
-            'user_id' => Auth::id(),
-        ]));
-
-        $this->tryProcessBatch();
-
-        return $this->waitForResult($requestId);
+        // Fully synchronous: get database results + fetch missing from API
+        return $this->processSmilesList($smilesList);
     }
 
     public function predictSingle(string $smiles)
@@ -157,22 +144,25 @@ class AdmetService
         }
         try {
             $response = Http::timeout($this->timeout)->post(
-                config('services.ai.admet_url') . '/predict/batch',
+                config('services.admet.url') . '/predict_batch',
                 ['smiles_list' => $smilesList]
             );
 
             if (!$response->successful()) {
-                \Log::error('API request failed', [
+                \Log::error('ADMET API request failed', [
                     'status' => $response->status(),
-                    'body' => $response->body()
+                    'body'   => $response->body(),
                 ]);
                 return $this->createErrorResults($smilesList, 'API request failed: ' . $response->status());
             }
 
             $data = $response->json();
-            return $this->saveApiResults($data, $smilesList);
+            
+            // Handle both direct results array and wrapped results object
+            $results_data = isset($data['results']) ? $data : ['results' => $data];
+            return $this->saveApiResults($results_data, $smilesList);
         } catch (\Exception $e) {
-            \Log::error('API exception', ['error' => $e->getMessage()]);
+            \Log::error('ADMET API exception', ['error' => $e->getMessage()]);
             return $this->createErrorResults($smilesList, $e->getMessage());
         }
     }
@@ -186,13 +176,25 @@ class AdmetService
                 if (!isset($smilesList[$index])) continue;
 
                 $smiles = $smilesList[$index];
-                $predictions = $result['predictions'] ?? $result;
 
-                $admet = $this->saveToDatabase($smiles, $predictions);
+                // Handle PredictionResponse objects from ADMET API
+                $predictions_data = $result['predictions'] ?? $result;
+                
+                // Skip invalid SMILES that the Python service rejected
+                if (!empty($result['error']) || empty($predictions_data)) {
+                    $results[] = [
+                        'smiles' => $smiles,
+                        'error'  => $result['error'] ?? 'No predictions returned',
+                        'source' => 'api',
+                    ];
+                    continue;
+                }
+
+                $admet = $this->saveToDatabase($smiles, $predictions_data);
                 $results[] = array_merge($this->formatResult($admet, $smiles), ['source' => 'api']);
             }
         } else {
-            \Log::warning('Unexpected API response format', ['data' => $data]);
+            \Log::warning('Unexpected ADMET API response format', ['data' => $data]);
             return $this->createErrorResults($smilesList, 'Invalid response format from API');
         }
 
@@ -296,7 +298,7 @@ class AdmetService
 
         try {
             $response = Http::timeout($this->timeout)->post(
-                config('services.ai.admet_url') . '/predict/batch',
+                config('services.admet.url') . '/predict_batch',
                 ['smiles_list' => $allSmiles]
             );
 
@@ -305,12 +307,18 @@ class AdmetService
             }
 
             $data = $response->json();
-            $apiResults = $data['results'] ?? $data['predictions'] ?? [];
+            $apiResults = $data['results'] ?? [];
 
             $resultsPerRequest = $this->distributeBatchResults($apiResults, $smilesToRequestMap);
 
+            // Wrap results in the standard structure the controller expects
             foreach ($resultsPerRequest as $requestId => $requestResults) {
-                Cache::put("admet_result_$requestId", $requestResults, 60);
+                $payload = [
+                    'total_processed' => count($requestResults),
+                    'total_smiles'    => count($requestResults),
+                    'results'         => $requestResults,
+                ];
+                Cache::put("admet_result_$requestId", $payload, 60);
             }
 
             $this->handleMissingRequests($requests, $resultsPerRequest);
