@@ -5,6 +5,7 @@ namespace App\Services;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Redis;
 use App\Models\Admet;
 
 class AdmetService
@@ -12,6 +13,8 @@ class AdmetService
     protected int $batchSize = 100;
     protected int $singleBatchLimit = 6;
     protected int $timeout = 120;
+    protected string $queueKey = 'admet_batch_queue';
+    protected string $lockKey = 'admet_batch_lock';
 
     protected function parseSmiles(string $input): array
     {
@@ -144,7 +147,7 @@ class AdmetService
         }
         try {
             $response = Http::timeout($this->timeout)->post(
-                config('services.admet.url') . '/predict_batch',
+                config('services.admet.url') . '/predict/batch',
                 ['smiles_list' => $smilesList]
             );
 
@@ -157,7 +160,7 @@ class AdmetService
             }
 
             $data = $response->json();
-            
+
             // Handle both direct results array and wrapped results object
             $results_data = isset($data['results']) ? $data : ['results' => $data];
             return $this->saveApiResults($results_data, $smilesList);
@@ -179,7 +182,7 @@ class AdmetService
 
                 // Handle PredictionResponse objects from ADMET API
                 $predictions_data = $result['predictions'] ?? $result;
-                
+
                 // Skip invalid SMILES that the Python service rejected
                 if (!empty($result['error']) || empty($predictions_data)) {
                     $results[] = [
@@ -298,7 +301,7 @@ class AdmetService
 
         try {
             $response = Http::timeout($this->timeout)->post(
-                config('services.admet.url') . '/predict_batch',
+                config('services.admet.url') . '/predict/batch',
                 ['smiles_list' => $allSmiles]
             );
 
