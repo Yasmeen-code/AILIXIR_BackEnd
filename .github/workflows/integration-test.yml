@@ -285,7 +285,12 @@ jobs:
 
       - name: Run drug repurposing integration tests
         run: |
-          docker compose exec -T laravel php artisan test --filter=DrugRepurposingIntegrationTest
+          # Match phpunit.xml: sync queue + sqlite so jobs run inside the test process
+          docker compose exec -T \
+            -e QUEUE_CONNECTION=sync \
+            -e DB_CONNECTION=sqlite \
+            -e DB_DATABASE=:memory: \
+            laravel php artisan test --filter=DrugRepurposingIntegrationTest
 
       - name: Dump logs on failure
         if: failure()

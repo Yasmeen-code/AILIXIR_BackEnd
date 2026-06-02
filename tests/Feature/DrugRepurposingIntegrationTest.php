@@ -17,6 +17,17 @@ class DrugRepurposingIntegrationTest extends TestCase
 
     private const DISEASE = 'Type 2 Diabetes';
 
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        // Docker sets QUEUE_CONNECTION=database and DB_HOST=mysql on the container,
+        // which overrides phpunit.xml. The queue worker uses MySQL while tests use
+        // in-memory SQLite, so async jobs never run during tests. Sync forces the
+        // job to finish before the status endpoint is called.
+        config(['queue.default' => 'sync']);
+    }
+
     public function test_unauthenticated_target_lookup_is_rejected(): void
     {
         $this->postJson('/api/drug-repurposing/targets', [
