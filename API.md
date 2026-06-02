@@ -16,22 +16,23 @@ Complete API specification for AILIXIR-Backend, including all endpoints, authent
 - [Authentication Endpoints](#authentication-endpoints)
 - [AI Integration Endpoints](#ai-integration-endpoints)
 - [AI Service Endpoints](#ai-service-endpoints)
-- [AI Agent Endpoints](#ai-agent-endpoints)
+- [AI Agent Endpoints (Chemistry AI)](#ai-agent-endpoints-chemistry-ai)
 - [Chemical Search Endpoints](#chemical-search-endpoints)
 - [Docking API](#docking-api)
 - [Convert SMILES API](#convert-smiles-api)
 - [User Management Endpoints](#user-management-endpoints)
-- [Awards & Scientists Endpoints](#awards--scientists-endpoints)
-- [News Endpoints](#news-endpoints)
-- [ADMET Prediction Endpoints](#admet-prediction-endpoints)
-- [AI Generation Endpoints](#ai-generation-endpoints)
+- [Awards And Scientists API](#awards-and-scientists-api)
+- [News API](#news-api)
+- [Admet Prediction API](#admet-prediction-api)
+- [AI Generation API](#ai-generation-api)
 - [Error Handling](#error-handling)
 - [Rate Limiting](#rate-limiting)
 - [Integration Examples](#integration-examples)
+- [Support](#support)
 
 ---
 
-## 🔍 Overview
+## Overview
 
 AILIXIR provides a RESTful API for accessing all drug discovery services. The API is built with:
 
@@ -52,7 +53,7 @@ AILIXIR provides a RESTful API for accessing all drug discovery services. The AP
 
 ---
 
-## 🔐 Authentication
+## Authentication
 
 ### Overview
 
@@ -80,7 +81,7 @@ Tokens are issued after successful login or registration. Store securely (never 
 
 ---
 
-## 🌐 Base URLs
+## Base URLs
 
 ### Production
 
@@ -107,7 +108,7 @@ http://localhost:8080/docs      # Laravel API (Swagger)
 
 ---
 
-## 🔄 Common Patterns
+## Common Patterns
 
 ### Pagination
 
@@ -168,7 +169,7 @@ GET /api/ai/status/{job_id}
 
 ---
 
-## ❤️ Health & Status
+## Health & Status
 
 ### System Health
 
@@ -235,7 +236,7 @@ GET /ai-services/health
 
 ---
 
-## 👤 Authentication Endpoints
+## Authentication Endpoints
 
 ### Register User
 
@@ -438,7 +439,7 @@ Authorization: Bearer YOUR_ACCESS_TOKEN
 
 ## '''
 
-## 🤖 AI Integration Endpoints
+## AI Integration Endpoints
 
 These endpoints are for testing and monitoring AI microservices. Available only if `AI_INTEGRATION_ROUTES_ENABLED=true`.
 
@@ -551,7 +552,7 @@ Authorization: Bearer YOUR_ACCESS_TOKEN
 
 ---
 
-## 🧬 AI Service Endpoints
+## AI Service Endpoints
 
 ### Submit AI Job
 
@@ -738,7 +739,7 @@ Authorization: Bearer YOUR_ACCESS_TOKEN
 
 ---
 
-## 🤖 AI Agent Endpoints (Chemistry AI)
+## AI Agent Endpoints (Chemistry AI)
 
 AI-powered chemistry analysis agent with conversation memory. All endpoints require authentication.
 
@@ -1212,7 +1213,7 @@ Authorization: Bearer YOUR_ACCESS_TOKEN
 
 ---
 
-## 🔍 Chemical Search Endpoints
+## Chemical Search Endpoints
 
 ### Retrieval-Only Search
 
@@ -1558,7 +1559,7 @@ curl -X POST "{base_url}/api/convert-smiles/convert" \\
 
 ---
 
-## 👥 User Management Endpoints
+## User Management Endpoints
 
 ### Get Profile
 
@@ -1616,7 +1617,7 @@ Content-Type: application/json
 
 ---
 
-## 🏆 Awards & Scientists Endpoints
+## Awards And Scientists API
 
 ### List Awards
 
@@ -1845,7 +1846,7 @@ GET /scientists/{scientist_id}/awards
 
 ---
 
-## 📰 News Endpoints
+## News API
 
 ### Get News Feed
 
@@ -2081,7 +2082,7 @@ Authorization: Bearer YOUR_ACCESS_TOKEN
 
 '''
 
-## 🧪 ADMET Prediction Endpoint
+## Admet Prediction API
 
 ### POST `/api/admet/predict`
 
@@ -2150,7 +2151,7 @@ curl -X POST /api/admet/predict \\
 
 '''
 
-## 🤖 AI Generation Endpoint
+## AI Generation API
 
 ### POST `/api/ai/generation/run`
 
@@ -2451,7 +2452,7 @@ CN1CCC2C1CCN2CCC(=O)Nc1ccc2ncnc(Nc3ccc4ncncc4c3)c2c1,1,22.74,True,CN1CCC2C1CCN2C
 
 '''
 
-## ❌ Error Handling
+## Error Handling
 
 ### Error Response Format
 
@@ -2521,7 +2522,7 @@ Content-Type: application/json
 
 ---
 
-## 🚦 Rate Limiting
+## Rate Limiting
 
 ### Rate Limit Headers
 
@@ -2572,7 +2573,7 @@ When rate limited (HTTP 429):
 
 ---
 
-## 💡 Integration Examples
+## Integration Examples
 
 ### Example 1: Complete ADMET Prediction Workflow
 
@@ -2814,7 +2815,7 @@ class ChemistryApiService {
 
 ---
 
-## 📞 Support
+## Support
 
 For API issues or questions:
 
