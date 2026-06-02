@@ -258,9 +258,7 @@ jobs:
         uses: docker/setup-buildx-action@v3
 
       - name: Build and start stack
-        env:
-          USE_MOCK_MODEL: "True"
-          USE_MOCK_DRUGS: "True"
+       
         run: |
           docker compose down -v 2>/dev/null || true
           docker compose build --parallel
