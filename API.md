@@ -23,6 +23,8 @@ Complete API specification for AILIXIR-Backend, including all endpoints, authent
 - [User Management Endpoints](#user-management-endpoints)
 - [Awards & Scientists Endpoints](#awards--scientists-endpoints)
 - [News Endpoints](#news-endpoints)
+- [ADMET Prediction Endpoints](#admet-prediction-endpoints)
+- [AI Generation Endpoints](#ai-generation-endpoints)
 - [Error Handling](#error-handling)
 - [Rate Limiting](#rate-limiting)
 - [Integration Examples](#integration-examples)
@@ -2145,6 +2147,307 @@ curl -X POST /api/admet/predict \\
     ]
 }
 ```
+
+'''
+
+## 🤖 AI Generation Endpoint
+
+### POST `/api/ai/generation/run`
+
+**Authentication:** Bearer token required
+
+**Input Options:**
+
+| Option          | Type    | Description                                                                 |
+| --------------- | ------- | --------------------------------------------------------------------------- |
+| `num_molecules` | integer | Number of molecules to generate                                             |
+| `return_top_k`  | integer | Number of top molecules to return                                           |
+| `docking_mode`  | string  | Docking mode: "all" or "off" or "top_k"                                     |
+| `dock_top_k`    | integer | Number of top molecules to dock is only required when docking mode is top_k |
+
+**Example:**
+
+```bash
+curl -X POST /api/ai/generation/run \\
+  -H "Authorization: Bearer {token}" \\
+  -H "Content-Type: application/json" \\
+  -d '{"num_molecules": 5, "return_top_k": 5, "docking_mode": "all", "dock_top_k": 5}'
+```
+
+**Response (200 OK):**
+
+```json
+{
+    "success": true,
+    "message": "Generation job started successfully",
+    "job_id": "gen_20260602_174612_90c1b1",
+    "status": "running",
+    "preset": "egfr_generator",
+    "num_molecules": 5,
+    "return_top_k": 5,
+    "docking_mode": "all",
+    "dock_top_k": 5,
+    "created_at": "2026-06-02 17:46:10"
+}
+```
+
+---
+
+**GET `/api/ai/generation/status/{job_id}`**
+
+**Authentication:** Bearer token required
+
+**Example:**
+
+```bash
+curl -X GET /api/ai/generation/status/gen_20260602_174612_90c1b1 \\
+  -H "Authorization: Bearer {token}"
+```
+
+**Response (200 OK):**
+
+```json
+{
+    "success": true,
+    "job_id": "gen_20260602_174612_90c1b1",
+    "status": "completed",
+    "preset": "egfr_generator",
+    "num_molecules": 5,
+    "return_top_k": 5,
+    "docking_mode": "all",
+    "dock_top_k": 5,
+    "created_at": "2026-06-02 17:46:10"
+}
+```
+
+---
+
+**GET `/api/ai/generation/jobs/{job_id}/results`**
+
+**Authentication:** Bearer token required
+
+**Example:**
+
+```bash
+curl -X GET /api/ai/generation/jobs/gen_20260602_174612_90c1b1/results \\
+  -H "Authorization: Bearer {token}"
+```
+
+**Response (200 OK):**
+
+```json
+{
+    "success": true,
+    "job_id": "gen_20260602_174612_90c1b1",
+    "status": "completed",
+    "preset": "egfr_generator",
+    "num_molecules": 5,
+    "return_top_k": 5,
+    "docking_mode": "all",
+    "dock_top_k": 5,
+    "summary": {
+        "num_requested": 5,
+        "num_generated": 5,
+        "num_valid": 5,
+        "num_returned": 5,
+        "num_docked": 5
+    },
+    "files": {
+        "csv": {
+            "filename": "generated_results.csv"
+        },
+        "json": {
+            "filename": "generated_results.json"
+        }
+    },
+    "ligands": [
+        {
+            "SMILES": "CCN1CCN(CCC(=O)Nc2ccc3nncc(-c4ccc5ncncc5c4)c3c2)C1",
+            "SMILES_state": 1,
+            "NLL": 8.24,
+            "valid": true,
+            "canonical_smiles": "CCN1CCN(CCC(=O)Nc2ccc3nncc(-c4ccc5ncncc5c4)c3c2)C1",
+            "mw": 427.5120000000002,
+            "logp": 3.1636000000000006,
+            "tpsa": 87.14,
+            "hbd": 1,
+            "hba": 7,
+            "rot_bonds": 6,
+            "qed": 0.505688822717197,
+            "sa_score": 2.715858141741272,
+            "pred_pAff_mean": 10.734132766723633,
+            "docking_score": -8.91,
+            "docking_status": "completed",
+            "rank": 1
+        },
+        {
+            "SMILES": "Cn1cnc2ccc(Nc3ncnc4ccc(NC(=O)CCN5CCC5)cc34)cc21",
+            "SMILES_state": 1,
+            "NLL": 5.32,
+            "valid": true,
+            "canonical_smiles": "Cn1cnc2ccc(Nc3ncnc4ccc(NC(=O)CCN5CCC5)cc34)cc21",
+            "mw": 401.4740000000003,
+            "logp": 3.2944000000000013,
+            "tpsa": 87.96999999999998,
+            "hbd": 2,
+            "hba": 6,
+            "rot_bonds": 6,
+            "qed": 0.5154635202823702,
+            "sa_score": 2.404394987645352,
+            "pred_pAff_mean": 9.775605201721191,
+            "docking_score": -8.27,
+            "docking_status": "completed",
+            "rank": 2
+        },
+        {
+            "SMILES": "CN1CCCN(CCC(=O)Nc2ccc3nncc(-c4ccc5cnccc5c4)c3c2)C1",
+            "SMILES_state": 1,
+            "NLL": 5.95,
+            "valid": true,
+            "canonical_smiles": "CN1CCCN(CCC(=O)Nc2ccc3nncc(-c4ccc5cnccc5c4)c3c2)C1",
+            "mw": 426.5240000000002,
+            "logp": 3.768600000000002,
+            "tpsa": 74.25,
+            "hbd": 1,
+            "hba": 6,
+            "rot_bonds": 5,
+            "qed": 0.523710400747619,
+            "sa_score": 2.669701840595609,
+            "pred_pAff_mean": 9.587095260620115,
+            "docking_score": -10.25,
+            "docking_status": "completed",
+            "rank": 3
+        },
+        {
+            "SMILES": "CN1CCCN(CCC(=O)Nc2ccc3nncc(-c4ccc5cnnnc5c4)c3c2)C1",
+            "SMILES_state": 1,
+            "NLL": 8.32,
+            "valid": true,
+            "canonical_smiles": "CN1CCCN(CCC(=O)Nc2ccc3nncc(-c4ccc5cnnnc5c4)c3c2)C1",
+            "mw": 428.5000000000002,
+            "logp": 2.5586,
+            "tpsa": 100.03,
+            "hbd": 1,
+            "hba": 8,
+            "rot_bonds": 5,
+            "qed": 0.5177099598248629,
+            "sa_score": 2.917413951888572,
+            "pred_pAff_mean": 8.804740905761719,
+            "docking_score": -10.15,
+            "docking_status": "completed",
+            "rank": 4
+        },
+        {
+            "SMILES": "O=C(CN1CCNCC1)Nc1ccc2nncc(-c3ccc4cnncc4c3)c2c1",
+            "SMILES_state": 1,
+            "NLL": 8.41,
+            "valid": true,
+            "canonical_smiles": "O=C(CN1CCNCC1)Nc1ccc2nncc(-c3ccc4cnncc4c3)c2c1",
+            "mw": 399.45800000000014,
+            "logp": 2.0836999999999994,
+            "tpsa": 95.93,
+            "hbd": 2,
+            "hba": 7,
+            "rot_bonds": 4,
+            "qed": 0.5423758682727866,
+            "sa_score": 2.665545251407164,
+            "pred_pAff_mean": 7.531160354614258,
+            "docking_score": -9.5,
+            "docking_status": "completed",
+            "rank": 5
+        }
+    ],
+    "created_at": "2026-06-02 17:46:10"
+}
+```
+
+---
+
+## ligands export
+
+### POST `/api/ai/ligands/export`
+
+**Authentication:** Bearer token required
+
+**Input Options:**
+
+| Name     | Type   | Description                            |
+| -------- | ------ | -------------------------------------- |
+| `smiles` | string | SMILES strings                         |
+| `format` | string | Supported formats: pdbqt or pdb or sdf |
+
+**Example:**
+
+```bash
+curl -X POST http://localhost:8080/api/ai/ligands/export \
+  -H "Authorization: Bearer {token}" \
+  -H "Content-Type: application/json" \
+  -d '{"smiles": "CCO", "format": "pdbqt"}'
+```
+
+**Response:**
+
+```json
+{
+    "success": true,
+    "data": {
+        "job_id": "lig_20260602_184722_a19639",
+        "status": "completed",
+        "smiles": "CCO",
+        "format": "pdbqt",
+        "filename": "ligand_3d.pdbqt",
+        "created_at": "2026-06-02 18:47:22"
+    }
+}
+```
+
+---
+
+## ligands download files or Generation files
+
+### GET `/api/ai/files/{job_id}/{filename}`
+
+**Authentication:** Bearer token required
+
+**Example ligands download:**
+
+```bash
+curl -X GET http://localhost:8080/api/ai/files/lig_20260602_181751_0227c4/ligand_3d.pdbqt \
+  -H "Authorization: Bearer {token}"
+```
+
+**Response:**
+
+```pdbqt
+REMARK SMILES CCC
+REMARK SMILES IDX 1 1 2 2 3 3
+REMARK H PARENT
+ROOT
+ATOM      1  C   UNL     1       1.223  -0.144  -0.355  1.00  0.00     0.003 C
+ATOM      2  C   UNL     1       0.031  -0.177   0.596  1.00  0.00    -0.007 C
+ATOM      3  C   UNL     1      -1.247   0.279  -0.101  1.00  0.00     0.003 C
+ENDROOT
+TORSDOF 0
+
+```
+
+**Example Generation files download:**
+
+```bash
+curl -X GET http://127.0.0.1:8000/api/ai/files/gen_20260602_185419_15fc7b/generated_results.csv \
+  -H "Authorization: Bearer {token}"
+```
+
+**Response:**
+
+```csv
+SMILES,SMILES_state,NLL,valid,canonical_smiles,mw,logp,tpsa,hbd,hba,rot_bonds,qed,sa_score,pred_pAff_mean,docking_score,docking_status
+CN1CCCN(CCC(=O)Nc2ccc3nncc(-c4ccc5cncnc5c4)c3c2)C1,1,4.14,True,CN1CCCN(CCC(=O)Nc2ccc3nncc(-c4ccc5cncnc5c4)c3c2)C1,427.5120000000002,3.1636000000000006,87.14,1,7,5,0.5234216428527144,2.7645745083533857,10.726750373840332,-9.16,completed
+O=C(CCN1CCCC1)Nc1ccc2c(Nc3cccc(Cl)c3)ncnc2c1,1,6.06,True,O=C(CCN1CCCC1)Nc1ccc2c(Nc3cccc(Cl)c3)ncnc2c1,395.89400000000006,4.451200000000003,70.15,2,5,6,0.6447750051881624,2.11252799494409,8.844084739685059,-8.23,completed
+CN1CCC2C1CCN2CCC(=O)Nc1ccc2ncnc(Nc3ccc4ncncc4c3)c2c1,1,22.74,True,CN1CCC2C1CCN2CCC(=O)Nc1ccc2ncnc(Nc3ccc4ncncc4c3)c2c1,468.5650000000001,3.4236000000000013,99.17,2,8,6,0.4441562846144389,3.462932738106919,8.693540573120117,-9.2,completed
+```
+
+---
 
 '''
 

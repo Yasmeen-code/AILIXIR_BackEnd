@@ -1,6 +1,6 @@
 <?php
 
-use App\Http\Controllers\Api\AiController;
+// use App\Http\Controllers\Api\AiController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\AwardController;
 use App\Http\Controllers\Api\ConvertSmilesController;
@@ -22,6 +22,19 @@ use App\Http\Controllers\Api\ChemicalSearchController;
 use App\Http\Controllers\Api\ChemistryController;
 use App\Http\Controllers\Api\AiServicesIntegrationController;
 use App\Http\Controllers\DockingTestController;
+use App\Http\Controllers\Api\GenerationController;
+use App\Http\Controllers\Api\LigandsController;
+
+/*
+|--------------------------------------------------------------------------
+| API Routes
+|--------------------------------------------------------------------------
+|
+| Here is where you can register API routes for your application. These
+| routes are loaded by the RouteServiceProvider within a group which
+| is assigned the "api" middleware group. Enjoy building your API!
+|
+*/
 
 // ==================== AI INTEGRATION (Docker / CI) ====================
 if (config('app.enable_ai_integration_routes')) {
@@ -108,16 +121,6 @@ Route::prefix('drug-repurposing')->middleware('auth:sanctum')->group(function ()
     Route::post('screen', [ScreeningController::class, 'screen']);
 });
 
-// ==================== AI JOBS ====================
-Route::middleware('auth:sanctum')->prefix('ai')->group(function () {
-    Route::post('/run', [AiController::class, 'run']);
-    Route::get('/status/{job:job_id}', [AiController::class, 'status']);
-    Route::get('/preview/{job:job_id}', [AiController::class, 'preview']);
-    Route::get('/download/top/{job:job_id}', [AiController::class, 'downloadTop']);
-    Route::get('/download/full/{job:job_id}', [AiController::class, 'downloadFull']);
-    Route::get('/history', [AiController::class, 'history']);
-});
-
 // ==================== SIMULATIONS ====================
 
 Route::prefix('simulations')->middleware('auth:sanctum')->group(function () {
@@ -167,8 +170,24 @@ Route::middleware('auth:sanctum')->group(function () {
 // ==================== ADMET PREDICTION ====================
 Route::middleware('auth:sanctum')->post('/admet/predict', [AdmetController::class, 'predict']);
 
+// ==================== AI-GENERATION ====================
+Route::middleware('auth:sanctum')->prefix('ai')->group(function () {
 
+    Route::prefix('generation')->group(function () {
+        Route::post('/run', [GenerationController::class, 'run']);
 
+        Route::middleware('job.owner')->group(function () {
+            Route::get('/status/{job_id}', [GenerationController::class, 'status']);
+            Route::get('/jobs/{job_id}/results', [GenerationController::class, 'results']);
+        });
+    });
+
+    // ========== Files ==========
+    Route::middleware('job.owner')->get('/files/{job_id}/{filename}', [GenerationController::class, 'downloadFile']);
+
+    // ========== Ligands Export ==========
+    Route::post('/ligands/export', [LigandsController::class, 'exportLigands']);
+});
 
 
 
