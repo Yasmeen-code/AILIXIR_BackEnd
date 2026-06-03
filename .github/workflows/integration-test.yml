@@ -288,8 +288,8 @@ jobs:
           # Match phpunit.xml: sync queue + sqlite so jobs run inside the test process
           docker compose exec -T \
             -e QUEUE_CONNECTION=sync \
-            
             laravel php artisan test --filter=DrugRepurposingIntegrationTest
+            
 
       - name: Dump logs on failure
         if: failure()
