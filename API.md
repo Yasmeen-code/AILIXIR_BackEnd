@@ -19,6 +19,7 @@ Complete API specification for AILIXIR-Backend, including all endpoints, authent
 - [AI Agent Endpoints](#ai-agent-endpoints)
 - [Chemical Search Endpoints](#chemical-search-endpoints)
 - [Docking API](#docking-api)
+- [Drug Repurposing API](#drug-repurposing-api)
 - [Convert SMILES API](#convert-smiles-api)
 - [User Management Endpoints](#user-management-endpoints)
 - [Awards & Scientists Endpoints](#awards--scientists-endpoints)
@@ -1474,6 +1475,262 @@ If the job is not completed, the `results` block may be omitted.
     - `id` (integer)
 - Returns a file download for the completed docking result.
 - Content disposition filename: `docking_result_{id}.pdbqt`
+
+---
+
+## Drug Repurposing API
+
+### POST `/api/drug-repurposing/targets`
+
+- Auth required
+- Content type: `application/json`
+- Request body:
+    - `disease_name` (string, required)
+    - `top_n` (integer, optional, default 10, range 1–100)
+
+#### Example curl request
+
+```bash
+curl -X POST "{base_url}/api/drug-repurposing/targets" \\
+  -H "Authorization: Bearer {token}" \\
+  -H "Content-Type: application/json" \\
+  -d '{"disease_name": "Type 2 Diabetes", "top_n": 10}'
+```
+
+#### Success response
+
+```json
+{
+    "success": true,
+    "message": "Target lookup queued successfully",
+    "data": {
+        "job_id": 15,
+        "status": "pending"
+    }
+}
+```
+
+---
+
+### GET `/api/drug-repurposing/targets/{id}`
+
+- Auth required
+- Path parameter:
+    - `id` (integer)
+
+#### Success response (completed)
+
+```json
+{
+    "success": true,
+    "message": "Target lookup status retrieved successfully",
+    "data": {
+        "job_id": 4,
+        "status": "completed",
+        "input": {
+            "disease_name": "Type 2 Diabetes",
+            "top_n": 10
+        },
+        "output": {
+            "disease": "Type 2 Diabetes",
+            "total_targets": 10,
+            "targets": [
+                {"symbol": "KCNJ11", "name": "potassium inwardly rectifying channel subfamily J member 11", "score": 0.8651},
+                {"symbol": "ABCC8", "name": "ATP binding cassette subfamily C member 8", "score": 0.8648},
+                {"symbol": "GCK", "name": "glucokinase", "score": 0.8612},
+                {"symbol": "PPARG", "name": "peroxisome proliferator activated receptor gamma", "score": 0.8486},
+                {"symbol": "INSR", "name": "insulin receptor", "score": 0.7887},
+                {"symbol": "HNF1B", "name": "HNF1 homeobox B", "score": 0.7846},
+                {"symbol": "HNF1A", "name": "HNF1 homeobox A", "score": 0.7796},
+                {"symbol": "HNF4A", "name": "hepatocyte nuclear factor 4 alpha", "score": 0.7763},
+                {"symbol": "WFS1", "name": "wolframin ER transmembrane glycoprotein", "score": 0.7695},
+                {"symbol": "GLP1R", "name": "glucagon like peptide 1 receptor", "score": 0.7667}
+            ]
+        },
+        "created_at": "2026-06-03T07:31:42.000000Z"
+    }
+}
+```
+
+If the job is not completed, the `output` field will be `null`.
+
+---
+
+### GET `/api/drug-repurposing/targets/history`
+
+- Auth required
+- Query parameters:
+    - `per_page` (integer, optional, default 15)
+
+#### Response
+
+```json
+{
+    "success": true,
+    "message": "Target lookup history retrieved successfully",
+    "data": {
+        "data": [
+            {
+                "id": 4,
+                "input": {
+                    "disease_name": "Type 2 Diabetes",
+                    "top_n": 10
+                },
+                "output": {
+                    "disease": "Type 2 Diabetes",
+                    "total_targets": 10,
+                    "targets": [
+                        {"symbol": "KCNJ11", "name": "potassium inwardly rectifying channel subfamily J member 11", "score": 0.8651},
+                        {"symbol": "GCK", "name": "glucokinase", "score": 0.8612}
+                    ]
+                },
+                "status": "completed",
+                "created_at": "2026-06-03T07:31:42.000000Z"
+            }
+        ],
+        "pagination": {
+            "current_page": 1,
+            "per_page": 15,
+            "total": 3,
+            "last_page": 1,
+            "has_more": false
+        }
+    }
+}
+```
+
+---
+
+### POST `/api/drug-repurposing/screen`
+
+- Auth required
+- Content type: `application/json`
+- Request body:
+    - `disease_name` (string, required)
+    - `known_drugs` (array of strings, optional)
+    - `min_score` (numeric, optional, range 0–1)
+    - `top_n_targets` (integer, optional, range 1–100)
+
+#### Example curl request
+
+```bash
+curl -X POST "{base_url}/api/drug-repurposing/screen" \\
+  -H "Authorization: Bearer {token}" \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "disease_name": "Type 2 Diabetes",
+    "known_drugs": ["Metformin", "Insulin"],
+    "min_score": 0.5,
+    "top_n_targets": 10
+  }'
+```
+
+#### Success response
+
+```json
+{
+    "success": true,
+    "message": "Screening queued successfully",
+    "data": {
+        "job_id": 22,
+        "status": "pending"
+    }
+}
+```
+
+---
+
+### GET `/api/drug-repurposing/screen/{id}`
+
+- Auth required
+- Path parameter:
+    - `id` (integer)
+
+#### Success response (completed)
+
+```json
+{
+    "success": true,
+    "message": "Screening status retrieved successfully",
+    "data": {
+        "job_id": 22,
+        "status": "completed",
+        "input": {
+            "disease_name": "Type 2 Diabetes",
+            "min_score": 0.5,
+            "top_n_targets": 10,
+            "known_drugs": ["Metformin", "Insulin"]
+        },
+        "output": {
+            "disease": "Type 2 Diabetes",
+            "total_drugs": 200,
+            "total_predictions": 2000,
+            "top_results": [
+                {"drug_name": "Drug_CHEMBL1754", "target_symbol": "KCNJ11", "score": 1, "status": "Potential Discovery"},
+                {"drug_name": "Drug_CHEMBL1754", "target_symbol": "ABCC8", "score": 1, "status": "Potential Discovery"},
+                {"drug_name": "Drug_CHEMBL1754", "target_symbol": "GCK", "score": 1, "status": "Potential Discovery"},
+                {"drug_name": "Drug_CHEMBL1754", "target_symbol": "PPARG", "score": 1, "status": "Potential Discovery"},
+                {"drug_name": "Drug_CHEMBL1754", "target_symbol": "INSR", "score": 1, "status": "Potential Discovery"}
+            ],
+            "success": true,
+            "message": "✅ Screening completed in 47.30s using CPU. Found 2000 candidates (10 in top results)."
+        },
+        "created_at": "2026-06-02T21:35:24.000000Z"
+    }
+}
+```
+
+If the job is not completed, the `output` field will be `null`.
+
+---
+
+### GET `/api/drug-repurposing/screen/history`
+
+- Auth required
+- Query parameters:
+    - `per_page` (integer, optional, default 15)
+
+#### Response
+
+```json
+{
+    "success": true,
+    "message": "Screening history retrieved successfully",
+    "data": {
+        "data": [
+            {
+                "id": 22,
+                "input": {
+                    "disease_name": "Type 2 Diabetes",
+                    "min_score": 0.5,
+                    "top_n_targets": 10,
+                    "known_drugs": ["Metformin", "Insulin"]
+                },
+                "output": {
+                    "disease": "Type 2 Diabetes",
+                    "total_drugs": 200,
+                    "total_predictions": 2000,
+                    "top_results": [
+                        {"drug_name": "Drug_CHEMBL1754", "target_symbol": "KCNJ11", "score": 1, "status": "Potential Discovery"},
+                        {"drug_name": "Drug_CHEMBL1754", "target_symbol": "ABCC8", "score": 1, "status": "Potential Discovery"}
+                    ],
+                    "success": true,
+                    "message": "✅ Screening completed in 47.30s using CPU. Found 2000 candidates (10 in top results)."
+                },
+                "status": "completed",
+                "created_at": "2026-06-02T21:35:24.000000Z"
+            }
+        ],
+        "pagination": {
+            "current_page": 1,
+            "per_page": 15,
+            "total": 5,
+            "last_page": 1,
+            "has_more": false
+        }
+    }
+}
+```
 
 ---
 
