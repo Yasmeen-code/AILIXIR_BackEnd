@@ -14,10 +14,11 @@ class ScreenRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'disease_name' => ['required', 'string', 'max:255'],
-            'known_drugs'  => ['sometimes', 'array'],
-            'known_drugs.*' => ['string'],
-            'top_k'        => ['sometimes', 'integer', 'min:1', 'max:100'],
+            'disease_name'   => ['required', 'string', 'max:255'],
+            'known_drugs'    => ['sometimes', 'array'],
+            'known_drugs.*'  => ['string'],
+            'min_score'      => ['sometimes', 'numeric', 'min:0', 'max:1'],
+            'top_n_targets'  => ['sometimes', 'integer', 'min:1', 'max:100'],
         ];
     }
 }

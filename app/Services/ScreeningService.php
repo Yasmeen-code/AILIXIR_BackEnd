@@ -10,38 +10,52 @@ class ScreeningService
 
     public function __construct()
     {
-        $this->baseUrl = config('services.screening.url');
+        $this->baseUrl = rtrim((string) config('services.drug_repurposing.url'), '/');
     }
 
     private function client()
     {
-        return Http::timeout(300);
+        $client = Http::timeout(300);
+
+        $token = config('services.drug_repurposing.token');
+        if ($token) {
+            $client = $client->withToken($token);
+        }
+
+        return $client;
     }
 
     /**
-     * GET /targets/{disease_name}
-     * Quick lookup: returns disease targets from the external AI service.
+     * POST /api/v1/disease-targets
      */
-    public function getTargets(string $diseaseName): array
+    public function getTargets(array $input): array
     {
-        $response = $this->client()->get(
-            $this->baseUrl . '/screen/targets/' . urlencode($diseaseName)
+        $payload = [
+            'disease_name' => $input['disease_name'],
+            'top_n'        => (int) ($input['top_n'] ?? 10),
+        ];
+
+        $response = $this->client()->post(
+            $this->baseUrl . '/api/v1/disease-targets',
+            $payload
         );
+
+        $response->throw();
 
         return $response->json();
     }
 
     /**
-     * POST /screen
-     * Full AI drug screening – forwards the payload to the external service and
-     * returns the raw decoded response array.
+     * POST /api/v1/screen
      */
     public function screen(array $payload): array
     {
         $response = $this->client()->post(
-            $this->baseUrl . '/screen/screen',
+            $this->baseUrl . '/api/v1/screen',
             $payload
         );
+
+        $response->throw();
 
         return $response->json();
     }

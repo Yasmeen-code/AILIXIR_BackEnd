@@ -29,6 +29,7 @@ return [
 
     'drug_repurposing' => [
         'url' => env('DRUG_REPURPOSING_URL', 'http://drug-repurposing:8000'),
+        'token' => env('DRUG_REPURPOSING_TOKEN'),
     ],
 
     'postmark' => [
@@ -62,8 +63,5 @@ return [
         'jwt_secret' => env('JWT_SECRET'),
     ],
 
-    'screening' => [
-        'url' => env('SCREENING_SERVICE_URL', 'http://localhost:8000/api/v1'),
-    ],
 
 ];

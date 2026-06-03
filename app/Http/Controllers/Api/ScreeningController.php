@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Requests\Screen\ScreenRequest;
+use App\Http\Requests\Screen\TargetLookupRequest;
 use App\Models\ScreeningResult;
 use App\Models\TargetLookup;
 use App\Jobs\RunTargetLookupJob;
@@ -17,13 +18,15 @@ class ScreeningController extends BaseController
     public function __construct(protected ScreeningService $screeningService) {}
 
     // ──────────────────────────────────────────────────────────────────────────
-    // GET /api/v1/screen/targets/{disease_name}
+    // POST /api/drug-repurposing/targets  →  upstream POST /api/v1/disease-targets
     // ──────────────────────────────────────────────────────────────────────────
-    public function targets(string $disease_name): JsonResponse
+    public function targets(TargetLookupRequest $request): JsonResponse
     {
+        $input = $request->validated();
+
         $lookup = TargetLookup::create([
             'user_id' => Auth::id(),
-            'input'   => ['disease_name' => $disease_name],
+            'input'   => $input,
             'status'  => 'pending',
         ]);
 
@@ -36,7 +39,7 @@ class ScreeningController extends BaseController
     }
 
     // ──────────────────────────────────────────────────────────────────────────
-    // POST /api/v1/screen/screen
+    // POST /api/drug-repurposing/screen  →  upstream POST /api/v1/screen
     // ──────────────────────────────────────────────────────────────────────────
     public function screen(ScreenRequest $request): JsonResponse
     {

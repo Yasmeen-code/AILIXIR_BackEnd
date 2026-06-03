@@ -11,18 +11,16 @@ RUN apk add --no-cache icu-dev libzip-dev oniguruma-dev \
     && docker-php-ext-install intl zip mbstring bcmath pcntl
 
 # Add build argument for composer dev dependencies
-ARG COMPOSER_DEV="--no-dev"
 
 COPY composer.json composer.lock ./
 RUN composer install \
-    $COMPOSER_DEV \
     --no-interaction \
     --no-scripts \
     --prefer-dist \
     --optimize-autoloader
 
 COPY . .
-RUN composer dump-autoload --optimize --classmap-authoritative $COMPOSER_DEV
+RUN composer dump-autoload --optimize --classmap-authoritative
 
 # ============================================================
 # Stage 2: Frontend assets (Vite)
