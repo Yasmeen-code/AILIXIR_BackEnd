@@ -11,7 +11,7 @@ class AiServiceClient
 
     public function __construct()
     {
-        $this->baseUrl = config('services.ai.url', 'http://localhost:8000');
+        $this->baseUrl = rtrim(config('services.generation.url', 'http://generation:8000'), '/');
     }
 
     public function startGeneration(array $params): Response

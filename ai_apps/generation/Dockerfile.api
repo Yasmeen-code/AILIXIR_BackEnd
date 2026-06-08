@@ -1,0 +1,102 @@
+FROM nvidia/cuda:12.4.1-devel-ubuntu22.04
+
+WORKDIR /app
+
+ENV DEBIAN_FRONTEND=noninteractive
+ENV PATH=/usr/local/cuda/bin:/opt/conda/bin:$PATH
+ENV LD_LIBRARY_PATH=/usr/local/cuda/lib64:/opt/conda/envs/ailixir/lib:/opt/conda/lib:/usr/local/lib
+
+SHELL ["/bin/bash", "-lc"]
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    git \
+    wget \
+    curl \
+    ca-certificates \
+    build-essential \
+    make \
+    procps \
+    cuda-cudart-dev-12-4 \
+    cuda-driver-dev-12-4 \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN wget -q https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Linux-x86_64.sh -O /tmp/miniforge.sh \
+    && bash /tmp/miniforge.sh -b -p /opt/conda \
+    && rm /tmp/miniforge.sh \
+    && conda clean -afy
+
+RUN conda create -n ailixir python=3.10 -y && conda clean -afy
+
+SHELL ["conda", "run", "--no-capture-output", "-n", "ailixir", "/bin/bash", "-lc"]
+
+RUN conda install -y -c conda-forge \
+    git \
+    wget \
+    curl \
+    pandas \
+    numpy \
+    rdkit \
+    fastapi \
+    uvicorn \
+    pydantic \
+    requests \
+    openbabel \
+    meeko \
+    libstdcxx-ng \
+    libgcc-ng \
+    && conda clean -afy
+
+RUN git clone --depth 1 https://github.com/MolecularAI/REINVENT4.git /opt/REINVENT4 \
+    && cd /opt/REINVENT4 \
+    && python install.py cpu
+
+RUN python -c "from rdkit import Chem; print('RDKit import OK')"
+RUN python -c "import importlib.metadata as m; print('REINVENT version', m.version('reinvent'))"
+
+SHELL ["/bin/bash", "-lc"]
+
+ARG ADGPU_TARGETS="50"
+
+RUN set -eux; \
+    which nvcc; \
+    nvcc --version; \
+    echo "Searching CUDA headers and libraries"; \
+    find /usr/local -name cuda.h | head -20; \
+    find /usr/local -name libcudart.so | head -20; \
+    find /usr/local -path '*stubs/libcuda.so' | head -20; \
+    CUDA_INC="$(dirname "$(find /usr/local -name cuda.h | head -n 1)")"; \
+    CUDA_LIB="$(dirname "$(find /usr/local -name libcudart.so | head -n 1)")"; \
+    CUDA_STUB="$(dirname "$(find /usr/local -path '*stubs/libcuda.so' | head -n 1)")"; \
+    echo "CUDA_INC=$CUDA_INC"; \
+    echo "CUDA_LIB=$CUDA_LIB"; \
+    echo "CUDA_STUB=$CUDA_STUB"; \
+    test -n "$CUDA_INC"; \
+    test -n "$CUDA_LIB"; \
+    test -n "$CUDA_STUB"; \
+    test -f "$CUDA_INC/cuda.h"; \
+    test -f "$CUDA_LIB/libcudart.so"; \
+    test -f "$CUDA_STUB/libcuda.so"; \
+    ln -sf "$CUDA_STUB/libcuda.so" "$CUDA_LIB/libcuda.so"; \
+    rm -rf /opt/AutoDock-GPU; \
+    git clone --depth 1 https://github.com/ccsb-scripps/AutoDock-GPU.git /opt/AutoDock-GPU; \
+    cd /opt/AutoDock-GPU; \
+    make DEVICE=CUDA NUMWI=64 TARGETS="$ADGPU_TARGETS" GPU_INCLUDE_PATH="$CUDA_INC" GPU_LIBRARY_PATH="$CUDA_LIB"; \
+    find /opt/AutoDock-GPU -maxdepth 3 -type f -name "autodock_*" -print; \
+    test -f /opt/AutoDock-GPU/bin/autodock_gpu_64wi; \
+    chmod +x /opt/AutoDock-GPU/bin/autodock_gpu_64wi
+
+COPY api.py /app/api.py
+COPY bundle /app/bundle
+
+RUN mkdir -p /app/outputs/jobs
+
+ENV PUBLIC_BASE_URL=http://localhost:8000
+ENV REINVENT_DEVICE=cpu
+ENV DEEPPURPOSE_URL=http://deeppurpose:8001/reinvent_predict
+ENV ADGPU_BIN=/opt/AutoDock-GPU/bin/autodock_gpu_64wi
+ENV PYTHON=python
+ENV LD_PRELOAD=/opt/conda/envs/ailixir/lib/libstdc++.so.6
+
+EXPOSE 8000
+
+CMD ["conda", "run", "--no-capture-output", "-n", "ailixir", "uvicorn", "api:app", "--host", "0.0.0.0", "--port", "8000"]

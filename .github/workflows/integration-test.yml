@@ -19,7 +19,38 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          lfs: true
+      - name: Pull and verify Git LFS files
+        run: |
+          git lfs version
+          git lfs pull
+          git lfs checkout
+          git lfs ls-files
 
+          python - <<'PY'
+          from pathlib import Path
+
+          paths = [
+              "ai_apps/generation/bundle/models/affinity/config.pkl",
+              "ai_apps/generation/bundle/models/affinity/model.pt",
+              "ai_apps/generation/bundle/models/generator/egfr_generator.chkpt",
+              "ai_apps/generation/bundle/models/generator/reinvent.prior",
+          ]
+
+          for p in paths:
+              path = Path(p)
+              if not path.exists():
+                  raise SystemExit(f"Missing required artifact: {p}")
+
+              data = path.read_bytes()[:80]
+              size = path.stat().st_size
+
+              print(f"{p}: {size} bytes")
+
+              if data.startswith(b"version https://git-lfs.github.com"):
+                  raise SystemExit(f"{p} is still a Git LFS pointer file")
+          PY
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
@@ -28,8 +59,14 @@ jobs:
           # Clean up volumes from previous runs
           docker compose down -v 2>/dev/null || true
 
-          docker compose build --parallel
+          docker builder prune -af || true
+          docker system df
+
+          COMPOSE_PARALLEL_LIMIT=1 docker compose build
+          docker system df
+
           docker compose up -d --wait
+
 
           # Run fresh migrations to ensure clean database state
           docker compose exec -T laravel php artisan migrate:fresh --force
@@ -253,7 +290,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-
+        with:
+          lfs: true
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
@@ -261,7 +299,12 @@ jobs:
        
         run: |
           docker compose down -v 2>/dev/null || true
-          docker compose build --parallel
+          docker builder prune -af || true
+          docker system df
+
+          COMPOSE_PARALLEL_LIMIT=1 docker compose build
+          docker system df
+
           docker compose up -d --wait
 
       - name: Verify drug-repurposing reachable from Laravel container
@@ -307,7 +350,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-
+        with:
+          lfs: true
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
@@ -341,14 +385,20 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-
+        with:
+          lfs: true
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
       - name: Build and start stack
         run: |
           docker compose down -v 2>/dev/null || true
-          docker compose build --parallel
+          docker builder prune -af || true
+          docker system df
+
+          COMPOSE_PARALLEL_LIMIT=1 docker compose build
+          docker system df
+
           docker compose up -d --wait
 
           # Run fresh migrations to ensure clean database state
