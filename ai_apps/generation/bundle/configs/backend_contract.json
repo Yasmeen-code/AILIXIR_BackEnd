@@ -1,0 +1,80 @@
+{
+  "project": "EGFR AI backend bundle",
+  "version": "v1-minimal",
+  "modes": {
+    "generate": {
+      "type": "sampling_from_packaged_generator",
+      "config": "configs/sampling_model.bundle.toml",
+      "checkpoint": "models/generator/egfr_generator.chkpt",
+      "allowed_user_inputs": [
+        "preset",
+        "num_molecules",
+        "return_top_k"
+      ],
+      "do_not_expose": [
+        "raw TOML",
+        "checkpoint paths",
+        "training stages",
+        "RL scoring strategy",
+        "batch_size",
+        "bucket_size"
+      ],
+      "postprocess": {
+        "script": "tools/enrich_generated.py",
+        "input": "outputs/generate/generated_smiles.csv",
+        "output": "outputs/generate/generated_smiles_enriched.csv",
+        "adds_columns": [
+          "valid",
+          "canonical_smiles",
+          "mw",
+          "logp",
+          "tpsa",
+          "hbd",
+          "hba",
+          "rot_bonds",
+          "qed",
+          "sa_score",
+          "pred_pAff_mean"
+        ],
+        "sort_note": "Display sorting may use pred_pAff_mean desc then QED desc. This is not a final scientific ranking."
+      }
+    },
+    "score_smiles": {
+      "type": "affinity_api",
+      "run_command": "uvicorn services.deeppurpose.serve_affinity:app --host 127.0.0.1 --port 8001",
+      "health_endpoint": "GET /health",
+      "predict_endpoint": "POST /reinvent_predict",
+      "request_example": {
+        "smiles": [
+          "CCO",
+          "c1ccccc1"
+        ]
+      },
+      "response_key": "pred_pAff_mean"
+    },
+    "docking": {
+      "enabled_by_default": false,
+      "allowed_modes": [
+        "off",
+        "top_k",
+        "all"
+      ],
+      "recommended_mode": "top_k",
+      "top_k_default": 10,
+      "maps_dir": "docking/maps_current",
+      "grid_file": "docking/maps_current/4WKQ_receptor_v5_SBr.maps.fld",
+      "binary_env_var": "ADGPU_BIN",
+      "result_columns": [
+        "docking_score",
+        "docking_status",
+        "docking_pose_file"
+      ],
+      "when_disabled": {
+        "docking_score": null,
+        "docking_status": "not_run",
+        "docking_pose_file": null
+      },
+      "note": "Docking is optional and backend-controlled. Use top_k for demos because docking is slower than descriptor and affinity scoring."
+    }
+  }
+}
