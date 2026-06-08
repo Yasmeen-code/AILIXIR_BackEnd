@@ -19,8 +19,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-            with:
-         lfs: true
+        with:
+          lfs: true
       - name: Pull and verify Git LFS files
         run: |
           git lfs version
@@ -284,7 +284,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-
+        with:
+          lfs: true
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
@@ -338,7 +339,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-
+        with:
+          lfs: true
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
@@ -372,7 +374,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-
+        with:
+          lfs: true
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
