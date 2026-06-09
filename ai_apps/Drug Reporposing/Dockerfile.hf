@@ -1,0 +1,38 @@
+# Lightweight Dockerfile for Hugging Face Spaces
+# Uses mock model/drugs to avoid heavy DeepPurpose + TDC dependencies
+FROM python:3.10-slim
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+COPY requirements.txt .
+# Only install lightweight deps (skip torch/DeepPurpose on HF)
+RUN pip install --no-cache-dir --upgrade pip && \
+    pip install --no-cache-dir \
+        fastapi uvicorn pydantic python-multipart \
+        numpy pandas scikit-learn scipy xarray \
+        requests httpx \
+        python-json-logger structlog \
+        python-dotenv \
+        deepsmiles pandas-flavor && \
+    rm -rf /root/.cache/pip/*
+
+COPY . /app
+
+RUN useradd -m -u 1000 appuser && chown -R appuser:appuser /app
+USER appuser
+
+EXPOSE 7860
+
+ENV USE_MOCK_MODEL=True
+ENV USE_MOCK_DRUGS=True
+ENV HOST=0.0.0.0
+ENV PORT=7860
+
+HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=5 \
+    CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:7860/health')"
+
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "7860"]
