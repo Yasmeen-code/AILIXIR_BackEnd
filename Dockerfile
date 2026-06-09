@@ -47,20 +47,20 @@ RUN apt-get update && apt-get install -y \
     libicu-dev \
     libzip-dev \
     libonig-dev \
+    libsqlite3-dev \
     wget \
     bzip2 \
     ca-certificates \
     openbabel \
+    supervisor \
     && docker-php-ext-install \
-    pdo_mysql \
+    pdo_sqlite \
     zip \
     intl \
     mbstring \
     bcmath \
     opcache \
     pcntl \
-    && pecl install redis \
-    && docker-php-ext-enable redis \
     && rm -rf /var/lib/apt/lists/*
 
 COPY docker/php/opcache.ini /usr/local/etc/php/conf.d/opcache.ini
@@ -99,17 +99,17 @@ COPY --from=vendor --chown=www-data:www-data /app /var/www/html
 COPY --from=assets --chown=www-data:www-data /app/public/build /var/www/html/public/build
 
 COPY docker/entrypoint.sh /usr/local/bin/entrypoint.sh
-COPY docker/laravel.env .env
+COPY docker/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 RUN chmod +x /usr/local/bin/entrypoint.sh \
-    && mkdir -p storage/framework/{cache,sessions,views} storage/logs bootstrap/cache \
-    && chown -R www-data:www-data storage bootstrap/cache .env /var/www/html/vina_env
+    && mkdir -p storage/framework/{cache,sessions,views} storage/logs bootstrap/cache database \
+    && chown -R www-data:www-data storage bootstrap/cache database /var/www/html/vina_env
 
 USER www-data
 
-EXPOSE 8000
+EXPOSE 8000 7860
 
 HEALTHCHECK --interval=15s --timeout=5s --start-period=40s --retries=5 \
-    CMD php -r "exit((int)(@file_get_contents('http://127.0.0.1:8000') === false));"
+    CMD php -r "exit((int)(@file_get_contents('http://127.0.0.1:7860') === false));"
 
 ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
 CMD ["php", "artisan", "serve", "--host=0.0.0.0", "--port=8000"]

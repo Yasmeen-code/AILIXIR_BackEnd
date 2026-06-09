@@ -17,7 +17,6 @@ services:
       CLOUDINARY_CLOUD_NAME: dummy_cloud
       CLOUDINARY_API_KEY: dummy_key
       CLOUDINARY_API_SECRET: dummy_secret
-      DB_HOST: mysql
       GENERATION_SERVICE_URL: http://generation:8000
       CHEMICAL_AI_URL: http://chemical-rag:5000
       ADMET_AI_URL: http://admet:8000
@@ -28,8 +27,6 @@ services:
     volumes:
       - laravel-storage:/var/www/html/storage
     depends_on:
-      mysql:
-        condition: service_healthy
       generation:
         condition: service_healthy
       admet:
@@ -54,17 +51,15 @@ services:
       CLOUDINARY_CLOUD_NAME: dummy_cloud
       CLOUDINARY_API_KEY: dummy_key
       CLOUDINARY_API_SECRET: dummy_secret
-      DB_HOST: mysql
       CHEMICAL_AI_URL: http://chemical-rag:5000
       ADMET_AI_URL: http://admet:8000
       AI_ADMET_SERVICE_URL: http://admet:8000
       DRUG_REPURPOSING_URL: http://drug-repurposing:8000
+      AI_SERVICE_URL: http://drug-repurposing:8000
       RUN_MIGRATIONS: "false"
     # Wait for Laravel to complete migrations before starting queue
     command: sh -c "sleep 30 && php artisan queue:work --sleep=3 --tries=3 --timeout=300"
     depends_on:
-      mysql:
-        condition: service_healthy
       laravel:
         condition: service_started
     healthcheck:
@@ -75,26 +70,6 @@ services:
       start_period: 90s
     networks:
       - ailixir
-
-  mysql:
-    image: mariadb:11.4
-    container_name: ailixir-mysql
-    restart: unless-stopped
-    environment:
-      MYSQL_ROOT_PASSWORD: secret
-      MYSQL_DATABASE: ailixir
-      MYSQL_USER: ailixir
-      MYSQL_PASSWORD: secret
-    volumes:
-      - mysql-data:/var/lib/mysql
-    networks:
-      - ailixir
-    healthcheck:
-      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
-      interval: 10s
-      timeout: 5s
-      retries: 10
-      start_period: 30s
 
   # ── AI microservices ────────────────────────────────────────
   generation-deeppurpose:
@@ -154,8 +129,6 @@ services:
       resources:
         limits:
           memory: 8G
-
-
 
   admet:
     build:
@@ -241,7 +214,6 @@ networks:
     driver: bridge
 
 volumes:
-  mysql-data:
   generation-outputs:
   laravel-storage:
   chemical-rag-data:

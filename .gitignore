@@ -25,3 +25,6 @@ Thumbs.db
 .env
 __pycache__/
 *.pyc
+*.sqlite
+*.sqlite-wal
+*.sqlite-shm
