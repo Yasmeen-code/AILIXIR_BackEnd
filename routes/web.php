@@ -30,3 +30,4 @@ Route::get('/upload-test', function () {
 // Route::get('/news/refresh', [NewsController::class, 'refresh'])->name('news.refresh');
 
 Route::get('/api-endpoints', [ApiDocsController::class, 'index']);
+Route::get('/docs', [ApiDocsController::class, 'showDocs']);
