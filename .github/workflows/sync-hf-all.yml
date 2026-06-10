@@ -15,7 +15,7 @@ name: Sync to Hugging Face Spaces
 
 on:
   push:
-    branches: [main]
+    branches: [main, feature/hugging-face-deploy]
   workflow_dispatch:
 
 jobs:
@@ -103,7 +103,6 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          lfs: true
       - name: Install git-xet for binary file support
         run: |
           curl --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/huggingface/xet-core/refs/heads/main/git_xet/install.sh | sh
@@ -160,7 +159,24 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          lfs: true
+          lfs: false
+      - uses: actions/cache@v4
+        id: lfs-cache
+        with:
+          path: .lfs-cache
+          key: lfs-generation-${{ hashFiles('ai_apps/generation/bundle/models/**') }}
+          restore-keys: lfs-generation-
+      - name: Pull LFS objects (cached)
+        run: |
+          git lfs install
+          if [ -d .lfs-cache ]; then
+            mkdir -p .git/lfs/objects
+            rsync -a .lfs-cache/ .git/lfs/objects/
+          fi
+          git lfs pull
+          mkdir -p .lfs-cache
+          rsync -a .git/lfs/objects/ .lfs-cache/
+          git lfs checkout
       - name: Install git-xet for binary file support
         run: |
           curl --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/huggingface/xet-core/refs/heads/main/git_xet/install.sh | sh
