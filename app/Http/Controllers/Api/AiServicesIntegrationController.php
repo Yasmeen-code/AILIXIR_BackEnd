@@ -21,6 +21,7 @@ class AiServicesIntegrationController extends Controller
 
         foreach ($checks as $name => $baseUrl) {
             $results[$name] = $this->probeHealth($baseUrl);
+            usleep(200_000);
         }
 
         $allHealthy = collect($results)->every(
@@ -63,8 +64,9 @@ class AiServicesIntegrationController extends Controller
     {
         $baseUrl = rtrim((string) config('services.drug_repurposing.url'), '/');
 
-        $health = Http::timeout(60)->get("{$baseUrl}/health");
-        $modelStatus = Http::timeout(60)->get("{$baseUrl}/api/v1/model-status");
+        $health = Http::timeout(60)->retry(3, 500)->withUserAgent('AILIXIR-Internal/1.0')->get("{$baseUrl}/health");
+        usleep(200_000);
+        $modelStatus = Http::timeout(60)->retry(3, 500)->withUserAgent('AILIXIR-Internal/1.0')->get("{$baseUrl}/api/v1/model-status");
 
         $success = $health->successful() && $modelStatus->successful();
 
@@ -92,7 +94,7 @@ class AiServicesIntegrationController extends Controller
         }
 
         try {
-            $response = Http::timeout(60)->get(rtrim($baseUrl, '/').'/health');
+            $response = Http::timeout(60)->retry(3, 500)->withUserAgent('AILIXIR-Internal/1.0')->get(rtrim($baseUrl, '/').'/health');
 
             return [
                 'status' => $response->successful() ? 'healthy' : 'unhealthy',
