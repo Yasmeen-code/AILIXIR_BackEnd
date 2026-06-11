@@ -82,11 +82,26 @@
         .toc ul { list-style: none; padding-left: 0; }
         .toc li { margin-bottom: 4px; }
         .toc a { color: #2563eb; font-weight: 500; }
+        h2, h3, h4 { scroll-margin-top: 24px; }
     </style>
 </head>
 <body>
     <div class="container">
         {!! $content !!}
     </div>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            document.querySelectorAll('.toc a[href^="#"]').forEach(function (link) {
+                link.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    var target = document.getElementById(this.getAttribute('href').substring(1));
+                    if (target) {
+                        target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                        history.pushState(null, null, this.href);
+                    }
+                });
+            });
+        });
+    </script>
 </body>
 </html>
