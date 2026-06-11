@@ -1,0 +1,49 @@
+name: HF Deployment Tests
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 6 * * *"
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+
+      - name: Run Python tests against HF deployment
+        env:
+          BASE_URL: https://RottenShadow-ailixir-api.hf.space/api
+          TEST_EMAIL: salehyasmeen080@gmail.com
+          TEST_PASSWORD: "123456789"
+          TEST_NAME: yasmeen564
+          REDIS_HOST: localhost
+          REDIS_PORT: 6379
+        run: |
+          python -m pytest tests/ -v --tb=short --junitxml=junit.xml -m "not slow"
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: hf-test-results
+          path: junit.xml
+
+      - name: Test Summary
+        uses: test-summary/action@v2
+        if: always()
+        with:
+          paths: "junit.xml"
