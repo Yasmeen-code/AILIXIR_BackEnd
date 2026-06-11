@@ -13,7 +13,11 @@ services:
     env_file:
       - docker/laravel.env
     environment:
-      DB_HOST: mysql
+      CLOUDINARY_URL: cloudinary://dummy_key:dummy_secret@dummy_cloud
+      CLOUDINARY_CLOUD_NAME: dummy_cloud
+      CLOUDINARY_API_KEY: dummy_key
+      CLOUDINARY_API_SECRET: dummy_secret
+      GENERATION_SERVICE_URL: http://generation:8000
       CHEMICAL_AI_URL: http://chemical-rag:5000
       ADMET_AI_URL: http://admet:8000
       AI_ADMET_SERVICE_URL: http://admet:8000
@@ -23,7 +27,7 @@ services:
     volumes:
       - laravel-storage:/var/www/html/storage
     depends_on:
-      mysql:
+      generation:
         condition: service_healthy
       admet:
         condition: service_healthy
@@ -43,16 +47,19 @@ services:
     env_file:
       - docker/laravel.env
     environment:
-      DB_HOST: mysql
+      CLOUDINARY_URL: cloudinary://dummy_key:dummy_secret@dummy_cloud
+      CLOUDINARY_CLOUD_NAME: dummy_cloud
+      CLOUDINARY_API_KEY: dummy_key
+      CLOUDINARY_API_SECRET: dummy_secret
       CHEMICAL_AI_URL: http://chemical-rag:5000
       ADMET_AI_URL: http://admet:8000
       AI_ADMET_SERVICE_URL: http://admet:8000
       DRUG_REPURPOSING_URL: http://drug-repurposing:8000
+      AI_SERVICE_URL: http://drug-repurposing:8000
+      RUN_MIGRATIONS: "false"
     # Wait for Laravel to complete migrations before starting queue
     command: sh -c "sleep 30 && php artisan queue:work --sleep=3 --tries=3 --timeout=300"
     depends_on:
-      mysql:
-        condition: service_healthy
       laravel:
         condition: service_started
     healthcheck:
@@ -64,27 +71,65 @@ services:
     networks:
       - ailixir
 
-  mysql:
-    image: mariadb:11.4
-    container_name: ailixir-mysql
+  # ── AI microservices ────────────────────────────────────────
+  generation-deeppurpose:
+    build:
+      context: ./ai_apps/generation
+      dockerfile: Dockerfile.dp
+    container_name: ailixir-generation-deeppurpose
     restart: unless-stopped
-    environment:
-      MYSQL_ROOT_PASSWORD: secret
-      MYSQL_DATABASE: ailixir
-      MYSQL_USER: ailixir
-      MYSQL_PASSWORD: secret
+    ports:
+      - "${GENERATION_DEEPPURPOSE_HTTP_PORT:-8006}:8001"
     volumes:
-      - mysql-data:/var/lib/mysql
+      - generation-outputs:/app/outputs
+      - ./ai_apps/generation/bundle:/app/bundle
     networks:
       - ailixir
     healthcheck:
-      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
-      interval: 10s
-      timeout: 5s
-      retries: 10
-      start_period: 30s
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8001/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 8
+      start_period: 240s
+    deploy:
+      resources:
+        limits:
+          memory: 6G
 
-  # ── AI microservices ────────────────────────────────────────
+  generation:
+    build:
+      context: ./ai_apps/generation
+      dockerfile: Dockerfile.api
+    container_name: ailixir-generation
+    restart: unless-stopped
+    ports:
+      - "${GENERATION_HTTP_PORT:-8005}:8000"
+    environment:
+      PUBLIC_BASE_URL: http://localhost:8005
+      DEEPPURPOSE_URL: http://generation-deeppurpose:8001/reinvent_predict
+      REINVENT_DEVICE: cpu
+      NVIDIA_VISIBLE_DEVICES: all
+      NVIDIA_DRIVER_CAPABILITIES: compute,utility
+      ADGPU_BIN: /opt/AutoDock-GPU/bin/autodock_gpu_64wi
+    volumes:
+      - generation-outputs:/app/outputs
+      - ./ai_apps/generation/bundle:/app/bundle
+    depends_on:
+      generation-deeppurpose:
+        condition: service_healthy
+    networks:
+      - ailixir
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 8
+      start_period: 300s
+    deploy:
+      resources:
+        limits:
+          memory: 8G
+
   admet:
     build:
       context: ./ai_apps/ADMIT/admet_inference
@@ -169,6 +214,6 @@ networks:
     driver: bridge
 
 volumes:
-  mysql-data:
+  generation-outputs:
   laravel-storage:
   chemical-rag-data:

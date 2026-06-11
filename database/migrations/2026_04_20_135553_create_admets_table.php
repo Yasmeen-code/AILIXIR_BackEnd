@@ -20,8 +20,7 @@ return new class extends Migration
             $table->float('metabolism')->nullable();
             $table->float('excretion')->nullable();
             $table->float('toxicity')->nullable();
-            $table->timestamp('created_at')->useCurrent();
-            $table->timestamp('updated_at')->useCurrent()->useCurrentOnUpdate();
+            $table->timestamps();
         });
     }
 

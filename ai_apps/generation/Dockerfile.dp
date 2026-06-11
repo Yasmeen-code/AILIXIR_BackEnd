@@ -1,0 +1,37 @@
+FROM condaforge/miniforge3:24.11.3-0
+
+WORKDIR /app
+
+SHELL ["/bin/bash", "-lc"]
+
+RUN conda create -n dp python=3.8 -y && conda clean -afy
+
+SHELL ["conda", "run", "-n", "dp", "/bin/bash", "-lc"]
+
+RUN conda install -y -c conda-forge \
+    git \
+    pandas \
+    numpy \
+    scikit-learn \
+    rdkit \
+    fastapi \
+    uvicorn \
+    requests \
+    tqdm \
+    pip \
+    && conda clean -afy
+
+RUN pip install git+https://github.com/bp-kelley/descriptastorus
+
+RUN pip install DeepPurpose
+
+COPY bundle /app/bundle
+
+ENV PYTHONPATH=/app/bundle
+
+RUN mkdir -p /home/abdullah/projects/egfr_drug_discovery/runs/deeppurpose \
+    && mkdir -p /app/outputs/deeppurpose
+
+EXPOSE 8001
+
+CMD ["conda", "run", "--no-capture-output", "-n", "dp", "uvicorn", "services.deeppurpose.serve_affinity:app", "--app-dir", "/app/bundle", "--host", "0.0.0.0", "--port", "8001"]

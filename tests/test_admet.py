@@ -3,6 +3,7 @@ Integration Tests for ADMET Service with Laravel Sanctum Authentication
 اختبارات التكامل لخدمة ADMET مع توثيق Laravel Sanctum
 """
 
+import os
 import pytest
 import requests
 import redis
@@ -17,21 +18,21 @@ from datetime import datetime
 class TestConfig:
     """إعدادات بيئة الاختبار"""
     def __init__(self):
-        self.base_url: str = "http://127.0.0.1:8000"
+        self.base_url: str = os.environ.get("BASE_URL", "http://127.0.0.1:8000")
         self.api_endpoint: str = "/api/admet/predict"
         self.login_endpoint: str = "/api/user/login"
         self.register_endpoint: str = "/api/user/register"
-        self.redis_host: str = "localhost"
-        self.redis_port: int = 6379
+        self.redis_host: str = os.environ.get("REDIS_HOST", "localhost")
+        self.redis_port: int = int(os.environ.get("REDIS_PORT", "6379"))
         self.timeout: int = 30
 
 config = TestConfig()
 
 # بيانات مستخدم اختبار
 TEST_USER = {
-    "name": "Hazem Hatem",
-    "email": "hhazm6745@gmail.com",
-    "password": "Hazem@2005"
+    "name": os.environ.get("TEST_NAME", "Hazem Hatem"),
+    "email": os.environ.get("TEST_EMAIL", "hhazm6745@gmail.com"),
+    "password": os.environ.get("TEST_PASSWORD", "Hazem@2005")
 }
 
 # تجاهل التحذير الخاص بـ PytestCollectionWarning
