@@ -161,7 +161,7 @@ def check_data_models() -> bool:
         from app.models import (
             ScreeningRequest,
             ScreeningResponse,
-            PredictionResult,
+            DrugCandidate,
             DiseaseSearchRequest,
         )
         print(f"  ✅ All data models loaded")

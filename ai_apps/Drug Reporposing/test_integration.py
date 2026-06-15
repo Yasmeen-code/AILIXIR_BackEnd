@@ -225,18 +225,16 @@ def test_virtual_screening() -> bool:
             print_success(f"✅ SCREENING COMPLETE in {elapsed:.1f} seconds")
             print("")
             print(f"Disease Targeted: {data['disease']}")
-            print(f"Targets Used: {data['total_targets']}")
-            print(f"Drugs Screened: {data['total_drugs']}")
-            print(f"Total Predictions: {data['total_predictions']}")
-            print(f"Success: {data['success']}")
-            print(f"Message: {data['message']}")
+            print(f"Targets Used: {data['total_targets_found']}")
+            print(f"Drugs Screened: {data['total_drugs_screened']}")
+            print(f"Total Predictions: {data['total_pairs_evaluated']}")
             print("")
             
-            if data['top_results']:
-                print_success(f"Top {len(data['top_results'])} candidates:")
-                for i, result in enumerate(data['top_results'], 1):
+            if data['top_candidates']:
+                print_success(f"Top {len(data['top_candidates'])} candidates:")
+                for i, result in enumerate(data['top_candidates'], 1):
                     print(f"   {i}. {result['drug_name']} → {result['target_symbol']}")
-                    print(f"      Score: {result['score']:.3f} | {result['status']}")
+                    print(f"      Binding Score: {result['binding_score']:.3f} | {result['status']}")
             else:
                 print_error("No results found")
             
