@@ -6,6 +6,7 @@ from .protein_sequences import ProteinSequencePipeline
 from .drug_library import DrugLibraryPipeline
 from .ai_screening import AIScreeningPipeline
 from .result_processing import ResultProcessingPipeline
+from .pdb_structures import PdbStructurePipeline
 
 __all__ = [
     'DiseaseTargetPipeline',
@@ -13,4 +14,5 @@ __all__ = [
     'DrugLibraryPipeline',
     'AIScreeningPipeline',
     'ResultProcessingPipeline',
+    'PdbStructurePipeline',
 ]

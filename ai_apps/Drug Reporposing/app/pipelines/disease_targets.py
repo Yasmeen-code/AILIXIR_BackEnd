@@ -12,6 +12,44 @@ class DiseaseTargetPipeline:
     def __init__(self, api_url: str = "https://api.platform.opentargets.org/api/v4/graphql"):
         self.api_url = api_url
 
+    def fetch_disease_id(self, disease_name: str) -> Optional[str]:
+        """
+        Fetches the EFO disease ID for a given disease name.
+
+        Args:
+            disease_name: Name of the disease to search for
+
+        Returns:
+            EFO ID string (e.g. 'EFO_0001360'), or None if not found
+        """
+        search_query = """
+        query searchDisease($queryString: String!) {
+          search(queryString: $queryString, entityNames: ["disease"]) {
+            hits { id name }
+          }
+        }
+        """
+        try:
+            response = requests.post(
+                self.api_url,
+                json={'query': search_query, 'variables': {"queryString": disease_name}},
+                timeout=30
+            )
+            response.raise_for_status()
+            hits = response.json().get('data', {}).get('search', {}).get('hits', [])
+            if not hits:
+                logger.warning(f"No disease found for: {disease_name}")
+                return None
+            disease_id = hits[0]['id']
+            logger.info(f"✅ Disease identified: {hits[0]['name']} ({disease_id})")
+            return disease_id
+        except requests.exceptions.RequestException as e:
+            logger.error(f"API request failed: {str(e)}")
+            raise
+        except Exception as e:
+            logger.error(f"Error fetching disease ID: {str(e)}")
+            raise
+
     def get_disease_targets(self, disease_name: str, top_n: int = 10) -> Optional[List[Dict]]:
         """
         Fetches the top N target proteins associated with a specific disease.
@@ -81,7 +119,8 @@ class DiseaseTargetPipeline:
                 {
                     "symbol": r['target']['approvedSymbol'],
                     "name": r['target']['approvedName'],
-                    "score": round(r['score'], 4)
+                    "score": round(r['score'], 4),
+                    "uniprot_id": ""
                 }
                 for r in targets_data
             ]
