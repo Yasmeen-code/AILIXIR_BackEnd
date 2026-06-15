@@ -1,0 +1,37 @@
+FROM python:3.10-slim
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    ca-certificates curl git libxrender1 libxext6 && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+RUN pip install --no-cache-dir --upgrade pip && \
+    pip install --no-cache-dir \
+        fastapi uvicorn pydantic requests pandas rdkit \
+    && rm -rf /root/.cache/pip/*
+
+RUN git clone --depth 1 https://github.com/MolecularAI/REINVENT4.git /opt/REINVENT4 \
+    && cd /opt/REINVENT4 \
+    && python install.py cpu -d none \
+    && rm -rf /root/.cache/pip/*
+
+RUN pip install --no-cache-dir git+https://github.com/bp-kelley/descriptastorus 2>/dev/null; \
+    pip install --no-cache-dir DeepPurpose 2>/dev/null; \
+    rm -rf /root/.cache/pip/*
+
+COPY api.py .
+COPY bundle/ ./bundle/
+
+RUN useradd -m -u 1000 appuser && chown -R appuser:appuser /app
+USER appuser
+
+ENV REINVENT_DEVICE=cpu
+ENV PUBLIC_BASE_URL=http://localhost:7860
+ENV PYTHON=python
+
+EXPOSE 7860
+
+HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=5 \
+    CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:7860/health')"
+
+CMD ["uvicorn", "api:app", "--host", "0.0.0.0", "--port", "7860"]

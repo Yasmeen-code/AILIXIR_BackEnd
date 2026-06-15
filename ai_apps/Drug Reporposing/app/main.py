@@ -69,33 +69,42 @@ async def startup_event():
     logger.info(f"Dataset: {settings.TDC_DATASET}")
     
     try:
-        logger.info("\n[1/2] Loading DeepPurpose MPNN_CNN_BindingDB model...")
-        ai_pipeline.load_model(model_name=settings.DEEP_PURPOSE_MODEL)
-        logger.info("✅ AI model loaded successfully\n")
-        
-        logger.info("[2/2] Verifying drug library...")
-        # Test drug library access (will use fallback if TDC unavailable)
-        test_drugs = drug_pipeline.load_drug_library(
-            dataset_name=settings.TDC_DATASET, 
-            max_drugs=10
-        )
-        logger.info(f"✅ Drug library ready - {len(test_drugs)} sample drugs loaded\n")
-        
-        logger.info(f"{'='*70}")
-        logger.info("✅ PRODUCTION MODE: All systems ready")
-        logger.info("   - Real DeepPurpose MPNN_CNN predictions enabled")
-        logger.info("   - Drug library enabled (Official TDC or Local Fallback)")
-        logger.info("   - No mock predictions active")
-        logger.info(f"{'='*70}\n")
+        if ai_pipeline.use_mock:
+            logger.info("\n[1/2] Mock mode enabled - skipping DeepPurpose model loading")
+            logger.info("[2/2] Mock drug library enabled - skipping TDC download")
+            logger.info(f"\n{'='*70}")
+            logger.info("✅ MOCK MODE: All systems ready")
+            logger.info("   - Using mock predictions (random scores)")
+            logger.info("   - Drug library: local fallback")
+            logger.info(f"{'='*70}\n")
+        else:
+            logger.info("\n[1/2] Loading DeepPurpose MPNN_CNN_BindingDB model...")
+            ai_pipeline.load_model(model_name=settings.DEEP_PURPOSE_MODEL)
+            logger.info("✅ AI model loaded successfully\n")
+            
+            logger.info("[2/2] Verifying drug library...")
+            test_drugs = drug_pipeline.load_drug_library(
+                dataset_name=settings.TDC_DATASET, 
+                max_drugs=10
+            )
+            logger.info(f"✅ Drug library ready - {len(test_drugs)} sample drugs loaded\n")
+            
+            logger.info(f"{'='*70}")
+            logger.info("✅ PRODUCTION MODE: All systems ready")
+            logger.info("   - Real DeepPurpose MPNN_CNN predictions enabled")
+            logger.info("   - Drug library enabled (Official TDC or Local Fallback)")
+            logger.info("   - No mock predictions active")
+            logger.info(f"{'='*70}\n")
         
     except ImportError as e:
         logger.error(f"\n{'='*70}")
         logger.error("❌ STARTUP FAILED: Missing required dependencies")
         logger.error(f"{'='*70}")
         logger.error(f"Error: {str(e)}\n")
-        logger.error("Install required packages:\n")
-        logger.error("  DeepPurpose and dependencies are REQUIRED")
-        logger.error("  Check terminal output above for pip install commands\n")
+        if not ai_pipeline.use_mock:
+            logger.error("Install required packages:\n")
+            logger.error("  DeepPurpose and dependencies are REQUIRED")
+            logger.error("  Check terminal output above for pip install commands\n")
         raise
         
     except RuntimeError as e:
@@ -110,8 +119,9 @@ async def startup_event():
         logger.error(f"❌ STARTUP FAILED: Unexpected error")
         logger.error(f"{'='*70}")
         logger.error(f"Error: {str(e)}\n")
-        import traceback
-        traceback.print_exc()
+        if not ai_pipeline.use_mock:
+            import traceback
+            traceback.print_exc()
         raise
 
 

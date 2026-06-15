@@ -15,15 +15,45 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          lfs: true
 
+      - name: Pull and verify Git LFS files
+        run: |
+          git lfs version
+          git lfs pull
+          git lfs checkout
+          git lfs ls-files
+
+          python - <<'PY'
+          from pathlib import Path
+
+          paths = [
+              "ai_apps/generation/bundle/models/affinity/config.pkl",
+              "ai_apps/generation/bundle/models/affinity/model.pt",
+              "ai_apps/generation/bundle/models/generator/egfr_generator.chkpt",
+              "ai_apps/generation/bundle/models/generator/reinvent.prior",
+          ]
+
+          for p in paths:
+              path = Path(p)
+              if not path.exists():
+                  raise SystemExit(f"Missing required artifact: {p}")
+
+              data = path.read_bytes()[:80]
+              size = path.stat().st_size
+
+              print(f"{p}: {size} bytes")
+
+              if data.startswith(b"version https://git-lfs.github.com"):
+                  raise SystemExit(f"{p} is still a Git LFS pointer file")
+          PY
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
       - name: Create .env file for Docker
         run: |
           cp docker/laravel.env .env
-          echo "APP_DEBUG=true" >> .env
-          echo "APP_ENV=testing" >> .env
 
       - name: Start Docker containers
         run: |
@@ -31,16 +61,6 @@ jobs:
 
       - name: Wait for services to be healthy
         run: |
-          echo "Waiting for MySQL to be healthy..."
-          for i in {1..60}; do
-            if docker exec ailixir-mysql healthcheck.sh --connect --innodb_initialized > /dev/null 2>&1; then
-              echo "MySQL is healthy"
-              break
-            fi
-            echo "Attempt $i/60: MySQL not ready yet..."
-            sleep 5
-          done
-
           echo "Waiting for Laravel API to be ready..."
           for i in {1..60}; do
             if docker exec ailixir-laravel curl -f http://127.0.0.1:8000 > /dev/null 2>&1; then
@@ -103,7 +123,6 @@ jobs:
         run: |
           mkdir -p logs
           docker compose logs laravel > logs/laravel.log
-          docker compose logs mysql > logs/mysql.log
           docker compose logs admet > logs/admet.log
           docker compose logs drug-repurposing > logs/drug-repurposing.log
           docker compose logs chemical-rag > logs/chemical-rag.log
