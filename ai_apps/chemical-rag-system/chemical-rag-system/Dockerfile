@@ -27,18 +27,16 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy application code
 COPY . .
 
-# Expose custom port
-EXPOSE 5000
+EXPOSE 7860
 
 # Create directory for images if it doesn't exist
 RUN mkdir -p app/static/images && chmod 777 app/static/images
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=5 \
-    CMD curl -f http://localhost:5000/health || exit 1
+    CMD curl -f http://localhost:7860/health || exit 1
 
 # Set Python to run in unbuffered mode
 ENV PYTHONUNBUFFERED=1
 
-# Run the application with gunicorn for production
-CMD ["python", "-m", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "5000", "--workers", "2"]
+CMD python -m uvicorn app.main:app --host 0.0.0.0 --port ${API_PORT:-7860} --workers 2

@@ -98,8 +98,8 @@ class AIScreeningPipeline:
         target_lib: List[Dict]
     ) -> List[Dict]:
         """
-        Performs AI-based matching between all drugs and targets using REAL DeepPurpose.
-        Uses MPNN for drug encoding and CNN for protein encoding.
+        Performs AI-based matching between all drugs and targets.
+        Uses real DeepPurpose predictions or mock predictions based on use_mock flag.
         
         Args:
             drug_lib: List of drugs with 'name' and 'smiles'
@@ -107,42 +107,48 @@ class AIScreeningPipeline:
         
         Returns:
             List of predictions with drug_name, target_symbol, and score
-            
-        Raises:
-            RuntimeError: If model not loaded or prediction fails
         """
-        if not self.model or not self._is_initialized:
-            raise RuntimeError(
-                "AI model not loaded. Call load_model() first or ensure DeepPurpose is installed."
-            )
-
         if not drug_lib or not target_lib:
             raise ValueError("Drug library and target library cannot be empty")
 
-        logger.info(f"🚀 Starting AI Virtual Screening (REAL PREDICTIONS)...")
-        logger.info(f"   Drugs: {len(drug_lib)}, Targets: {len(target_lib)}")
-        logger.info(f"   Total pairs: {len(drug_lib) * len(target_lib)}")
+        n_pairs = len(drug_lib) * len(target_lib)
         
-        # Prepare data
-        X_drugs = []
-        X_targets = []
-        pair_info = []
+        if self.use_mock:
+            logger.info(f"Using mock predictions for {n_pairs} drug-target pairs")
+            pair_info = []
+            for drug in drug_lib:
+                for target in target_lib:
+                    pair_info.append({
+                        'drug_name': drug['name'],
+                        'target_symbol': target['symbol']
+                    })
+            scores = self._generate_mock_predictions(n_pairs)
+            method = "MOCK"
+        else:
+            if not self.model or not self._is_initialized:
+                raise RuntimeError(
+                    "AI model not loaded. Call load_model() first."
+                )
+            
+            logger.info(f"Starting AI Virtual Screening (REAL PREDICTIONS)...")
+            logger.info(f"   Drugs: {len(drug_lib)}, Targets: {len(target_lib)}")
+            logger.info(f"   Total pairs: {n_pairs}")
+            
+            X_drugs = []
+            X_targets = []
+            pair_info = []
+            for drug in drug_lib:
+                for target in target_lib:
+                    X_drugs.append(drug['smiles'])
+                    X_targets.append(target['sequence'])
+                    pair_info.append({
+                        'drug_name': drug['name'],
+                        'target_symbol': target['symbol']
+                    })
+            
+            scores = self._predict_with_model(X_drugs, X_targets)
+            method = "REAL"
 
-        for drug in drug_lib:
-            for target in target_lib:
-                X_drugs.append(drug['smiles'])
-                X_targets.append(target['sequence'])
-                pair_info.append({
-                    'drug_name': drug['name'],
-                    'target_symbol': target['symbol']
-                })
-
-        logger.info(f"   Encoding compounds (MPNN) and proteins (CNN)...")
-        
-        # Run REAL predictions with DeepPurpose
-        scores = self._predict_with_model(X_drugs, X_targets)
-
-        # Combine results
         results = []
         for i, score in enumerate(scores):
             results.append({
@@ -151,7 +157,7 @@ class AIScreeningPipeline:
                 "score": round(float(score), 4)
             })
 
-        logger.info(f"✅ AI Screening completed with REAL predictions: {len(results)} drug-target pairs scored")
+        logger.info(f"AI Screening completed ({method}): {len(results)} drug-target pairs scored")
         return results
 
     def _predict_with_model(self, X_drugs: List[str], X_targets: List[str]) -> np.ndarray:

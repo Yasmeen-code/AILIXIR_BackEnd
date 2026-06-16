@@ -157,6 +157,7 @@ class DrugRepurposingIntegrationTest extends TestCase
 
         try {
             $healthy = Http::timeout(30)
+                ->retry(3, 500)
                 ->get("{$baseUrl}/health")
                 ->successful();
         } catch (\Throwable $e) {

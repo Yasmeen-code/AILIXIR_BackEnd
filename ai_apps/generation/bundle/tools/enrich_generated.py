@@ -103,22 +103,27 @@ def call_affinity_api(smiles_list, url: str):
     if not smiles_list:
         return []
 
-    response = requests.post(
-        url,
-        json={"smiles": smiles_list},
-        timeout=300,
-    )
-    response.raise_for_status()
-
-    payload = response.json()
-    preds = payload.get("pred_pAff_mean")
-
-    if preds is None:
-        raise RuntimeError(
-            f"Affinity API response missing 'pred_pAff_mean'. Response was: {json.dumps(payload)[:500]}"
+    try:
+        response = requests.post(
+            url,
+            json={"smiles": smiles_list},
+            timeout=300,
         )
+        response.raise_for_status()
 
-    return [float(x) for x in preds]
+        payload = response.json()
+        preds = payload.get("pred_pAff_mean")
+
+        if preds is None:
+            raise RuntimeError(
+                f"Affinity API response missing 'pred_pAff_mean'. Response was: {json.dumps(payload)[:500]}"
+            )
+
+        return [float(x) for x in preds]
+
+    except Exception as e:
+        print(f"Warning: Affinity API call failed ({e}). Returning null predictions.")
+        return [None] * len(smiles_list)
 
 
 def main():

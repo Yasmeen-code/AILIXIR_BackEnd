@@ -23,15 +23,13 @@ if __name__ == "__main__":
     running_in_docker = os.path.exists('/.dockerenv')
     
     if running_in_docker:
-        # In Docker: bind to 0.0.0.0 and port 5000 (matches docker-compose mapping)
         host = "0.0.0.0"
-        port = 5000
-        is_reload = False  # Disable reload in Docker
+        port = int(os.getenv("API_PORT", 7860))
+        is_reload = False
     else:
-        # Local development: bind to localhost and port 8000 WITHOUT reload (to let index build complete)
         host = "127.0.0.1"
-        port = 8000
-        is_reload = False  # DISABLED: Don't interrupt index building with auto-reload
+        port = int(os.getenv("API_PORT", 8000))
+        is_reload = False
     
     print(f"[STARTUP] Starting FastAPI server on {host}:{port}")
     if running_in_docker:

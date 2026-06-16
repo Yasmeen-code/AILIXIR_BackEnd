@@ -9,7 +9,7 @@ from pathlib import Path
 from typing import Literal, Optional, List, Dict, Any
 
 import pandas as pd
-from fastapi import FastAPI, HTTPException, BackgroundTasks
+from fastapi import FastAPI, HTTPException, BackgroundTasks, Request
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
@@ -24,11 +24,18 @@ OUTPUTS_DIR = APP_ROOT / "outputs"
 JOBS_DIR = OUTPUTS_DIR / "jobs"
 
 PUBLIC_BASE_URL = os.getenv("PUBLIC_BASE_URL", "http://localhost:8000").rstrip("/")
-DEEPPURPOSE_URL = os.getenv("DEEPPURPOSE_URL", "http://127.0.0.1:8001/reinvent_predict")
+DEEPPURPOSE_URL = os.getenv("DEEPPURPOSE_URL", "http://127.0.0.1:7860/reinvent_predict")
 REINVENT_DEVICE = os.getenv("REINVENT_DEVICE", "cpu")
 ADGPU_BIN = os.getenv("ADGPU_BIN", "")
 
 JOBS_DIR.mkdir(parents=True, exist_ok=True)
+
+# Attempt to load DeepPurpose affinity service (optional)
+try:
+    from bundle.services.deeppurpose.serve_affinity import predict_smiles_list
+    HAS_AFFINITY = True
+except Exception:
+    HAS_AFFINITY = False
 
 
 app = FastAPI(
@@ -401,6 +408,19 @@ def health():
         "reinvent_device": REINVENT_DEVICE,
         "adgpu_bin": ADGPU_BIN or None,
     }
+
+
+@app.post("/reinvent_predict")
+async def reinvent_predict(request: Request):
+    if not HAS_AFFINITY:
+        return JSONResponse(
+            status_code=503,
+            content={"error": "Affinity prediction service not available (DeepPurpose not installed)"}
+        )
+    payload = await request.json()
+    smiles = payload.get("smiles", []) if isinstance(payload, dict) else []
+    preds = predict_smiles_list(smiles)
+    return {"pred_pAff_mean": preds}
 
 
 @app.get("/files/jobs/{job_id}/{path:path}")

@@ -118,12 +118,14 @@ class ScreeningController extends BaseController
             return $this->errorResponse('Target lookup not found or unauthorized', 404);
         }
 
-        return $this->successResponse('Target lookup status retrieved successfully', [
-            'job_id'     => $lookup->id,
-            'status'     => $lookup->status,
-            'input'      => $lookup->input,
-            'output'     => $lookup->output,
-            'created_at' => $lookup->created_at,
+        return $this->successResponse('Target lookup history retrieved successfully', [
+            'data' => [
+                [
+                    'id'     => $lookup->id,
+                    'input'  => $lookup->input,
+                    'output' => $lookup->output,
+                ]
+            ]
         ]);
     }
 
@@ -140,12 +142,14 @@ class ScreeningController extends BaseController
             return $this->errorResponse('Screening result not found or unauthorized', 404);
         }
 
-        return $this->successResponse('Screening status retrieved successfully', [
-            'job_id'     => $result->id,
-            'status'     => $result->status,
-            'input'      => $result->input,
-            'output'     => $result->output,
-            'created_at' => $result->created_at,
+        return $this->successResponse('Screening history retrieved successfully', [
+            'data' => [
+                [
+                    'id'     => $result->id,
+                    'input'  => $result->input,
+                    'output' => $result->output,
+                ]
+            ]
         ]);
     }
 }
