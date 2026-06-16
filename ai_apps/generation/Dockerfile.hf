@@ -155,6 +155,11 @@ RUN set -eux; \
 
 COPY api.py /app/api.py
 COPY bundle /app/bundle
+
+# Download model files from Hugging Face Hub (avoids GitHub LFS quota)
+RUN conda run -n ailixir pip install --no-cache-dir huggingface_hub \
+    && conda run -n ailixir python -c "from huggingface_hub import snapshot_download; snapshot_download(repo_id='shdwRow/ailixir-generation-models', local_dir='bundle/models')"
+
 COPY start_hf.sh /app/start_hf.sh
 
 RUN sed -i 's/\r$//' /app/start_hf.sh \
