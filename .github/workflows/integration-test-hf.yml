@@ -237,14 +237,14 @@ jobs:
             -H "Content-Type: application/json" \
             -d '{"email":"salehyasmeen080@gmail.com","password":"123456789"}')
           if [ "$HTTP_CODE" != "200" ]; then exit 1; fi
-          python3 -c "
-import json
-with open('login.json') as f: data = json.load(f)
-token = data.get('data', {}).get('token')
-if not token: exit(1)
-with open('token.txt','w') as f: f.write(token)
-print('Login OK')
-"
+          python3 - <<'PY'
+          import json
+          with open('login.json') as f: data = json.load(f)
+          token = data.get('data', {}).get('token')
+          if not token: exit(1)
+          with open('token.txt','w') as f: f.write(token)
+          print('Login OK')
+          PY
 
       - name: Test retrieval-only chemical search
         run: |
@@ -329,14 +329,14 @@ print('Login OK')
             -H "Content-Type: application/json" \
             -d '{"email":"salehyasmeen080@gmail.com","password":"123456789"}')
           if [ "$HTTP_CODE" != "200" ]; then exit 1; fi
-          python3 -c "
-import json
-with open('login.json') as f: data = json.load(f)
-token = data.get('data', {}).get('token')
-if not token: exit(1)
-with open('token.txt','w') as f: f.write(token)
-print('Login OK')
-"
+          python3 - <<'PY'
+          import json
+          with open('login.json') as f: data = json.load(f)
+          token = data.get('data', {}).get('token')
+          if not token: exit(1)
+          with open('token.txt','w') as f: f.write(token)
+          print('Login OK')
+          PY
 
       - name: Test unauthenticated DR request is rejected
         run: |
@@ -348,12 +348,12 @@ print('Login OK')
             echo "Expected 401, got $HTTP_CODE"
             exit 1
           fi
-          python3 -c "
-import json
-with open('dr_unauth.json') as f: data = json.load(f)
-assert not data.get('success', True), 'Expected success=false'
-print('Unauthenticated DR request correctly rejected')
-"
+          python3 - <<'PY'
+          import json
+          with open('dr_unauth.json') as f: data = json.load(f)
+          assert not data.get('success', True), 'Expected success=false'
+          print('Unauthenticated DR request correctly rejected')
+          PY
 
       - name: Test DR target lookup requires disease_name
         run: |
@@ -447,14 +447,14 @@ print('Unauthenticated DR request correctly rejected')
             -H "Content-Type: application/json" \
             -d '{"email":"salehyasmeen080@gmail.com","password":"123456789"}')
           if [ "$HTTP_CODE" != "200" ]; then exit 1; fi
-          python3 -c "
-import json
-with open('login.json') as f: data = json.load(f)
-token = data.get('data', {}).get('token')
-if not token: exit(1)
-with open('token.txt','w') as f: f.write(token)
-print('Login OK')
-"
+          python3 - <<'PY'
+          import json
+          with open('login.json') as f: data = json.load(f)
+          token = data.get('data', {}).get('token')
+          if not token: exit(1)
+          with open('token.txt','w') as f: f.write(token)
+          print('Login OK')
+          PY
 
       - name: Test docking submit
         run: |
