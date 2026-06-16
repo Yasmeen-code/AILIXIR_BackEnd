@@ -12,16 +12,19 @@ from app.models import (
     DiseaseSearchRequest,
     ScreeningRequest,
     ScreeningResponse,
-    PredictionResult,
+    DrugCandidate,
     HealthCheckResponse,
-    ErrorResponse
+    ErrorResponse,
+    EnrichedTargetResponse
 )
+from app.pipelines.screening_cache import load_cached_screening, save_cached_screening
 from app.pipelines import (
     DiseaseTargetPipeline,
     ProteinSequencePipeline,
     DrugLibraryPipeline,
     AIScreeningPipeline,
-    ResultProcessingPipeline
+    ResultProcessingPipeline,
+    PdbStructurePipeline
 )
 
 # Configure logging
@@ -55,6 +58,7 @@ protein_pipeline = ProteinSequencePipeline(api_url=settings.UNIPROT_API_URL)
 drug_pipeline = DrugLibraryPipeline(use_mock=settings.USE_MOCK_DRUGS)
 ai_pipeline = AIScreeningPipeline(use_mock=settings.USE_MOCK_MODEL)
 result_pipeline = ResultProcessingPipeline()
+pdb_pipeline = PdbStructurePipeline(api_url=settings.UNIPROT_API_URL)
 
 # Load AI model at startup
 @app.on_event("startup")
@@ -166,17 +170,20 @@ async def root():
     }
 
 
-# Disease Targets Endpoint
-@app.post("/api/v1/disease-targets")
+# Disease Targets Endpoint (enriched with sequences + PDB IDs)
+@app.post("/api/v1/disease-targets", response_model=EnrichedTargetResponse)
 async def get_disease_targets(request: DiseaseSearchRequest):
     """
-    Get target proteins associated with a disease using Open Targets API.
+    Get target proteins associated with a disease using Open Targets API,
+    enriched with protein sequences (UniProt) and PDB structure IDs.
     
     - **disease_name**: Name of the disease to search for
     - **top_n**: Number of top targets to retrieve (1-100, default: 10)
     """
     try:
         logger.info(f"Searching targets for disease: {request.disease_name}")
+
+        disease_id = disease_pipeline.fetch_disease_id(request.disease_name)
         
         targets = disease_pipeline.get_disease_targets(
             disease_name=request.disease_name,
@@ -188,11 +195,22 @@ async def get_disease_targets(request: DiseaseSearchRequest):
                 status_code=404,
                 detail=f"No targets found for disease: {request.disease_name}"
             )
+
+        targets_with_seqs = protein_pipeline.get_protein_sequences(targets)
+
+        if not targets_with_seqs:
+            raise HTTPException(
+                status_code=400,
+                detail="Could not fetch sequences for any targets"
+            )
+
+        enriched = pdb_pipeline.fetch_pdb_ids(targets_with_seqs)
         
         return {
             "disease": request.disease_name,
-            "total_targets": len(targets),
-            "targets": targets
+            "disease_id": disease_id or "unknown",
+            "total_targets": len(enriched),
+            "targets": enriched
         }
     
     except HTTPException:
@@ -266,6 +284,12 @@ async def virtual_screening(request: ScreeningRequest):
     5. Process and rank results
     """
     try:
+        # Check cache
+        cached = load_cached_screening(request)
+        if cached is not None:
+            logger.info(f"Returning cached screening for: {request.disease_name}")
+            return ScreeningResponse(**cached)
+
         start_time = time.time()
         logger.info(f"Starting screening for disease: {request.disease_name}")
         
@@ -323,9 +347,9 @@ async def virtual_screening(request: ScreeningRequest):
         else:
             logger.info(f"  CPU mode (batch size: {settings.BATCH_SIZE})")
         
-        raw_results = ai_pipeline.run_virtual_screening(drugs, targets_with_seqs)
+        candidates, warnings = ai_pipeline.run_virtual_screening(drugs, targets_with_seqs)
         
-        if not raw_results:
+        if not candidates:
             raise HTTPException(
                 status_code=400,
                 detail="AI screening failed to produce predictions"
@@ -334,30 +358,42 @@ async def virtual_screening(request: ScreeningRequest):
         # Stage 5: Process results
         logger.info("Stage 5: Processing and ranking results...")
         final_results = result_pipeline.process_final_results(
-            raw_results,
+            candidates,
             known_drugs=request.known_drugs,
             min_score=request.min_score
         )
         
-        top_results = result_pipeline.get_top_results(final_results, top_n=10)
+        top_k = final_results[:10]
+        
+        top_candidates = [
+            DrugCandidate(
+                drug_name=r["drug_name"],
+                smiles=r.get("smiles", ""),
+                target_symbol=r["target_symbol"],
+                uniprot_id=r.get("uniprot_id", ""),
+                binding_score=r["score"],
+                rank=i + 1,
+                status=r.get("status", "").replace("✅ ", "").replace("🆕 ", "")
+            )
+            for i, r in enumerate(top_k)
+        ]
         
         elapsed_time = time.time() - start_time
         logger.info(f"✅ Screening complete in {elapsed_time:.2f} seconds")
         logger.info(f"   Total candidates: {len(final_results)}")
-        logger.info(f"   Top candidates: {len(top_results)}")
+        logger.info(f"   Top candidates: {len(top_k)}")
         
-        # Log model info in response
-        model_info = ai_pipeline.get_model_info()
-        
-        return ScreeningResponse(
-            disease=request.disease_name,
-            total_targets=len(targets_with_seqs),
-            total_drugs=len(drugs),
-            total_predictions=len(raw_results),
-            top_results=[PredictionResult(**r) for r in top_results],
-            success=True,
-            message=f"✅ Screening completed in {elapsed_time:.2f}s using {('GPU - ' + model_info['device'] if model_info['gpu_available'] else 'CPU')}. Found {len(final_results)} candidates ({len(top_results)} in top results)."
+        response = ScreeningResponse(
+            disease_name=request.disease_name,
+            total_targets_found=len(targets_with_seqs),
+            total_drugs_screened=len(drugs),
+            total_pairs_evaluated=len(candidates),
+            top_candidates=top_candidates,
+            warnings=warnings,
         )
+        
+        save_cached_screening(request, response.model_dump())
+        return response
     
     except HTTPException:
         raise

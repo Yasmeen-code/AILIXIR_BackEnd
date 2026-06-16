@@ -49,10 +49,12 @@ class ProteinSequencePipeline:
                 data = response.json()
                 
                 if data.get('results') and len(data['results']) > 0:
-                    sequence = data['results'][0].get('sequence', {}).get('value')
+                    result = data['results'][0]
+                    sequence = result.get('sequence', {}).get('value')
+                    t['uniprot_id'] = result.get('primaryAccession', '')
                     if sequence:
                         t['sequence'] = sequence
-                        logger.info(f"   ✅ Successfully fetched sequence for: {symbol}")
+                        logger.info(f"   ✅ Successfully fetched sequence for: {symbol} (uniprot_id={t['uniprot_id']})")
                     else:
                         # Use mock sequence if no real sequence found
                         if symbol in MOCK_SEQUENCES:

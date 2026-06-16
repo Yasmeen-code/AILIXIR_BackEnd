@@ -20,13 +20,17 @@ class TargetInfo(BaseModel):
     name: Optional[str] = None
     score: float
     sequence: Optional[str] = None
+    uniprot_id: str = ""
+    pdb_ids: List[str] = []
 
     class Config:
         example = {
             "symbol": "INSR",
             "name": "Insulin Receptor",
             "score": 0.85,
-            "sequence": None
+            "sequence": None,
+            "uniprot_id": "P06213",
+            "pdb_ids": ["2HR7", "3EKN", "4IBM"]
         }
 
 
@@ -44,18 +48,24 @@ class DrugInfo(BaseModel):
         }
 
 
-class PredictionResult(BaseModel):
-    """Individual drug-target prediction result"""
+class DrugCandidate(BaseModel):
+    """Drug-target prediction candidate"""
     drug_name: str
+    smiles: str = ""
     target_symbol: str
-    score: float
+    uniprot_id: str = ""
+    binding_score: float
+    rank: int = 0
     status: Optional[str] = None
 
     class Config:
         example = {
             "drug_name": "Drug_001",
+            "smiles": "CC(=O)Oc1ccccc1C(=O)O",
             "target_symbol": "INSR",
-            "score": 0.75,
+            "uniprot_id": "P06213",
+            "binding_score": 0.85,
+            "rank": 1,
             "status": "🆕 Potential Discovery"
         }
 
@@ -81,23 +91,31 @@ class ScreeningRequest(BaseModel):
 
 class ScreeningResponse(BaseModel):
     """Response model for screening results"""
-    disease: str
-    total_targets: int
-    total_drugs: int
-    total_predictions: int
-    top_results: List[PredictionResult]
-    success: bool
-    message: str
+    disease_name: str
+    total_targets_found: int
+    total_drugs_screened: int
+    total_pairs_evaluated: int
+    top_candidates: List[DrugCandidate]
+    warnings: List[str] = []
 
     class Config:
         example = {
-            "disease": "Type 2 Diabetes",
-            "total_targets": 10,
-            "total_drugs": 5,
-            "total_predictions": 50,
-            "top_results": [],
-            "success": True,
-            "message": "Screening completed successfully"
+            "disease_name": "Type 2 Diabetes",
+            "total_targets_found": 10,
+            "total_drugs_screened": 200,
+            "total_pairs_evaluated": 2000,
+            "top_candidates": [
+                {
+                    "drug_name": "Drug_001",
+                    "smiles": "CC(=O)Oc1ccccc1C(=O)O",
+                    "target_symbol": "INSR",
+                    "uniprot_id": "P06213",
+                    "binding_score": 0.85,
+                    "rank": 1,
+                    "status": "🆕 Potential Discovery"
+                }
+            ],
+            "warnings": []
         }
 
 
@@ -112,6 +130,31 @@ class HealthCheckResponse(BaseModel):
             "status": "healthy",
             "version": "1.0.0",
             "service": "Drug Repurposing API"
+        }
+
+
+class EnrichedTargetResponse(BaseModel):
+    """Response model for enriched targets endpoint"""
+    disease: str
+    disease_id: str
+    total_targets: int
+    targets: List[TargetInfo]
+
+    class Config:
+        example = {
+            "disease": "Type 2 Diabetes",
+            "disease_id": "EFO_0001360",
+            "total_targets": 10,
+            "targets": [
+                {
+                    "symbol": "INSR",
+                    "name": "Insulin Receptor",
+                    "score": 0.85,
+                    "sequence": None,
+                    "uniprot_id": "P06213",
+                    "pdb_ids": ["2HR7", "3EKN", "4IBM"]
+                }
+            ]
         }
 
 
