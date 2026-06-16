@@ -119,13 +119,10 @@ class ScreeningController extends BaseController
         }
 
         return $this->successResponse('Target lookup history retrieved successfully', [
-            'data' => [
-                [
-                    'id'     => $lookup->id,
-                    'input'  => $lookup->input,
-                    'output' => $lookup->output,
-                ]
-            ]
+            'id'     => $lookup->id,
+            'input'  => $lookup->input,
+            'output' => $lookup->output,
+            'status' => $lookup->status,
         ]);
     }
 
@@ -143,13 +140,10 @@ class ScreeningController extends BaseController
         }
 
         return $this->successResponse('Screening history retrieved successfully', [
-            'data' => [
-                [
-                    'id'     => $result->id,
-                    'input'  => $result->input,
-                    'output' => $result->output,
-                ]
-            ]
+            'id'     => $result->id,
+            'input'  => $result->input,
+            'output' => $result->output,
+            'status' => $result->status,
         ]);
     }
 }
