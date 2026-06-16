@@ -140,11 +140,11 @@ class TestScreeningPipeline:
         
         if response.status_code == 200:
             data = response.json()
-            assert "disease" in data
-            assert "total_targets" in data
-            assert "total_drugs" in data
-            assert "top_results" in data
-            assert "success" in data
+            assert "disease_name" in data
+            assert "total_targets_found" in data
+            assert "total_drugs_screened" in data
+            assert "top_candidates" in data
+            assert "warnings" in data
 
 
 if __name__ == "__main__":

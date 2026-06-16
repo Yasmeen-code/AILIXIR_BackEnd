@@ -3,7 +3,7 @@ Stage 4: AI Prediction Engine
 Performs AI-based matching between drugs and targets using DeepPurpose MPNN_CNN model.
 """
 import logging
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Tuple
 import numpy as np
 from app.config import settings
 
@@ -96,7 +96,7 @@ class AIScreeningPipeline:
         self,
         drug_lib: List[Dict],
         target_lib: List[Dict]
-    ) -> List[Dict]:
+    ) -> Tuple[List[Dict], List[str]]:
         """
         Performs AI-based matching between all drugs and targets.
         Uses real DeepPurpose predictions or mock predictions based on use_mock flag.
@@ -106,12 +106,14 @@ class AIScreeningPipeline:
             target_lib: List of targets with 'symbol' and 'sequence'
         
         Returns:
-            List of predictions with drug_name, target_symbol, and score
+            Tuple of (predictions, warnings) where each prediction dict contains
+            drug_name, target_symbol, smiles, uniprot_id, and score
         """
         if not drug_lib or not target_lib:
             raise ValueError("Drug library and target library cannot be empty")
 
         n_pairs = len(drug_lib) * len(target_lib)
+        warnings = []
         
         if self.use_mock:
             logger.info(f"Using mock predictions for {n_pairs} drug-target pairs")
@@ -120,10 +122,13 @@ class AIScreeningPipeline:
                 for target in target_lib:
                     pair_info.append({
                         'drug_name': drug['name'],
-                        'target_symbol': target['symbol']
+                        'smiles': drug.get('smiles', ''),
+                        'target_symbol': target['symbol'],
+                        'uniprot_id': target.get('uniprot_id', ''),
                     })
             scores = self._generate_mock_predictions(n_pairs)
             method = "MOCK"
+            warnings.append("Mock predictions enabled (not real AI scores)")
         else:
             if not self.model or not self._is_initialized:
                 raise RuntimeError(
@@ -143,7 +148,9 @@ class AIScreeningPipeline:
                     X_targets.append(target['sequence'])
                     pair_info.append({
                         'drug_name': drug['name'],
-                        'target_symbol': target['symbol']
+                        'smiles': drug.get('smiles', ''),
+                        'target_symbol': target['symbol'],
+                        'uniprot_id': target.get('uniprot_id', ''),
                     })
             
             scores = self._predict_with_model(X_drugs, X_targets)
@@ -153,12 +160,14 @@ class AIScreeningPipeline:
         for i, score in enumerate(scores):
             results.append({
                 "drug_name": pair_info[i]['drug_name'],
+                "smiles": pair_info[i]['smiles'],
                 "target_symbol": pair_info[i]['target_symbol'],
+                "uniprot_id": pair_info[i]['uniprot_id'],
                 "score": round(float(score), 4)
             })
 
         logger.info(f"AI Screening completed ({method}): {len(results)} drug-target pairs scored")
-        return results
+        return results, warnings
 
     def _predict_with_model(self, X_drugs: List[str], X_targets: List[str]) -> np.ndarray:
         """
