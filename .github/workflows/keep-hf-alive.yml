@@ -1,0 +1,16 @@
+name: Keep HF Alive
+
+on:
+  schedule:
+    - cron: "0 */24 * * *"
+  workflow_dispatch:
+
+jobs:
+  keep_hf_alive_job:
+    name: keep hf alive job
+    runs-on: ubuntu-latest
+    steps:
+      - name: Hit health endpoint
+        run: |
+          curl -s -o /dev/null -w "%{http_code}" \
+            "https://RottenShadow-ailixir-api.hf.space/api/ai-services/health"
