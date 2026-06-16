@@ -25,7 +25,7 @@ RUN wget -q https://github.com/conda-forge/miniforge/releases/latest/download/Mi
     && rm /tmp/miniforge.sh \
     && conda clean -afy
 
-RUN conda create -n ailixir python=3.10 -y && conda clean -afy
+RUN conda create -n ailixir python=3.11 -y && conda clean -afy
 
 SHELL ["conda", "run", "--no-capture-output", "-n", "ailixir", "/bin/bash", "-lc"]
 
@@ -90,7 +90,7 @@ COPY bundle /app/bundle
 
 # Download model files from Hugging Face Hub (avoids GitHub LFS quota)
 RUN conda run -n ailixir pip install --no-cache-dir huggingface_hub \
-    && conda run -n ailixir python -c "from huggingface_hub import snapshot_download; snapshot_download(repo_id='shdwRow/ailixir-generation-models', local_dir='bundle/models')"
+    && conda run -n ailixir python -c "from huggingface_hub import snapshot_download; snapshot_download(repo_id='shdwRow/ailixir-generation-models', repo_type='dataset', local_dir='bundle/models')"
 
 RUN mkdir -p /app/outputs/jobs
 

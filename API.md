@@ -1524,31 +1524,31 @@ curl -X POST "{base_url}/api/drug-repurposing/targets" \\
 ```json
 {
     "success": true,
-    "message": "Target lookup status retrieved successfully",
+    "message": "Target lookup history retrieved successfully",
     "data": {
-        "job_id": 4,
-        "status": "completed",
+        "id": 4,
         "input": {
             "disease_name": "Type 2 Diabetes",
             "top_n": 10
         },
         "output": {
             "disease": "Type 2 Diabetes",
+            "disease_id": "EFO_0001360",
             "total_targets": 10,
             "targets": [
-                {"symbol": "KCNJ11", "name": "potassium inwardly rectifying channel subfamily J member 11", "score": 0.8651},
-                {"symbol": "ABCC8", "name": "ATP binding cassette subfamily C member 8", "score": 0.8648},
-                {"symbol": "GCK", "name": "glucokinase", "score": 0.8612},
-                {"symbol": "PPARG", "name": "peroxisome proliferator activated receptor gamma", "score": 0.8486},
-                {"symbol": "INSR", "name": "insulin receptor", "score": 0.7887},
-                {"symbol": "HNF1B", "name": "HNF1 homeobox B", "score": 0.7846},
-                {"symbol": "HNF1A", "name": "HNF1 homeobox A", "score": 0.7796},
-                {"symbol": "HNF4A", "name": "hepatocyte nuclear factor 4 alpha", "score": 0.7763},
-                {"symbol": "WFS1", "name": "wolframin ER transmembrane glycoprotein", "score": 0.7695},
-                {"symbol": "GLP1R", "name": "glucagon like peptide 1 receptor", "score": 0.7667}
+                {"symbol": "KCNJ11", "name": "potassium inwardly rectifying channel subfamily J member 11", "score": 0.8651, "sequence": null, "uniprot_id": "Q14654", "pdb_ids": ["2UKM", "2UGY", "2UUG"]},
+                {"symbol": "ABCC8", "name": "ATP binding cassette subfamily C member 8", "score": 0.8648, "sequence": null, "uniprot_id": "Q09428", "pdb_ids": []},
+                {"symbol": "GCK", "name": "glucokinase", "score": 0.8612, "sequence": null, "uniprot_id": "P35557", "pdb_ids": ["1V4S", "3F9M", "4ISE"]},
+                {"symbol": "PPARG", "name": "peroxisome proliferator activated receptor gamma", "score": 0.8486, "sequence": null, "uniprot_id": "P37231", "pdb_ids": ["7AEX", "7AEW", "7AEV"]},
+                {"symbol": "INSR", "name": "insulin receptor", "score": 0.7887, "sequence": null, "uniprot_id": "P06213", "pdb_ids": ["2HR7", "3EKN", "4IBM"]},
+                {"symbol": "HNF1B", "name": "HNF1 homeobox B", "score": 0.7846, "sequence": null, "uniprot_id": "P35680", "pdb_ids": []},
+                {"symbol": "HNF1A", "name": "HNF1 homeobox A", "score": 0.7796, "sequence": null, "uniprot_id": "P20823", "pdb_ids": []},
+                {"symbol": "HNF4A", "name": "hepatocyte nuclear factor 4 alpha", "score": 0.7763, "sequence": null, "uniprot_id": "P41235", "pdb_ids": ["7D1C", "7D1D"]},
+                {"symbol": "WFS1", "name": "wolframin ER transmembrane glycoprotein", "score": 0.7695, "sequence": null, "uniprot_id": "O76024", "pdb_ids": []},
+                {"symbol": "GLP1R", "name": "glucagon like peptide 1 receptor", "score": 0.7667, "sequence": null, "uniprot_id": "P43220", "pdb_ids": []}
             ]
         },
-        "created_at": "2026-06-03T07:31:42.000000Z"
+        "status": "completed"
     }
 }
 ```
@@ -1579,10 +1579,11 @@ If the job is not completed, the `output` field will be `null`.
                 },
                 "output": {
                     "disease": "Type 2 Diabetes",
+                    "disease_id": "EFO_0001360",
                     "total_targets": 10,
                     "targets": [
-                        {"symbol": "KCNJ11", "name": "potassium inwardly rectifying channel subfamily J member 11", "score": 0.8651},
-                        {"symbol": "GCK", "name": "glucokinase", "score": 0.8612}
+                        {"symbol": "KCNJ11", "name": "potassium inwardly rectifying channel subfamily J member 11", "score": 0.8651, "sequence": null, "uniprot_id": "Q14654", "pdb_ids": ["2UKM", "2UGY", "2UUG"]},
+                        {"symbol": "GCK", "name": "glucokinase", "score": 0.8612, "sequence": null, "uniprot_id": "P35557", "pdb_ids": ["1V4S", "3F9M", "4ISE"]}
                     ]
                 },
                 "status": "completed",
@@ -1652,10 +1653,9 @@ curl -X POST "{base_url}/api/drug-repurposing/screen" \\
 ```json
 {
     "success": true,
-    "message": "Screening status retrieved successfully",
+    "message": "Screening history retrieved successfully",
     "data": {
-        "job_id": 22,
-        "status": "completed",
+        "id": 22,
         "input": {
             "disease_name": "Type 2 Diabetes",
             "min_score": 0.5,
@@ -1663,20 +1663,20 @@ curl -X POST "{base_url}/api/drug-repurposing/screen" \\
             "known_drugs": ["Metformin", "Insulin"]
         },
         "output": {
-            "disease": "Type 2 Diabetes",
-            "total_drugs": 200,
-            "total_predictions": 2000,
-            "top_results": [
-                {"drug_name": "Drug_CHEMBL1754", "target_symbol": "KCNJ11", "score": 1, "status": "Potential Discovery"},
-                {"drug_name": "Drug_CHEMBL1754", "target_symbol": "ABCC8", "score": 1, "status": "Potential Discovery"},
-                {"drug_name": "Drug_CHEMBL1754", "target_symbol": "GCK", "score": 1, "status": "Potential Discovery"},
-                {"drug_name": "Drug_CHEMBL1754", "target_symbol": "PPARG", "score": 1, "status": "Potential Discovery"},
-                {"drug_name": "Drug_CHEMBL1754", "target_symbol": "INSR", "score": 1, "status": "Potential Discovery"}
+            "disease_name": "Type 2 Diabetes",
+            "total_targets_found": 10,
+            "total_drugs_screened": 200,
+            "total_pairs_evaluated": 2000,
+            "top_candidates": [
+                {"drug_name": "Drug_CHEMBL1754", "smiles": "CC1=C(C=C(C=C1)NC(=O)C2=CC=C(C=C2)Cl)Cl", "target_symbol": "KCNJ11", "uniprot_id": "Q14654", "binding_score": 0.9821, "rank": 1, "status": "Potential Discovery"},
+                {"drug_name": "Drug_CHEMBL1754", "smiles": "CC1=C(C=C(C=C1)NC(=O)C2=CC=C(C=C2)Cl)Cl", "target_symbol": "ABCC8", "uniprot_id": "Q09428", "binding_score": 0.9765, "rank": 2, "status": "Potential Discovery"},
+                {"drug_name": "Drug_CHEMBL1754", "smiles": "CC1=C(C=C(C=C1)NC(=O)C2=CC=C(C=C2)Cl)Cl", "target_symbol": "GCK", "uniprot_id": "P35557", "binding_score": 0.9712, "rank": 3, "status": "Potential Discovery"},
+                {"drug_name": "Drug_CHEMBL1754", "smiles": "CC1=C(C=C(C=C1)NC(=O)C2=CC=C(C=C2)Cl)Cl", "target_symbol": "PPARG", "uniprot_id": "P37231", "binding_score": 0.9689, "rank": 4, "status": "Potential Discovery"},
+                {"drug_name": "Drug_CHEMBL1754", "smiles": "CC1=C(C=C(C=C1)NC(=O)C2=CC=C(C=C2)Cl)Cl", "target_symbol": "INSR", "uniprot_id": "P06213", "binding_score": 0.9634, "rank": 5, "status": "Potential Discovery"}
             ],
-            "success": true,
-            "message": "✅ Screening completed in 47.30s using CPU. Found 2000 candidates (10 in top results)."
+            "warnings": []
         },
-        "created_at": "2026-06-02T21:35:24.000000Z"
+        "status": "completed"
     }
 }
 ```
@@ -1708,15 +1708,15 @@ If the job is not completed, the `output` field will be `null`.
                     "known_drugs": ["Metformin", "Insulin"]
                 },
                 "output": {
-                    "disease": "Type 2 Diabetes",
-                    "total_drugs": 200,
-                    "total_predictions": 2000,
-                    "top_results": [
-                        {"drug_name": "Drug_CHEMBL1754", "target_symbol": "KCNJ11", "score": 1, "status": "Potential Discovery"},
-                        {"drug_name": "Drug_CHEMBL1754", "target_symbol": "ABCC8", "score": 1, "status": "Potential Discovery"}
+                    "disease_name": "Type 2 Diabetes",
+                    "total_targets_found": 10,
+                    "total_drugs_screened": 200,
+                    "total_pairs_evaluated": 2000,
+                    "top_candidates": [
+                        {"drug_name": "Drug_CHEMBL1754", "smiles": "CC1=C(C=C(C=C1)NC(=O)C2=CC=C(C=C2)Cl)Cl", "target_symbol": "KCNJ11", "uniprot_id": "Q14654", "binding_score": 0.9821, "rank": 1, "status": "Potential Discovery"},
+                        {"drug_name": "Drug_CHEMBL1754", "smiles": "CC1=C(C=C(C=C1)NC(=O)C2=CC=C(C=C2)Cl)Cl", "target_symbol": "ABCC8", "uniprot_id": "Q09428", "binding_score": 0.9765, "rank": 2, "status": "Potential Discovery"}
                     ],
-                    "success": true,
-                    "message": "✅ Screening completed in 47.30s using CPU. Found 2000 candidates (10 in top results)."
+                    "warnings": []
                 },
                 "status": "completed",
                 "created_at": "2026-06-02T21:35:24.000000Z"
