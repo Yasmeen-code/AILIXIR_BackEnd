@@ -88,6 +88,10 @@ RUN set -eux; \
 COPY api.py /app/api.py
 COPY bundle /app/bundle
 
+# Download model files from Hugging Face Hub (avoids GitHub LFS quota)
+RUN conda run -n ailixir pip install --no-cache-dir huggingface_hub \
+    && conda run -n ailixir python -c "from huggingface_hub import snapshot_download; snapshot_download(repo_id='shdwRow/ailixir-generation-models', local_dir='bundle/models')"
+
 RUN mkdir -p /app/outputs/jobs
 
 ENV PUBLIC_BASE_URL=http://localhost:8000

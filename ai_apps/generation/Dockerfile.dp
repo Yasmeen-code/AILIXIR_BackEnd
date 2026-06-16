@@ -27,6 +27,10 @@ RUN pip install DeepPurpose
 
 COPY bundle /app/bundle
 
+# Download model files from Hugging Face Hub (avoids GitHub LFS quota)
+RUN pip install --no-cache-dir huggingface_hub \
+    && python -c "from huggingface_hub import snapshot_download; snapshot_download(repo_id='shdwRow/ailixir-generation-models', local_dir='bundle/models')"
+
 ENV PYTHONPATH=/app/bundle
 
 RUN mkdir -p /home/abdullah/projects/egfr_drug_discovery/runs/deeppurpose \

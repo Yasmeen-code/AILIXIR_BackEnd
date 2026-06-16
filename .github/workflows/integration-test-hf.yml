@@ -1,0 +1,492 @@
+name: HF Spaces Integration Test
+
+on:
+  push:
+    branches: [main, develop, "feature/**"]
+  pull_request:
+    branches: [main, develop]
+  workflow_dispatch:
+
+concurrency:
+  group: hf-integration-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  core-ai-proxy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Warm up ailixir-api Space
+        run: |
+          echo "Waiting for ailixir-api HF Space..."
+          for i in $(seq 1 60); do
+            if curl -sf https://RottenShadow-ailixir-api.hf.space/ > /dev/null 2>&1; then
+              echo "ailixir-api is up"
+              sleep 5
+              exit 0
+            fi
+            echo "Attempt $i/60..."
+            sleep 5
+          done
+          exit 1
+
+      - name: Warm up ailixir-drug-repurposing Space
+        run: |
+          echo "Waiting for ailixir-drug-repurposing HF Space..."
+          for i in $(seq 1 60); do
+            if curl -sf https://RottenShadow-ailixir-drug-repurposing.hf.space/health > /dev/null 2>&1; then
+              echo "ailixir-drug-repurposing is up"
+              sleep 3
+              exit 0
+            fi
+            echo "Attempt $i/60..."
+            sleep 5
+          done
+          exit 1
+
+      - name: Warm up ailixir-admet Space
+        run: |
+          echo "Waiting for ailixir-admet HF Space..."
+          for i in $(seq 1 60); do
+            if curl -sf https://shdwRow-ailixir-admet.hf.space/health > /dev/null 2>&1; then
+              echo "ailixir-admet is up"
+              sleep 3
+              exit 0
+            fi
+            echo "Attempt $i/60..."
+            sleep 5
+          done
+          exit 1
+
+      - name: Warm up ailixir-chemical-rag Space
+        run: |
+          echo "Waiting for ailixir-chemical-rag HF Space..."
+          for i in $(seq 1 60); do
+            if curl -sf https://RottenShadow-ailixir-chemical-rag.hf.space/health > /dev/null 2>&1; then
+              echo "ailixir-chemical-rag is up"
+              sleep 3
+              exit 0
+            fi
+            echo "Attempt $i/60..."
+            sleep 5
+          done
+          exit 1
+
+      - name: Login and get Bearer token
+        run: |
+          echo "POST /api/user/login"
+          HTTP_CODE=$(curl -s -o login.json -w "%{http_code}" -X POST https://RottenShadow-ailixir-api.hf.space/api/user/login \
+            -H "Content-Type: application/json" \
+            -d '{"email":"salehyasmeen080@gmail.com","password":"123456789"}')
+          echo "HTTP Status: $HTTP_CODE"
+          cat login.json
+          echo ""
+
+          if [ "$HTTP_CODE" != "200" ]; then
+            echo "Login failed with HTTP $HTTP_CODE"
+            exit 1
+          fi
+
+          python3 - <<'PY'
+          import json, sys
+          try:
+              data = json.load(open("login.json"))
+          except json.JSONDecodeError as e:
+              print("Invalid JSON response:", e)
+              with open("login.json") as f:
+                  print("Raw response:", f.read())
+              sys.exit(1)
+
+          if not data.get("success"):
+              print("Login failed:", json.dumps(data, indent=2))
+              sys.exit(1)
+
+          token = data.get("data", {}).get("token")
+          if not token:
+              print("No token in response:", json.dumps(data, indent=2))
+              sys.exit(1)
+
+          with open("token.txt", "w") as f:
+              f.write(token)
+          print("Login OK - token saved")
+          PY
+
+      - name: Test aggregated AI health via Laravel
+        run: |
+          TOKEN=$(cat token.txt)
+          echo "GET /api/ai-services/health"
+          HTTP_CODE=$(curl -s -o health.json -w "%{http_code}" https://RottenShadow-ailixir-api.hf.space/api/ai-services/health \
+            -H "Authorization: Bearer $TOKEN")
+          echo "HTTP Status: $HTTP_CODE"
+          cat health.json
+          echo ""
+          python3 - <<'PY'
+          import json, sys
+          data = json.load(open("health.json"))
+          if not data.get("success"):
+              print("AI services health check failed:", json.dumps(data, indent=2))
+              sys.exit(1)
+          print("All AI services healthy via Laravel proxy")
+          PY
+
+      - name: Test ADMET prediction via Laravel proxy
+        run: |
+          TOKEN=$(cat token.txt)
+          echo "POST /api/admet/predict"
+          HTTP_CODE=$(curl -s -o admet.json -w "%{http_code}" -X POST https://RottenShadow-ailixir-api.hf.space/api/admet/predict \
+            -H "Authorization: Bearer $TOKEN" \
+            -H "Content-Type: application/json" \
+            -d '{"smiles": "c1ccccc1, CCO, CCC"}')
+          echo "HTTP Status: $HTTP_CODE"
+          cat admet.json
+          echo ""
+
+          if [ "$HTTP_CODE" != "200" ]; then
+            echo "ADMET prediction failed with HTTP $HTTP_CODE"
+            exit 1
+          fi
+
+          python3 - <<'PY'
+          import json, sys
+          try:
+              data = json.load(open("admet.json"))
+          except json.JSONDecodeError as e:
+              print("Invalid JSON response:", e)
+              with open("admet.json") as f:
+                  print("Raw response:", f.read())
+              sys.exit(1)
+
+          if not data.get("success"):
+              print("ADMET prediction test failed:", json.dumps(data, indent=2))
+              sys.exit(1)
+
+          results = data.get("data", {}).get("results", [])
+          if len(results) < 3:
+              print(f"Expected at least 3 results, got {len(results)}")
+              sys.exit(1)
+
+          print(f"ADMET prediction OK - {len(results)} compounds processed")
+          PY
+
+      - name: Test Chemical RAG proxy via Laravel
+        run: |
+          TOKEN=$(cat token.txt)
+          echo "POST /api/ai-services/test/chemical-search"
+          HTTP_CODE=$(curl -s -o chemical.json -w "%{http_code}" -X POST https://RottenShadow-ailixir-api.hf.space/api/ai-services/test/chemical-search \
+            -H "Authorization: Bearer $TOKEN" \
+            -H "Content-Type: application/json" \
+            -d '{"query": "malaria drug"}')
+          echo "HTTP Status: $HTTP_CODE"
+          cat chemical.json
+          echo ""
+          python3 - <<'PY'
+          import json, sys
+          data = json.load(open("chemical.json"))
+          if not data.get("success"):
+              print("Chemical RAG proxy test failed:", json.dumps(data, indent=2))
+              sys.exit(1)
+          print("Chemical RAG proxy OK")
+          PY
+
+      - name: Test Drug Repurposing proxy via Laravel
+        run: |
+          TOKEN=$(cat token.txt)
+          echo "GET /api/ai-services/test/drug-repurposing"
+          HTTP_CODE=$(curl -s -o drug.json -w "%{http_code}" https://RottenShadow-ailixir-api.hf.space/api/ai-services/test/drug-repurposing \
+            -H "Authorization: Bearer $TOKEN")
+          echo "HTTP Status: $HTTP_CODE"
+          cat drug.json
+          echo ""
+          python3 - <<'PY'
+          import json, sys
+          data = json.load(open("drug.json"))
+          if not data.get("success"):
+              print("Drug Repurposing proxy test failed:", json.dumps(data, indent=2))
+              sys.exit(1)
+          print("Drug Repurposing proxy OK")
+          PY
+
+  chemical-search:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Warm up ailixir-api Space
+        run: |
+          for i in $(seq 1 60); do
+            if curl -sf https://RottenShadow-ailixir-api.hf.space/ > /dev/null 2>&1; then
+              echo "ailixir-api is up"
+              sleep 5
+              exit 0
+            fi
+            echo "Waiting ($i/60)..."
+            sleep 5
+          done
+          exit 1
+
+      - name: Login and get Bearer token
+        run: |
+          HTTP_CODE=$(curl -s -o login.json -w "%{http_code}" -X POST https://RottenShadow-ailixir-api.hf.space/api/user/login \
+            -H "Content-Type: application/json" \
+            -d '{"email":"salehyasmeen080@gmail.com","password":"123456789"}')
+          if [ "$HTTP_CODE" != "200" ]; then exit 1; fi
+          python3 - <<'PY'
+          import json
+          with open('login.json') as f: data = json.load(f)
+          token = data.get('data', {}).get('token')
+          if not token: exit(1)
+          with open('token.txt','w') as f: f.write(token)
+          print('Login OK')
+          PY
+
+      - name: Test retrieval-only chemical search
+        run: |
+          TOKEN=$(cat token.txt)
+          echo "POST /api/chemical-search (retrieval-only)"
+          HTTP_CODE=$(curl -s -o search.json -w "%{http_code}" -X POST https://RottenShadow-ailixir-api.hf.space/api/chemical-search \
+            -H "Authorization: Bearer $TOKEN" \
+            -H "Content-Type: application/json" \
+            -d '{"smiles":"CC(=O)O"}')
+          echo "HTTP Status: $HTTP_CODE"
+          cat search.json
+          echo ""
+          python3 - <<'PY'
+          import json, sys
+          data = json.load(open("search.json"))
+          if not data.get("success"):
+              print("Chemical search (retrieval-only) failed:", json.dumps(data, indent=2))
+              sys.exit(1)
+          if not isinstance(data.get("compounds"), list):
+              print("Missing 'compounds' array in response")
+              sys.exit(1)
+          if data.get("metadata", {}).get("source") != "retrieval":
+              print("Expected source='retrieval', got:", data.get("metadata", {}).get("source"))
+              sys.exit(1)
+          print("Chemical search (retrieval-only) OK - found", len(data["compounds"]), "compounds")
+          PY
+
+      - name: Test full RAG chemical search
+        run: |
+          TOKEN=$(cat token.txt)
+          echo "POST /api/chemical-search/full-rag"
+          HTTP_CODE=$(curl -s -o rag.json -w "%{http_code}" -X POST https://RottenShadow-ailixir-api.hf.space/api/chemical-search/full-rag \
+            -H "Authorization: Bearer $TOKEN" \
+            -H "Content-Type: application/json" \
+            -d '{"smiles":"CC(=O)O"}')
+          echo "HTTP Status: $HTTP_CODE"
+          cat rag.json
+          echo ""
+          python3 - <<'PY'
+          import json, sys
+          data = json.load(open("rag.json"))
+          if not data.get("success"):
+              print("Chemical search (full RAG) failed:", json.dumps(data, indent=2))
+              sys.exit(1)
+          if not isinstance(data.get("compounds"), list):
+              print("Missing 'compounds' array in response")
+              sys.exit(1)
+          if data.get("metadata", {}).get("source") != "full_rag":
+              print("Expected source='full_rag', got:", data.get("metadata", {}).get("source"))
+              sys.exit(1)
+          for compound in data["compounds"]:
+              if not compound.get("explanation"):
+                  print("Missing explanation for compound:", compound.get("name"))
+                  sys.exit(1)
+          print("Chemical search (full RAG) OK - found", len(data["compounds"]), "compounds with explanations")
+          PY
+
+  drug-repurposing-integration:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Warm up ailixir-api Space
+        run: |
+          for i in $(seq 1 60); do
+            if curl -sf https://RottenShadow-ailixir-api.hf.space/ > /dev/null 2>&1; then
+              echo "ailixir-api is up"
+              sleep 5
+              exit 0
+            fi
+            echo "Waiting ($i/60)..."
+            sleep 5
+          done
+          exit 1
+
+      - name: Login and get Bearer token
+        run: |
+          HTTP_CODE=$(curl -s -o login.json -w "%{http_code}" -X POST https://RottenShadow-ailixir-api.hf.space/api/user/login \
+            -H "Content-Type: application/json" \
+            -d '{"email":"salehyasmeen080@gmail.com","password":"123456789"}')
+          if [ "$HTTP_CODE" != "200" ]; then exit 1; fi
+          python3 - <<'PY'
+          import json
+          with open('login.json') as f: data = json.load(f)
+          token = data.get('data', {}).get('token')
+          if not token: exit(1)
+          with open('token.txt','w') as f: f.write(token)
+          print('Login OK')
+          PY
+
+      - name: Test unauthenticated DR request is rejected
+        run: |
+          echo "POST /api/drug-repurposing/targets (no auth)"
+          HTTP_CODE=$(curl -s -o dr_unauth.json -w "%{http_code}" -X POST https://RottenShadow-ailixir-api.hf.space/api/drug-repurposing/targets \
+            -H "Content-Type: application/json" \
+            -d '{"disease_name":"Type 2 Diabetes"}')
+          if [ "$HTTP_CODE" != "401" ]; then
+            echo "Expected 401, got $HTTP_CODE"
+            exit 1
+          fi
+          python3 - <<'PY'
+          import json
+          with open('dr_unauth.json') as f: data = json.load(f)
+          assert not data.get('success', True), 'Expected success=false'
+          print('Unauthenticated DR request correctly rejected')
+          PY
+
+      - name: Test DR target lookup requires disease_name
+        run: |
+          TOKEN=$(cat token.txt)
+          echo "POST /api/drug-repurposing/targets (missing disease_name)"
+          HTTP_CODE=$(curl -s -o dr_validation.json -w "%{http_code}" -X POST https://RottenShadow-ailixir-api.hf.space/api/drug-repurposing/targets \
+            -H "Authorization: Bearer $TOKEN" \
+            -H "Content-Type: application/json" \
+            -d '{"top_n": 2}')
+          if [ "$HTTP_CODE" != "422" ]; then
+            echo "Expected 422, got $HTTP_CODE"
+            exit 1
+          fi
+          echo "Missing disease_name correctly rejected"
+
+      - name: Test DR target lookup via Laravel proxy
+        run: |
+          TOKEN=$(cat token.txt)
+          echo "POST /api/drug-repurposing/targets"
+          HTTP_CODE=$(curl -s -o dr_targets.json -w "%{http_code}" -X POST https://RottenShadow-ailixir-api.hf.space/api/drug-repurposing/targets \
+            -H "Authorization: Bearer $TOKEN" \
+            -H "Content-Type: application/json" \
+            -d '{"disease_name":"Type 2 Diabetes","top_n":2}')
+          echo "HTTP Status: $HTTP_CODE"
+          cat dr_targets.json
+          echo ""
+
+          if [ "$HTTP_CODE" != "200" ]; then
+            echo "DR target lookup failed with HTTP $HTTP_CODE"
+            exit 1
+          fi
+
+          python3 - <<'PY'
+          import json, sys
+          data = json.load(open("dr_targets.json"))
+          if not data.get("success"):
+              print("DR target lookup failed:", json.dumps(data, indent=2))
+              sys.exit(1)
+          job_id = data.get("data", {}).get("job_id")
+          status = data.get("data", {}).get("status")
+          print(f"DR target lookup OK - job_id={job_id}, status={status}")
+
+          # Poll for completion
+          import time, urllib.request
+          base = "https://RottenShadow-ailixir-api.hf.space/api/drug-repurposing/targets"
+          with open("token.txt") as f: token = f.read().strip()
+          for i in range(30):
+              req = urllib.request.Request(f"{base}/{job_id}")
+              req.add_header("Authorization", f"Bearer {token}")
+              resp = urllib.request.urlopen(req)
+              status_data = json.loads(resp.read())
+              s = status_data.get("data", {}).get("status")
+              if s == "completed":
+                  output = status_data.get("data", {}).get("output", {})
+                  assert len(output.get("targets", [])) > 0, "No targets found"
+                  print(f"DR targets completed - {len(output['targets'])} targets found")
+                  sys.exit(0)
+              elif s == "failed":
+                  print("DR target lookup failed:", json.dumps(status_data, indent=2))
+                  sys.exit(1)
+              print(f"  Polling... attempt {i+1}/30, status={s}")
+              time.sleep(5)
+          print("DR target lookup did not complete in time")
+          sys.exit(1)
+          PY
+
+  docking-integration:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Warm up ailixir-api Space
+        run: |
+          for i in $(seq 1 60); do
+            if curl -sf https://RottenShadow-ailixir-api.hf.space/ > /dev/null 2>&1; then
+              echo "ailixir-api is up"
+              sleep 5
+              exit 0
+            fi
+            echo "Waiting ($i/60)..."
+            sleep 5
+          done
+          exit 1
+
+      - name: Login and get Bearer token
+        run: |
+          HTTP_CODE=$(curl -s -o login.json -w "%{http_code}" -X POST https://RottenShadow-ailixir-api.hf.space/api/user/login \
+            -H "Content-Type: application/json" \
+            -d '{"email":"salehyasmeen080@gmail.com","password":"123456789"}')
+          if [ "$HTTP_CODE" != "200" ]; then exit 1; fi
+          python3 - <<'PY'
+          import json
+          with open('login.json') as f: data = json.load(f)
+          token = data.get('data', {}).get('token')
+          if not token: exit(1)
+          with open('token.txt','w') as f: f.write(token)
+          print('Login OK')
+          PY
+
+      - name: Test docking submit
+        run: |
+          TOKEN=$(cat token.txt)
+          echo "POST /api/docking/submit"
+          HTTP_CODE=$(curl -s -o docking.json -w "%{http_code}" -X POST https://RottenShadow-ailixir-api.hf.space/api/docking/submit \
+            -H "Authorization: Bearer $TOKEN" \
+            -F "protein_name=EGFR" \
+            -F "protein_file=@tests/Fixtures/docking/egfr_clean.pdbqt" \
+            -F "ligand_name=Erlotinib" \
+            -F "ligand_file=@tests/Fixtures/docking/ligand.pdbqt" \
+            -F "center_x=10.0" \
+            -F "center_y=15.0" \
+            -F "center_z=20.0" \
+            -F "box_size_x=25.0" \
+            -F "box_size_y=25.0" \
+            -F "box_size_z=25.0" \
+            -F "exhaustiveness=8")
+          echo "HTTP Status: $HTTP_CODE"
+          cat docking.json
+          echo ""
+
+          if [ "$HTTP_CODE" != "200" ]; then
+            echo "Docking submit failed with HTTP $HTTP_CODE"
+            exit 1
+          fi
+
+          python3 - <<'PY'
+          import json, sys
+          data = json.load(open("docking.json"))
+          if not data.get("success"):
+              print("Docking submit failed:", json.dumps(data, indent=2))
+              sys.exit(1)
+          print("Docking submit OK - job created")
+          PY
