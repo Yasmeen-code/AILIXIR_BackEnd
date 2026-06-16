@@ -57,6 +57,40 @@ RUN git clone --depth 1 https://github.com/MolecularAI/REINVENT4.git /opt/REINVE
 RUN python -c "from rdkit import Chem; print('RDKit import OK')"
 RUN python -c "import importlib.metadata as m; print('REINVENT version', m.version('reinvent'))"
 
+# Meeko provides mk_prepare_ligand.py for PDBQT ligand preparation used by docking
+# Install with required runtime dependencies because pip meeko may not pull all of them.
+RUN set -eux; \
+    for i in 1 2 3 4 5; do \
+      if conda install -y -c conda-forge meeko gemmi scipy; then \
+        conda clean -afy; \
+        which mk_prepare_ligand.py; \
+        mk_prepare_ligand.py -h >/tmp/mk_prepare_ligand_help.txt; \
+        exit 0; \
+      fi; \
+      echo "meeko install failed on attempt ${i}, retrying..."; \
+      conda clean -i -y || true; \
+      sleep $((i * 20)); \
+    done; \
+    echo "meeko install failed after retries"; \
+    exit 1
+
+# Open Babel provides obabel for MOL2 ligand export
+RUN set -eux; \
+    for i in 1 2 3 4 5; do \
+      if conda install -y -c conda-forge openbabel; then \
+        conda clean -afy; \
+        which obabel; \
+        obabel -V; \
+        exit 0; \
+      fi; \
+      echo "openbabel install failed on attempt ${i}, retrying..."; \
+      conda clean -i -y || true; \
+      sleep $((i * 20)); \
+    done; \
+    echo "openbabel install failed after retries"; \
+    exit 1
+
+
 # -----------------------------
 # DeepPurpose affinity env
 # -----------------------------
