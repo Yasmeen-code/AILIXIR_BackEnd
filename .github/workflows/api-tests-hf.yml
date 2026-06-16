@@ -1,0 +1,63 @@
+name: AILIXIR API Tests (HF Spaces)
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+  schedule:
+    - cron: "0 6 * * *"
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install test dependencies
+        run: pip install -r requirements.txt
+
+      - name: Wake up HF Space
+        run: |
+          echo "Waiting for ailixir-api HF Space to be ready..."
+          for i in $(seq 1 60); do
+            if curl -sf https://RottenShadow-ailixir-api.hf.space/ > /dev/null 2>&1; then
+              echo "ailixir-api is up"
+              sleep 5
+              exit 0
+            fi
+            echo "Attempt $i/60: not ready yet..."
+            sleep 5
+          done
+          echo "ailixir-api failed to become healthy in time"
+          exit 1
+
+      - name: Run API tests
+        env:
+          BASE_URL: https://RottenShadow-ailixir-api.hf.space/api
+          TEST_EMAIL: test@example.com
+          TEST_PASSWORD: password123
+          TEST_NAME: testuser
+        run: |
+          python -m pytest tests/ -v --tb=short --junitxml=junit.xml || true
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-results-hf
+          path: junit.xml
+
+      - name: Test Summary
+        uses: test-summary/action@v2
+        with:
+          paths: junit.xml
+        if: always()

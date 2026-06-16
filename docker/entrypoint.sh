@@ -21,6 +21,9 @@ else
     echo "Skipping migrations because RUN_MIGRATIONS=${RUN_MIGRATIONS}"
 fi
 
+# Seed verified test users for CI testing (idempotent via firstOrCreate)
+php artisan db:seed --class=TestUserSeeder --force --no-interaction 2>/dev/null || true
+
 # Auto-generate APP_KEY on first boot if not set via env or .env
 if [ -z "${APP_KEY}" ] && ! grep -q '^APP_KEY=' /var/www/html/.env 2>/dev/null; then
     NEW_KEY="base64:$(php -r 'echo base64_encode(random_bytes(32));' 2>/dev/null)"
