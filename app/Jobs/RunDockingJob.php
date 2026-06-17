@@ -20,6 +20,14 @@ class RunDockingJob implements ShouldQueue
     public $params;
 
     /**
+     * The number of seconds the job can run before timing out.
+     *
+     * @var int
+     */
+    public $timeout = 1800;
+
+
+    /**
      * Create a new job instance.
      */
     public function __construct(DockingJob $dockingJob, array $params)
@@ -58,7 +66,7 @@ class RunDockingJob implements ShouldQueue
             );
 
             // Run process
-            $result = Process::run($cmd);
+            $result = Process::timeout($this->timeout)->run($cmd);
 
             // Using regex to reliably find our JSON object in the mixed python Vina logs output
             $outputData = null;

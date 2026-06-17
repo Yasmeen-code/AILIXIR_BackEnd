@@ -102,8 +102,12 @@ class DockingController
             ];
 
             if ($job->status === 'completed' && $job->result_data) {
+                $scores = [];
+                foreach (($job->result_data['vina_score'] ?? []) as $i => $affinity) {
+                    $scores[] = ['pose' => $i + 1, 'affinity' => (float) $affinity];
+                }
                 $data['results'] = [
-                    'vina_scores'  => $job->result_data['vina_score'] ?? [],
+                    'scores'       => $scores,
                     'download_url' => url('/api/docking/download/' . $job->id),
                 ];
             }
@@ -143,8 +147,12 @@ class DockingController
         // Build results block (only when job is completed)
         $results = null;
         if ($job->status === 'completed' && $job->result_data) {
+            $scores = [];
+            foreach (($job->result_data['vina_score'] ?? []) as $i => $affinity) {
+                $scores[] = ['pose' => $i + 1, 'affinity' => (float) $affinity];
+            }
             $results = [
-                'vina_scores'  => $job->result_data['vina_score'] ?? [],
+                'scores'       => $scores,
                 'download_url' => url('/api/docking/download/' . $job->id),
             ];
         }
@@ -189,7 +197,9 @@ class DockingController
             return $this->errorResponse('File not found on server', 404);
         }
 
-        return response()->download($filePath, 'docking_result_' . $job->id . '.pdbqt');
+        return response()->download($filePath, 'docking_result_' . $job->id . '.pdbqt', [
+            'Content-Disposition' => 'attachment; filename="docking_result_' . $job->id . '.pdbqt"',
+        ]);
     }
 
     /**
