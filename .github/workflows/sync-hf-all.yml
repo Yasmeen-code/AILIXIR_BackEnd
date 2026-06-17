@@ -59,7 +59,7 @@ jobs:
             'CLOUDINARY_API_KEY=dummy_key' \
             'CLOUDINARY_API_SECRET=dummy_secret' \
             'QUEUE_CONNECTION=sync' \
-            >> .env
+            > .env
           git config user.name "AILIXIR Bot"
           git config user.email "bot@ailixir.app"
           # Prevent the live database from being tracked/committed
