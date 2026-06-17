@@ -192,6 +192,7 @@ Route::middleware('auth:sanctum')->prefix('ai')->group(function () {
     Route::post('/ligands/export', [LigandsController::class, 'exportLigands']);
 });
 
+// ==================== STRIPE ====================
 Route::post('/stripe/webhook', [WebhookController::class, 'handleWebhook']);
 
 Route::middleware('auth:sanctum')->prefix('subscription')->group(function () {
