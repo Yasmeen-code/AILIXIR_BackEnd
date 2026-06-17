@@ -2364,6 +2364,534 @@ curl -X GET /api/ai/generation/jobs/gen_20260602_174612_90c1b1/results \\
 
 ---
 
+### GET `/api/ai/generation/history`
+
+**Authentication:** Bearer token required
+
+**Example:**
+
+```bash
+curl -X GET http://localhost:8080/api/ai/generation/history \
+  -H "Authorization: Bearer {token}"
+```
+
+**Response:**
+
+```json
+{
+    "success": true,
+    "message": "Generation job history retrieved successfully",
+    "data": {
+        "results": [
+            {
+                "id": 5,
+                "user_id": 1,
+                "job_id": "gen_20260602_185419_15fc7b",
+                "status": "completed",
+                "preset": "egfr_generator",
+                "num_molecules": 3,
+                "return_top_k": 3,
+                "docking_mode": "all",
+                "dock_top_k": 3,
+                "summary": {
+                    "num_requested": 3,
+                    "num_generated": 3,
+                    "num_valid": 3,
+                    "num_returned": 3,
+                    "num_docked": 3
+                },
+                "files": {
+                    "csv": {
+                        "filename": "generated_results.csv",
+                        "relative_url": "/files/jobs/gen_20260602_185419_15fc7b/generated_results.csv",
+                        "download_url": "https://superplausibly-nonflowering-keiko.ngrok-free.dev/files/jobs/gen_20260602_185419_15fc7b/generated_results.csv"
+                    },
+                    "json": {
+                        "filename": "generated_results.json",
+                        "relative_url": "/files/jobs/gen_20260602_185419_15fc7b/generated_results.json",
+                        "download_url": "https://superplausibly-nonflowering-keiko.ngrok-free.dev/files/jobs/gen_20260602_185419_15fc7b/generated_results.json"
+                    }
+                },
+                "created_at": "2026-06-02T18:54:16.000000Z",
+                "updated_at": "2026-06-02T18:56:01.000000Z",
+                "ligands": [
+                    {
+                        "SMILES": "CN1CCCN(CCC(=O)Nc2ccc3nncc(-c4ccc5cncnc5c4)c3c2)C1",
+                        "SMILES_state": 1,
+                        "NLL": 4.14,
+                        "valid": true,
+                        "canonical_smiles": "CN1CCCN(CCC(=O)Nc2ccc3nncc(-c4ccc5cncnc5c4)c3c2)C1",
+                        "mw": 427.5120000000002,
+                        "logp": 3.1636000000000006,
+                        "tpsa": 87.14,
+                        "hbd": 1,
+                        "hba": 7,
+                        "rot_bonds": 5,
+                        "qed": 0.5234216428527144,
+                        "sa_score": 2.7645745083533857,
+                        "pred_pAff_mean": 10.726750373840332,
+                        "docking_score": -9.16,
+                        "docking_status": "completed",
+                        "rank": 1
+                    },
+                    {
+                        "SMILES": "O=C(CCN1CCCC1)Nc1ccc2c(Nc3cccc(Cl)c3)ncnc2c1",
+                        "SMILES_state": 1,
+                        "NLL": 6.06,
+                        "valid": true,
+                        "canonical_smiles": "O=C(CCN1CCCC1)Nc1ccc2c(Nc3cccc(Cl)c3)ncnc2c1",
+                        "mw": 395.89400000000006,
+                        "logp": 4.451200000000003,
+                        "tpsa": 70.15,
+                        "hbd": 2,
+                        "hba": 5,
+                        "rot_bonds": 6,
+                        "qed": 0.6447750051881624,
+                        "sa_score": 2.11252799494409,
+                        "pred_pAff_mean": 8.844084739685059,
+                        "docking_score": -8.23,
+                        "docking_status": "completed",
+                        "rank": 2
+                    },
+                    {
+                        "SMILES": "CN1CCC2C1CCN2CCC(=O)Nc1ccc2ncnc(Nc3ccc4ncncc4c3)c2c1",
+                        "SMILES_state": 1,
+                        "NLL": 22.74,
+                        "valid": true,
+                        "canonical_smiles": "CN1CCC2C1CCN2CCC(=O)Nc1ccc2ncnc(Nc3ccc4ncncc4c3)c2c1",
+                        "mw": 468.5650000000001,
+                        "logp": 3.4236000000000013,
+                        "tpsa": 99.17,
+                        "hbd": 2,
+                        "hba": 8,
+                        "rot_bonds": 6,
+                        "qed": 0.4441562846144389,
+                        "sa_score": 3.462932738106919,
+                        "pred_pAff_mean": 8.693540573120117,
+                        "docking_score": -9.2,
+                        "docking_status": "completed",
+                        "rank": 3
+                    }
+                ]
+            },
+            {
+                "id": 4,
+                "user_id": 1,
+                "job_id": "gen_20260602_185402_e9b887",
+                "status": "running",
+                "preset": "egfr_generator",
+                "num_molecules": 5,
+                "return_top_k": 5,
+                "docking_mode": "all",
+                "dock_top_k": 5,
+                "summary": null,
+                "files": null,
+                "created_at": "2026-06-02T18:54:00.000000Z",
+                "updated_at": "2026-06-02T18:54:00.000000Z",
+                "ligands": null
+            },
+            {
+                "id": 3,
+                "user_id": 1,
+                "job_id": "gen_20260602_174612_90c1b1",
+                "status": "completed",
+                "preset": "egfr_generator",
+                "num_molecules": 5,
+                "return_top_k": 5,
+                "docking_mode": "all",
+                "dock_top_k": 5,
+                "summary": {
+                    "num_requested": 5,
+                    "num_generated": 5,
+                    "num_valid": 5,
+                    "num_returned": 5,
+                    "num_docked": 5
+                },
+                "files": {
+                    "csv": {
+                        "filename": "generated_results.csv",
+                        "relative_url": "/files/jobs/gen_20260602_174612_90c1b1/generated_results.csv",
+                        "download_url": "https://superplausibly-nonflowering-keiko.ngrok-free.dev/files/jobs/gen_20260602_174612_90c1b1/generated_results.csv"
+                    },
+                    "json": {
+                        "filename": "generated_results.json",
+                        "relative_url": "/files/jobs/gen_20260602_174612_90c1b1/generated_results.json",
+                        "download_url": "https://superplausibly-nonflowering-keiko.ngrok-free.dev/files/jobs/gen_20260602_174612_90c1b1/generated_results.json"
+                    }
+                },
+                "created_at": "2026-06-02T17:46:10.000000Z",
+                "updated_at": "2026-06-02T17:51:19.000000Z",
+                "ligands": [
+                    {
+                        "SMILES": "CCN1CCN(CCC(=O)Nc2ccc3nncc(-c4ccc5ncncc5c4)c3c2)C1",
+                        "SMILES_state": 1,
+                        "NLL": 8.24,
+                        "valid": true,
+                        "canonical_smiles": "CCN1CCN(CCC(=O)Nc2ccc3nncc(-c4ccc5ncncc5c4)c3c2)C1",
+                        "mw": 427.5120000000002,
+                        "logp": 3.1636000000000006,
+                        "tpsa": 87.14,
+                        "hbd": 1,
+                        "hba": 7,
+                        "rot_bonds": 6,
+                        "qed": 0.505688822717197,
+                        "sa_score": 2.715858141741272,
+                        "pred_pAff_mean": 10.734132766723633,
+                        "docking_score": -8.91,
+                        "docking_status": "completed",
+                        "rank": 1
+                    },
+                    {
+                        "SMILES": "Cn1cnc2ccc(Nc3ncnc4ccc(NC(=O)CCN5CCC5)cc34)cc21",
+                        "SMILES_state": 1,
+                        "NLL": 5.32,
+                        "valid": true,
+                        "canonical_smiles": "Cn1cnc2ccc(Nc3ncnc4ccc(NC(=O)CCN5CCC5)cc34)cc21",
+                        "mw": 401.4740000000003,
+                        "logp": 3.2944000000000013,
+                        "tpsa": 87.96999999999998,
+                        "hbd": 2,
+                        "hba": 6,
+                        "rot_bonds": 6,
+                        "qed": 0.5154635202823702,
+                        "sa_score": 2.404394987645352,
+                        "pred_pAff_mean": 9.775605201721191,
+                        "docking_score": -8.27,
+                        "docking_status": "completed",
+                        "rank": 2
+                    },
+                    {
+                        "SMILES": "CN1CCCN(CCC(=O)Nc2ccc3nncc(-c4ccc5cnccc5c4)c3c2)C1",
+                        "SMILES_state": 1,
+                        "NLL": 5.95,
+                        "valid": true,
+                        "canonical_smiles": "CN1CCCN(CCC(=O)Nc2ccc3nncc(-c4ccc5cnccc5c4)c3c2)C1",
+                        "mw": 426.5240000000002,
+                        "logp": 3.768600000000002,
+                        "tpsa": 74.25,
+                        "hbd": 1,
+                        "hba": 6,
+                        "rot_bonds": 5,
+                        "qed": 0.523710400747619,
+                        "sa_score": 2.669701840595609,
+                        "pred_pAff_mean": 9.587095260620115,
+                        "docking_score": -10.25,
+                        "docking_status": "completed",
+                        "rank": 3
+                    },
+                    {
+                        "SMILES": "CN1CCCN(CCC(=O)Nc2ccc3nncc(-c4ccc5cnnnc5c4)c3c2)C1",
+                        "SMILES_state": 1,
+                        "NLL": 8.32,
+                        "valid": true,
+                        "canonical_smiles": "CN1CCCN(CCC(=O)Nc2ccc3nncc(-c4ccc5cnnnc5c4)c3c2)C1",
+                        "mw": 428.5000000000002,
+                        "logp": 2.5586,
+                        "tpsa": 100.03,
+                        "hbd": 1,
+                        "hba": 8,
+                        "rot_bonds": 5,
+                        "qed": 0.5177099598248629,
+                        "sa_score": 2.917413951888572,
+                        "pred_pAff_mean": 8.804740905761719,
+                        "docking_score": -10.15,
+                        "docking_status": "completed",
+                        "rank": 4
+                    },
+                    {
+                        "SMILES": "O=C(CN1CCNCC1)Nc1ccc2nncc(-c3ccc4cnncc4c3)c2c1",
+                        "SMILES_state": 1,
+                        "NLL": 8.41,
+                        "valid": true,
+                        "canonical_smiles": "O=C(CN1CCNCC1)Nc1ccc2nncc(-c3ccc4cnncc4c3)c2c1",
+                        "mw": 399.45800000000014,
+                        "logp": 2.0836999999999994,
+                        "tpsa": 95.93,
+                        "hbd": 2,
+                        "hba": 7,
+                        "rot_bonds": 4,
+                        "qed": 0.5423758682727866,
+                        "sa_score": 2.665545251407164,
+                        "pred_pAff_mean": 7.531160354614258,
+                        "docking_score": -9.5,
+                        "docking_status": "completed",
+                        "rank": 5
+                    }
+                ]
+            },
+            {
+                "id": 2,
+                "user_id": 1,
+                "job_id": "gen_20260602_162928_00f1a6",
+                "status": "completed",
+                "preset": "egfr_generator",
+                "num_molecules": 5,
+                "return_top_k": 5,
+                "docking_mode": "all",
+                "dock_top_k": 5,
+                "summary": {
+                    "num_requested": 5,
+                    "num_generated": 5,
+                    "num_valid": 5,
+                    "num_returned": 5,
+                    "num_docked": 5
+                },
+                "files": {
+                    "csv": {
+                        "filename": "generated_results.csv",
+                        "relative_url": "/files/jobs/gen_20260602_162928_00f1a6/generated_results.csv",
+                        "download_url": "https://abcd-1234.ngrok-free.app/files/jobs/gen_20260602_162928_00f1a6/generated_results.csv"
+                    },
+                    "json": {
+                        "filename": "generated_results.json",
+                        "relative_url": "/files/jobs/gen_20260602_162928_00f1a6/generated_results.json",
+                        "download_url": "https://abcd-1234.ngrok-free.app/files/jobs/gen_20260602_162928_00f1a6/generated_results.json"
+                    }
+                },
+                "created_at": "2026-06-02T16:29:26.000000Z",
+                "updated_at": "2026-06-02T16:45:06.000000Z",
+                "ligands": [
+                    {
+                        "SMILES": "CN1CCCN(CCC(=O)Nc2ccc3nncc(-c4ccc5cncnc5c4)c3c2)C1",
+                        "SMILES_state": 1,
+                        "NLL": 5.95,
+                        "valid": true,
+                        "canonical_smiles": "CN1CCCN(CCC(=O)Nc2ccc3nncc(-c4ccc5cncnc5c4)c3c2)C1",
+                        "mw": 427.5120000000002,
+                        "logp": 3.1636000000000006,
+                        "tpsa": 87.14,
+                        "hbd": 1,
+                        "hba": 7,
+                        "rot_bonds": 5,
+                        "qed": 0.5234216428527144,
+                        "sa_score": 2.7645745083533857,
+                        "pred_pAff_mean": 10.726750373840332,
+                        "docking_score": -9.17,
+                        "docking_status": "completed",
+                        "rank": 1
+                    },
+                    {
+                        "SMILES": "CN1CCN(CCC(=O)Nc2ccc3nncc(-c4ccc5cncnc5c4)c3c2)CC1",
+                        "SMILES_state": 1,
+                        "NLL": 5.14,
+                        "valid": true,
+                        "canonical_smiles": "CN1CCN(CCC(=O)Nc2ccc3nncc(-c4ccc5cncnc5c4)c3c2)CC1",
+                        "mw": 427.5120000000002,
+                        "logp": 2.8160000000000007,
+                        "tpsa": 87.14,
+                        "hbd": 1,
+                        "hba": 7,
+                        "rot_bonds": 5,
+                        "qed": 0.5240018720180243,
+                        "sa_score": 2.567665997715085,
+                        "pred_pAff_mean": 10.2472505569458,
+                        "docking_score": -9.04,
+                        "docking_status": "completed",
+                        "rank": 2
+                    },
+                    {
+                        "SMILES": "CN1CCCN(CCC(=O)Nc2ccc3nncc(-c4ccc5cnccc5c4)c3c2)C1",
+                        "SMILES_state": 1,
+                        "NLL": 5.85,
+                        "valid": true,
+                        "canonical_smiles": "CN1CCCN(CCC(=O)Nc2ccc3nncc(-c4ccc5cnccc5c4)c3c2)C1",
+                        "mw": 426.5240000000002,
+                        "logp": 3.768600000000002,
+                        "tpsa": 74.25,
+                        "hbd": 1,
+                        "hba": 6,
+                        "rot_bonds": 5,
+                        "qed": 0.523710400747619,
+                        "sa_score": 2.669701840595609,
+                        "pred_pAff_mean": 9.5870943069458,
+                        "docking_score": -9.18,
+                        "docking_status": "completed",
+                        "rank": 3
+                    },
+                    {
+                        "SMILES": "CN1CCN(CCC(=O)Nc2ccc3nncc(-c4ccc5cnccc5c4)c3c2)CC1",
+                        "SMILES_state": 1,
+                        "NLL": 7.45,
+                        "valid": true,
+                        "canonical_smiles": "CN1CCN(CCC(=O)Nc2ccc3nncc(-c4ccc5cnccc5c4)c3c2)CC1",
+                        "mw": 426.5240000000002,
+                        "logp": 3.421000000000002,
+                        "tpsa": 74.25,
+                        "hbd": 1,
+                        "hba": 6,
+                        "rot_bonds": 5,
+                        "qed": 0.5271519273668187,
+                        "sa_score": 2.4727933299573124,
+                        "pred_pAff_mean": 9.139262199401855,
+                        "docking_score": -9.59,
+                        "docking_status": "completed",
+                        "rank": 4
+                    },
+                    {
+                        "SMILES": "CCN1CCN(CCC(=O)Nc2ccc3nncc(-c4cccc(F)c4)c3c2)C1",
+                        "SMILES_state": 1,
+                        "NLL": 7.31,
+                        "valid": true,
+                        "canonical_smiles": "CCN1CCN(CCC(=O)Nc2ccc3nncc(-c4cccc(F)c4)c3c2)C1",
+                        "mw": 393.4660000000002,
+                        "logp": 3.359500000000001,
+                        "tpsa": 61.36,
+                        "hbd": 1,
+                        "hba": 5,
+                        "rot_bonds": 6,
+                        "qed": 0.6958924258182049,
+                        "sa_score": 2.483388547894851,
+                        "pred_pAff_mean": 8.095303535461426,
+                        "docking_score": -8.79,
+                        "docking_status": "completed",
+                        "rank": 5
+                    }
+                ]
+            },
+            {
+                "id": 1,
+                "user_id": 1,
+                "job_id": "gen_20260602_161105_95a4f3",
+                "status": "completed",
+                "preset": "egfr_generator",
+                "num_molecules": 5,
+                "return_top_k": 5,
+                "docking_mode": "off",
+                "dock_top_k": 0,
+                "summary": {
+                    "num_requested": 5,
+                    "num_generated": 5,
+                    "num_valid": 5,
+                    "num_returned": 5,
+                    "num_docked": 0
+                },
+                "files": {
+                    "csv": {
+                        "filename": "generated_results.csv",
+                        "relative_url": "/files/jobs/gen_20260602_161105_95a4f3/generated_results.csv",
+                        "download_url": "https://abcd-1234.ngrok-free.app/files/jobs/gen_20260602_161105_95a4f3/generated_results.csv"
+                    },
+                    "json": {
+                        "filename": "generated_results.json",
+                        "relative_url": "/files/jobs/gen_20260602_161105_95a4f3/generated_results.json",
+                        "download_url": "https://abcd-1234.ngrok-free.app/files/jobs/gen_20260602_161105_95a4f3/generated_results.json"
+                    }
+                },
+                "created_at": "2026-06-02T16:11:02.000000Z",
+                "updated_at": "2026-06-02T16:45:52.000000Z",
+                "ligands": [
+                    {
+                        "SMILES": "CN1CCCN(CCC(=O)Nc2ccc3nncc(-c4ccc5cncnc5c4)c3c2)C1",
+                        "SMILES_state": 1,
+                        "NLL": 5.97,
+                        "valid": true,
+                        "canonical_smiles": "CN1CCCN(CCC(=O)Nc2ccc3nncc(-c4ccc5cncnc5c4)c3c2)C1",
+                        "mw": 427.5120000000002,
+                        "logp": 3.1636000000000006,
+                        "tpsa": 87.14,
+                        "hbd": 1,
+                        "hba": 7,
+                        "rot_bonds": 5,
+                        "qed": 0.5234216428527144,
+                        "sa_score": 2.7645745083533857,
+                        "pred_pAff_mean": 10.726750373840332,
+                        "docking_score": null,
+                        "docking_status": "not_run",
+                        "rank": 1
+                    },
+                    {
+                        "SMILES": "O=C(CCN1CCCCC1)Nc1ccc2nncc(-c3ccc4cncnc4c3)c2c1",
+                        "SMILES_state": 1,
+                        "NLL": 8.21,
+                        "valid": true,
+                        "canonical_smiles": "O=C(CCN1CCCCC1)Nc1ccc2nncc(-c3ccc4cncnc4c3)c2c1",
+                        "mw": 412.4970000000002,
+                        "logp": 4.054500000000003,
+                        "tpsa": 83.9,
+                        "hbd": 1,
+                        "hba": 6,
+                        "rot_bonds": 5,
+                        "qed": 0.532283447216262,
+                        "sa_score": 2.5088336367127653,
+                        "pred_pAff_mean": 9.917120933532717,
+                        "docking_score": null,
+                        "docking_status": "not_run",
+                        "rank": 2
+                    },
+                    {
+                        "SMILES": "CNCCCC(=O)Nc1ccc2nncc(-c3cccc4cncnc34)c2c1",
+                        "SMILES_state": 1,
+                        "NLL": 8.3,
+                        "valid": true,
+                        "canonical_smiles": "CNCCCC(=O)Nc1ccc2nncc(-c3cccc4cncnc34)c2c1",
+                        "mw": 372.4320000000001,
+                        "logp": 3.178100000000001,
+                        "tpsa": 92.69,
+                        "hbd": 2,
+                        "hba": 6,
+                        "rot_bonds": 6,
+                        "qed": 0.5051251070006001,
+                        "sa_score": 2.5602974133305807,
+                        "pred_pAff_mean": 9.24955940246582,
+                        "docking_score": null,
+                        "docking_status": "not_run",
+                        "rank": 3
+                    },
+                    {
+                        "SMILES": "CCC(=O)Nc1cccc(-c2cnnc3ccc(NC(=O)CCN4CCCN(C)C4)cc23)c1",
+                        "SMILES_state": 1,
+                        "NLL": 6.61,
+                        "valid": true,
+                        "canonical_smiles": "CCC(=O)Nc1cccc(-c2cnnc3ccc(NC(=O)CCN4CCCN(C)C4)cc23)c1",
+                        "mw": 446.5550000000004,
+                        "logp": 3.568900000000003,
+                        "tpsa": 90.45999999999998,
+                        "hbd": 2,
+                        "hba": 6,
+                        "rot_bonds": 7,
+                        "qed": 0.5767061490837626,
+                        "sa_score": 2.580768170904193,
+                        "pred_pAff_mean": 8.717927932739258,
+                        "docking_score": null,
+                        "docking_status": "not_run",
+                        "rank": 4
+                    },
+                    {
+                        "SMILES": "CCC(=O)Nc1cccc(-c2cnnc3ccc(NC(=O)CCCN)cc23)c1",
+                        "SMILES_state": 1,
+                        "NLL": 7.34,
+                        "valid": true,
+                        "canonical_smiles": "CCC(=O)Nc1cccc(-c2cnnc3ccc(NC(=O)CCCN)cc23)c1",
+                        "mw": 377.4480000000002,
+                        "logp": 3.322700000000001,
+                        "tpsa": 110,
+                        "hbd": 3,
+                        "hba": 5,
+                        "rot_bonds": 7,
+                        "qed": 0.5849389128589325,
+                        "sa_score": 2.2821504292780475,
+                        "pred_pAff_mean": 7.681546688079834,
+                        "docking_score": null,
+                        "docking_status": "not_run",
+                        "rank": 5
+                    }
+                ]
+            }
+        ],
+        "pagination": {
+            "currentPage": 1,
+            "totalPages": 1,
+            "totalResults": 5,
+            "perPage": 10,
+            "hasNextPage": false,
+            "hasPrevPage": false
+        }
+    }
+}
+```
+
+---
+
 ## ligands export
 
 ### POST `/api/ai/ligands/export`

@@ -3,7 +3,6 @@
 namespace App\Http\Controllers\Api;
 
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Http;
 use App\Models\AiJob;
 use App\Services\AiServiceClient;
 use App\Http\Requests\Ai\GenerationRequest;
@@ -91,6 +90,14 @@ class GenerationController extends BaseController
         }
 
         return $this->fileDownloadResponse($response, $safeFilename);
+    }
+
+    /**
+     *  History of jobs
+     */
+    public function history(Request $request): JsonResponse
+    {
+        return $this->jobHistoryResponse($request);
     }
 
     // ========== Private Helper Methods ==========
@@ -250,5 +257,17 @@ class GenerationController extends BaseController
         return response($response->body(), 200)
             ->header('Content-Type', $contentType)
             ->header('Content-Disposition', "attachment; filename=\"{$filename}\"");
+    }
+
+    private function jobHistoryResponse(Request $request)
+    {
+        $perPage = $request->input('per_page', 10);
+
+        $aiJobs = AiJob::query()
+            ->where('user_id', $request->user()->id)
+            ->orderBy('created_at', 'desc')
+            ->paginate($perPage);
+
+        return $this->paginatedResponse('Generation job history retrieved successfully',  $aiJobs);
     }
 }
