@@ -25,6 +25,9 @@ use App\Http\Controllers\DockingTestController;
 use App\Http\Controllers\Api\GenerationController;
 use App\Http\Controllers\Api\LigandsController;
 
+use App\Http\Controllers\Api\SubscriptionController;
+use App\Http\Controllers\WebhookController;
+
 /*
 |--------------------------------------------------------------------------
 | API Routes
@@ -189,6 +192,17 @@ Route::middleware('auth:sanctum')->prefix('ai')->group(function () {
     Route::post('/ligands/export', [LigandsController::class, 'exportLigands']);
 });
 
+Route::post('/stripe/webhook', [WebhookController::class, 'handleWebhook']);
+
+Route::middleware('auth:sanctum')->prefix('subscription')->group(function () {
+    Route::post('/checkout', [SubscriptionController::class, 'checkout']);
+    Route::get('/status', [SubscriptionController::class, 'status']);
+    Route::post('/cancel', [SubscriptionController::class, 'cancel']);
+    Route::post('/resume', [SubscriptionController::class, 'resume']);
+    Route::get('/billing-portal', [SubscriptionController::class, 'billingPortal']);
+    Route::get('/invoices', [SubscriptionController::class, 'invoices']);
+    Route::post('/update-payment-method', [SubscriptionController::class, 'updatePaymentMethod']);
+});
 
 
 

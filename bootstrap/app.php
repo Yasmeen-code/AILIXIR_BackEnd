@@ -18,6 +18,7 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->alias([
             'job.owner' => App\Http\Middleware\CheckJobOwnership::class,
+            'subscribed' => App\Http\Middleware\Subscribed::class
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
