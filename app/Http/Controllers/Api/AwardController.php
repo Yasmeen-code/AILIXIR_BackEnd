@@ -25,6 +25,7 @@ class AwardController extends BaseController
 
         return $this->paginatedResponse(
             'Awards retrieved successfully',
+            $awards->through(fn($award) => new AwardResource($award)),
             $awards
         );
     }
