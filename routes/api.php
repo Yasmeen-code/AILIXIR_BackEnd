@@ -175,7 +175,7 @@ Route::middleware('auth:sanctum')->prefix('ai')->group(function () {
 
     Route::prefix('generation')->group(function () {
         Route::post('/run', [GenerationController::class, 'run']);
-
+        Route::get('/history', [GenerationController::class, 'history']);
         Route::middleware('job.owner')->group(function () {
             Route::get('/status/{job_id}', [GenerationController::class, 'status']);
             Route::get('/jobs/{job_id}/results', [GenerationController::class, 'results']);
