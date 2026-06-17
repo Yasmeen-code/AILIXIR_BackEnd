@@ -20,6 +20,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->trustProxies(at: '*');
         $middleware->alias([
             'job.owner' => App\Http\Middleware\CheckJobOwnership::class,
+            'subscribed' => App\Http\Middleware\Subscribed::class
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

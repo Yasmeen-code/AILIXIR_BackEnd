@@ -3,7 +3,6 @@
 namespace App\Services;
 
 use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Redis;
 use App\Models\Admet;
@@ -81,15 +80,13 @@ class AdmetService
             throw new \Exception('No valid SMILES provided');
         }
 
-        // Fully synchronous: get database results + fetch missing from API
         return $this->processSmilesList($smilesList);
     }
 
     public function predictSingle(string $smiles)
     {
-        $existing = Admet::where('smiles', $smiles)
-            ->where('user_id', Auth::id())
-            ->first();
+        // البحث بدون user_id
+        $existing = Admet::where('smiles', $smiles)->first();
 
         if ($existing) {
             return $this->formatResult($existing, $smiles);
@@ -126,9 +123,8 @@ class AdmetService
         $missingSmiles = [];
 
         foreach ($smilesList as $smiles) {
-            $existing = Admet::where('smiles', $smiles)
-                ->where('user_id', Auth::id())
-                ->first();
+            // إزالة التصفية حسب user_id
+            $existing = Admet::where('smiles', $smiles)->first();
 
             if ($existing) {
                 $dbResults[] = array_merge($this->formatResult($existing, $smiles), ['source' => 'database']);
@@ -161,7 +157,6 @@ class AdmetService
 
             $data = $response->json();
 
-            // Handle both direct results array and wrapped results object
             $results_data = isset($data['results']) ? $data : ['results' => $data];
             return $this->saveApiResults($results_data, $smilesList);
         } catch (\Exception $e) {
@@ -179,11 +174,8 @@ class AdmetService
                 if (!isset($smilesList[$index])) continue;
 
                 $smiles = $smilesList[$index];
-
-                // Handle PredictionResponse objects from ADMET API
                 $predictions_data = $result['predictions'] ?? $result;
 
-                // Skip invalid SMILES that the Python service rejected
                 if (!empty($result['error']) || empty($predictions_data)) {
                     $results[] = [
                         'smiles' => $smiles,
@@ -193,6 +185,7 @@ class AdmetService
                     continue;
                 }
 
+                // حفظ بدون user_id
                 $admet = $this->saveToDatabase($smiles, $predictions_data);
                 $results[] = array_merge($this->formatResult($admet, $smiles), ['source' => 'api']);
             }
@@ -206,11 +199,9 @@ class AdmetService
 
     protected function saveToDatabase(string $smiles, array $predictions): Admet
     {
+        // إزالة user_id من updateOrCreate
         return Admet::updateOrCreate(
-            [
-                'smiles' => $smiles,
-                'user_id' => Auth::id()
-            ],
+            ['smiles' => $smiles],  // فقط smiles للبحث
             [
                 'absorption' => $predictions['Absorption'] ?? $predictions['absorption'] ?? null,
                 'distribution' => $predictions['Distribution'] ?? $predictions['distribution'] ?? null,
@@ -314,7 +305,6 @@ class AdmetService
 
             $resultsPerRequest = $this->distributeBatchResults($apiResults, $smilesToRequestMap);
 
-            // Wrap results in the standard structure the controller expects
             foreach ($resultsPerRequest as $requestId => $requestResults) {
                 $payload = [
                     'total_processed' => count($requestResults),
@@ -352,7 +342,7 @@ class AdmetService
                     'request_index' => $reqIndex,
                     'smiles_index' => $smilesIndex,
                     'smiles' => $smiles,
-                    'user_id' => $req['user_id']
+                    // إزالة user_id من هنا
                 ];
             }
         }
@@ -373,6 +363,7 @@ class AdmetService
             $requestId = $map['request_id'];
             $predictions = $result['predictions'] ?? $result;
 
+            // حفظ بدون user_id
             $admet = $this->saveToDatabase($map['smiles'], $predictions);
             $resultsPerRequest[$requestId][] = $this->formatResult($admet, $map['smiles']);
         }
