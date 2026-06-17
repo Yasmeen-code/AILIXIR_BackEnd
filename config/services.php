@@ -29,6 +29,7 @@ return [
 
     'drug_repurposing' => [
         'url' => env('DRUG_REPURPOSING_URL', 'http://drug-repurposing:8000'),
+        'token' => env('DRUG_REPURPOSING_TOKEN'),
     ],
 
     'postmark' => [
@@ -57,13 +58,14 @@ return [
         'client_secret' => env('GOOGLE_CLIENT_SECRET'),
         'redirect' => env('GOOGLE_REDIRECT_URI'),
     ],
+
+       'generation' => [
+    'url' => env('GENERATION_SERVICE_URL', 'http://generation:8000'),
+      ],
     'ai' => [
         'url' => env('AI_SERVICE_URL'),
         'jwt_secret' => env('JWT_SECRET'),
     ],
 
-    'screening' => [
-        'url' => env('SCREENING_SERVICE_URL', 'http://localhost:8000/api/v1'),
-    ],
 
 ];

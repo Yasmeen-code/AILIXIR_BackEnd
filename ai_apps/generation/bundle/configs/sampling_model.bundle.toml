@@ -1,0 +1,16 @@
+# Minimal deployment sampling config
+# Samples molecules from the packaged EGFR generator checkpoint.
+# Does not expose the original training/RL strategy.
+
+run_type = "sampling"
+device = "cuda:0"
+
+json_out_config = "outputs/generate/sampling_resolved.json"
+
+[parameters]
+model_file = "models/generator/egfr_generator.chkpt"
+output_file = "outputs/generate/generated_smiles.csv"
+
+num_smiles = 100
+unique_molecules = true
+randomize_smiles = true

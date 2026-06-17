@@ -68,7 +68,7 @@ class DockingController
             'n_poses' => $request->n_poses ?? 5,
         ]);
 
-        return $this->successResponse('Docking Job Successfully Queued', [
+        return response()->json([
             'job_id' => $job->id,
             'status' => $job->status,
         ]);
@@ -91,28 +91,26 @@ class DockingController
             ->paginate($perPage);
 
         $items = collect($paginator->items())->map(function ($job) {
-            $data = [
-                'job_id'     => $job->id,
-                'status'     => $job->status,
-                'inputs'     => [
-                    'protein' => $job->protein_name,
-                    'ligand'  => $job->ligand_name,
-                ],
-                'created_at' => $job->created_at->toIso8601String(),
-            ];
-
+            $scores = [];
             if ($job->status === 'completed' && $job->result_data) {
-                $data['results'] = [
-                    'vina_scores'  => $job->result_data['vina_score'] ?? [],
-                    'download_url' => url('/api/docking/download/' . $job->id),
-                ];
+                foreach (($job->result_data['vina_score'] ?? []) as $i => $affinity) {
+                    $scores[] = ['pose' => $i + 1, 'affinity' => (float) $affinity];
+                }
             }
 
-            return $data;
+            return [
+                'id'           => $job->id,
+                'status'       => $job->status,
+                'protein'      => $job->protein_name,
+                'ligand'       => $job->ligand_name,
+                'created_at'   => $job->created_at->toIso8601String(),
+                'download_url' => url('/api/docking/download/' . $job->id),
+                'scores'       => $scores,
+            ];
         });
 
-        return $this->successResponse('Docking history retrieved successfully', [
-            'data'       => $items,
+        return response()->json([
+            'results'    => $items,
             'pagination' => [
                 'current_page' => $paginator->currentPage(),
                 'per_page'     => $paginator->perPage(),
@@ -141,29 +139,27 @@ class DockingController
         }
 
         // Build results block (only when job is completed)
-        $results = null;
+        $scores = [];
         if ($job->status === 'completed' && $job->result_data) {
-            $results = [
-                'vina_scores'  => $job->result_data['vina_score'] ?? [],
-                'download_url' => url('/api/docking/download/' . $job->id),
-            ];
+            foreach (($job->result_data['vina_score'] ?? []) as $i => $affinity) {
+                $scores[] = ['pose' => $i + 1, 'affinity' => (float) $affinity];
+            }
         }
 
         $data = [
-            'job_id'     => $job->id,
-            'status'     => $job->status,
-            'inputs'     => [
-                'protein' => $job->protein_name,
-                'ligand'  => $job->ligand_name,
-            ],
-            'created_at' => $job->created_at->toIso8601String(),
+            'id'           => $job->id,
+            'status'       => $job->status,
+            'protein'      => $job->protein_name,
+            'ligand'       => $job->ligand_name,
+            'created_at'   => $job->created_at->toIso8601String(),
+            'download_url' => url('/api/docking/download/' . $job->id),
+            'scores'       => $scores,
         ];
 
-        if ($results !== null) {
-            $data['results'] = $results;
-        }
-
-        return $this->successResponse('Job details retrieved successfully', $data);
+        return response()->json(array_merge(
+            ['success' => true, 'message' => 'Job details retrieved successfully'],
+            $data
+        ));
     }
 
     /**
@@ -189,7 +185,9 @@ class DockingController
             return $this->errorResponse('File not found on server', 404);
         }
 
-        return response()->download($filePath, 'docking_result_' . $job->id . '.pdbqt');
+        return response()->download($filePath, 'docking_result_' . $job->id . '.pdbqt', [
+            'Content-Disposition' => 'attachment; filename="docking_result_' . $job->id . '.pdbqt"',
+        ]);
     }
 
     /**

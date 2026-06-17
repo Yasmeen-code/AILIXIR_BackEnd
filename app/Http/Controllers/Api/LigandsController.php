@@ -12,7 +12,7 @@ class LigandsController extends BaseController
 
     private function aiServiceUrl(): string
     {
-        return config('services.ai.url', 'http://localhost:8000');
+        return rtrim(config('services.generation.url', 'http://generation:8000'), '/');
     }
 
     public function exportLigands(Request $request)

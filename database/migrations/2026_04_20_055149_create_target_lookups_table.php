@@ -12,7 +12,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('user_id')->constrained()->cascadeOnDelete();
             $table->json('input');
-            $table->json('output');
+            $table->json('output')->nullable();
             $table->timestamps();
         });
     }

@@ -12,16 +12,19 @@ from app.models import (
     DiseaseSearchRequest,
     ScreeningRequest,
     ScreeningResponse,
-    PredictionResult,
+    DrugCandidate,
     HealthCheckResponse,
-    ErrorResponse
+    ErrorResponse,
+    EnrichedTargetResponse
 )
+from app.pipelines.screening_cache import load_cached_screening, save_cached_screening
 from app.pipelines import (
     DiseaseTargetPipeline,
     ProteinSequencePipeline,
     DrugLibraryPipeline,
     AIScreeningPipeline,
-    ResultProcessingPipeline
+    ResultProcessingPipeline,
+    PdbStructurePipeline
 )
 
 # Configure logging
@@ -55,6 +58,7 @@ protein_pipeline = ProteinSequencePipeline(api_url=settings.UNIPROT_API_URL)
 drug_pipeline = DrugLibraryPipeline(use_mock=settings.USE_MOCK_DRUGS)
 ai_pipeline = AIScreeningPipeline(use_mock=settings.USE_MOCK_MODEL)
 result_pipeline = ResultProcessingPipeline()
+pdb_pipeline = PdbStructurePipeline(api_url=settings.UNIPROT_API_URL)
 
 # Load AI model at startup
 @app.on_event("startup")
@@ -69,33 +73,42 @@ async def startup_event():
     logger.info(f"Dataset: {settings.TDC_DATASET}")
     
     try:
-        logger.info("\n[1/2] Loading DeepPurpose MPNN_CNN_BindingDB model...")
-        ai_pipeline.load_model(model_name=settings.DEEP_PURPOSE_MODEL)
-        logger.info("✅ AI model loaded successfully\n")
-        
-        logger.info("[2/2] Verifying drug library...")
-        # Test drug library access (will use fallback if TDC unavailable)
-        test_drugs = drug_pipeline.load_drug_library(
-            dataset_name=settings.TDC_DATASET, 
-            max_drugs=10
-        )
-        logger.info(f"✅ Drug library ready - {len(test_drugs)} sample drugs loaded\n")
-        
-        logger.info(f"{'='*70}")
-        logger.info("✅ PRODUCTION MODE: All systems ready")
-        logger.info("   - Real DeepPurpose MPNN_CNN predictions enabled")
-        logger.info("   - Drug library enabled (Official TDC or Local Fallback)")
-        logger.info("   - No mock predictions active")
-        logger.info(f"{'='*70}\n")
+        if ai_pipeline.use_mock:
+            logger.info("\n[1/2] Mock mode enabled - skipping DeepPurpose model loading")
+            logger.info("[2/2] Mock drug library enabled - skipping TDC download")
+            logger.info(f"\n{'='*70}")
+            logger.info("✅ MOCK MODE: All systems ready")
+            logger.info("   - Using mock predictions (random scores)")
+            logger.info("   - Drug library: local fallback")
+            logger.info(f"{'='*70}\n")
+        else:
+            logger.info("\n[1/2] Loading DeepPurpose MPNN_CNN_BindingDB model...")
+            ai_pipeline.load_model(model_name=settings.DEEP_PURPOSE_MODEL)
+            logger.info("✅ AI model loaded successfully\n")
+            
+            logger.info("[2/2] Verifying drug library...")
+            test_drugs = drug_pipeline.load_drug_library(
+                dataset_name=settings.TDC_DATASET, 
+                max_drugs=10
+            )
+            logger.info(f"✅ Drug library ready - {len(test_drugs)} sample drugs loaded\n")
+            
+            logger.info(f"{'='*70}")
+            logger.info("✅ PRODUCTION MODE: All systems ready")
+            logger.info("   - Real DeepPurpose MPNN_CNN predictions enabled")
+            logger.info("   - Drug library enabled (Official TDC or Local Fallback)")
+            logger.info("   - No mock predictions active")
+            logger.info(f"{'='*70}\n")
         
     except ImportError as e:
         logger.error(f"\n{'='*70}")
         logger.error("❌ STARTUP FAILED: Missing required dependencies")
         logger.error(f"{'='*70}")
         logger.error(f"Error: {str(e)}\n")
-        logger.error("Install required packages:\n")
-        logger.error("  DeepPurpose and dependencies are REQUIRED")
-        logger.error("  Check terminal output above for pip install commands\n")
+        if not ai_pipeline.use_mock:
+            logger.error("Install required packages:\n")
+            logger.error("  DeepPurpose and dependencies are REQUIRED")
+            logger.error("  Check terminal output above for pip install commands\n")
         raise
         
     except RuntimeError as e:
@@ -110,8 +123,9 @@ async def startup_event():
         logger.error(f"❌ STARTUP FAILED: Unexpected error")
         logger.error(f"{'='*70}")
         logger.error(f"Error: {str(e)}\n")
-        import traceback
-        traceback.print_exc()
+        if not ai_pipeline.use_mock:
+            import traceback
+            traceback.print_exc()
         raise
 
 
@@ -156,17 +170,20 @@ async def root():
     }
 
 
-# Disease Targets Endpoint
-@app.post("/api/v1/disease-targets")
+# Disease Targets Endpoint (enriched with sequences + PDB IDs)
+@app.post("/api/v1/disease-targets", response_model=EnrichedTargetResponse)
 async def get_disease_targets(request: DiseaseSearchRequest):
     """
-    Get target proteins associated with a disease using Open Targets API.
+    Get target proteins associated with a disease using Open Targets API,
+    enriched with protein sequences (UniProt) and PDB structure IDs.
     
     - **disease_name**: Name of the disease to search for
     - **top_n**: Number of top targets to retrieve (1-100, default: 10)
     """
     try:
         logger.info(f"Searching targets for disease: {request.disease_name}")
+
+        disease_id = disease_pipeline.fetch_disease_id(request.disease_name)
         
         targets = disease_pipeline.get_disease_targets(
             disease_name=request.disease_name,
@@ -178,11 +195,22 @@ async def get_disease_targets(request: DiseaseSearchRequest):
                 status_code=404,
                 detail=f"No targets found for disease: {request.disease_name}"
             )
+
+        targets_with_seqs = protein_pipeline.get_protein_sequences(targets)
+
+        if not targets_with_seqs:
+            raise HTTPException(
+                status_code=400,
+                detail="Could not fetch sequences for any targets"
+            )
+
+        enriched = pdb_pipeline.fetch_pdb_ids(targets_with_seqs)
         
         return {
             "disease": request.disease_name,
-            "total_targets": len(targets),
-            "targets": targets
+            "disease_id": disease_id or "unknown",
+            "total_targets": len(enriched),
+            "targets": enriched
         }
     
     except HTTPException:
@@ -256,6 +284,12 @@ async def virtual_screening(request: ScreeningRequest):
     5. Process and rank results
     """
     try:
+        # Check cache
+        cached = load_cached_screening(request)
+        if cached is not None:
+            logger.info(f"Returning cached screening for: {request.disease_name}")
+            return ScreeningResponse(**cached)
+
         start_time = time.time()
         logger.info(f"Starting screening for disease: {request.disease_name}")
         
@@ -313,9 +347,9 @@ async def virtual_screening(request: ScreeningRequest):
         else:
             logger.info(f"  CPU mode (batch size: {settings.BATCH_SIZE})")
         
-        raw_results = ai_pipeline.run_virtual_screening(drugs, targets_with_seqs)
+        candidates, warnings = ai_pipeline.run_virtual_screening(drugs, targets_with_seqs)
         
-        if not raw_results:
+        if not candidates:
             raise HTTPException(
                 status_code=400,
                 detail="AI screening failed to produce predictions"
@@ -324,30 +358,42 @@ async def virtual_screening(request: ScreeningRequest):
         # Stage 5: Process results
         logger.info("Stage 5: Processing and ranking results...")
         final_results = result_pipeline.process_final_results(
-            raw_results,
+            candidates,
             known_drugs=request.known_drugs,
             min_score=request.min_score
         )
         
-        top_results = result_pipeline.get_top_results(final_results, top_n=10)
+        top_k = final_results[:10]
+        
+        top_candidates = [
+            DrugCandidate(
+                drug_name=r["drug_name"],
+                smiles=r.get("smiles", ""),
+                target_symbol=r["target_symbol"],
+                uniprot_id=r.get("uniprot_id", ""),
+                binding_score=r["score"],
+                rank=i + 1,
+                status=r.get("status", "").replace("✅ ", "").replace("🆕 ", "")
+            )
+            for i, r in enumerate(top_k)
+        ]
         
         elapsed_time = time.time() - start_time
         logger.info(f"✅ Screening complete in {elapsed_time:.2f} seconds")
         logger.info(f"   Total candidates: {len(final_results)}")
-        logger.info(f"   Top candidates: {len(top_results)}")
+        logger.info(f"   Top candidates: {len(top_k)}")
         
-        # Log model info in response
-        model_info = ai_pipeline.get_model_info()
-        
-        return ScreeningResponse(
-            disease=request.disease_name,
-            total_targets=len(targets_with_seqs),
-            total_drugs=len(drugs),
-            total_predictions=len(raw_results),
-            top_results=[PredictionResult(**r) for r in top_results],
-            success=True,
-            message=f"✅ Screening completed in {elapsed_time:.2f}s using {('GPU - ' + model_info['device'] if model_info['gpu_available'] else 'CPU')}. Found {len(final_results)} candidates ({len(top_results)} in top results)."
+        response = ScreeningResponse(
+            disease_name=request.disease_name,
+            total_targets_found=len(targets_with_seqs),
+            total_drugs_screened=len(drugs),
+            total_pairs_evaluated=len(candidates),
+            top_candidates=top_candidates,
+            warnings=warnings,
         )
+        
+        save_cached_screening(request, response.model_dump())
+        return response
     
     except HTTPException:
         raise

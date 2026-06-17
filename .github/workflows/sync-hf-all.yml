@@ -1,0 +1,180 @@
+name: Sync to Hugging Face Spaces
+
+# Automatically syncs code from GitHub main branch to all 5 Hugging Face Spaces.
+# Each job syncs a different subset of the repo to a specific HF Space.
+#
+# Two HF accounts are used:
+#   - RottenShadow (main): ailixir-api, ailixir-drug-repurposing, ailixir-chemical-rag
+#   - shdwRow (secondary): ailixir-admet, ailixir-generation
+#
+# Required GitHub secrets:
+#   HF_TOKEN            — HF access token for RottenShadow account (read+write permissions)
+#   HF_TOKEN_SHDWROW    — HF access token for shdwRow account (read+write permissions)
+#   GOOGLE_CLIENT_ID    — Google OAuth client ID
+#   GOOGLE_CLIENT_SECRET — Google OAuth client secret
+
+on:
+  push:
+    branches: [main, feature/hugging-face-deploy]
+  workflow_dispatch:
+
+jobs:
+  # ── Backend API (Laravel) ──────────────────────────────────────
+  # Syncs the full repo minus AI app directories to RottenShadow/ailixir-api.
+  # The live SQLite database (database/ailixir.sqlite) is preserved across syncs:
+  #   - Excluded from rsync so it's never overwritten
+  #   - Restored from HEAD via git checkout so live data isn't committed
+  backend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Sync ailixir-api
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+        run: |
+          SPACE="RottenShadow/ailixir-api"
+          REPO_URL="https://RottenShadow:${HF_TOKEN}@huggingface.co/spaces/${SPACE}"
+          git clone --depth 1 "$REPO_URL" /tmp/hf-space
+          cd /tmp/hf-space
+          # Sync files (new, modified, deleted) but preserve the live database
+          rsync -av --delete --exclude=ai_apps --exclude=.git --exclude=.env --exclude=.dockerignore --exclude=public/imgs --exclude=storage --exclude=Diagrams --exclude=database/ailixir.sqlite "$GITHUB_WORKSPACE/" .
+          cp "$GITHUB_WORKSPACE/README_HF.md" README.md 2>/dev/null || true
+          # Write .env with all required environment variables for HF Spaces
+          printf '%s\n' \
+            'RUN_MODE=hf' \
+            'APP_KEY=base64:T/MgQZht16genNJN3aZ5flCuvfe7Zfs4yFhuAFO2itU=' \
+            'AI_INTEGRATION_ROUTES_ENABLED=true' \
+            'APP_URL=https://RottenShadow-ailixir-api.hf.space' \
+            'APP_DEBUG=true' \
+            'ADMET_AI_URL=https://shdwRow-ailixir-admet.hf.space' \
+            'CHEMICAL_AI_URL=https://RottenShadow-ailixir-chemical-rag.hf.space' \
+            'DRUG_REPURPOSING_URL=https://RottenShadow-ailixir-drug-repurposing.hf.space' \
+            'GENERATION_SERVICE_URL=https://shdwRow-ailixir-generation.hf.space' \
+            'GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }}' \
+            'GOOGLE_CLIENT_SECRET=${{ secrets.GOOGLE_CLIENT_SECRET }}' \
+            'GOOGLE_REDIRECT_URI=https://RottenShadow-ailixir-api.hf.space/api/user/auth/google' \
+            'CLOUDINARY_CLOUD_NAME=dummy_cloud' \
+            'CLOUDINARY_API_KEY=dummy_key' \
+            'CLOUDINARY_API_SECRET=dummy_secret' \
+            'QUEUE_CONNECTION=sync' \
+            > .env
+          git config user.name "AILIXIR Bot"
+          git config user.email "bot@ailixir.app"
+          # Prevent the live database from being tracked/committed
+          git checkout HEAD -- database/ailixir.sqlite 2>/dev/null || true
+          git add -A
+          if git diff --cached --quiet; then echo "  No changes"; else git commit -m "Auto-sync: $GITHUB_SHA"; git push; fi
+
+  # ── Drug Repurposing (FastAPI) ─────────────────────────────────
+  # Syncs ai_apps/Drug Reporposing/ to RottenShadow/ailixir-drug-repurposing.
+  # Renames Dockerfile.hf → Dockerfile if present.
+  # Can run in mock mode for testing (set USE_MOCK_MODEL=true in HF secrets).
+  drug-repurposing:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Sync ailixir-drug-repurposing
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+        run: |
+          SPACE="RottenShadow/ailixir-drug-repurposing"
+          REPO_URL="https://RottenShadow:${HF_TOKEN}@huggingface.co/spaces/${SPACE}"
+          git clone --depth 1 "$REPO_URL" /tmp/hf-space
+          cd /tmp/hf-space
+          rsync -av --delete --exclude=.git --exclude=__pycache__ --exclude='*.pyc' --exclude=digrams --exclude=docs --exclude=docker "$GITHUB_WORKSPACE/ai_apps/Drug Reporposing/" .
+          cp "$GITHUB_WORKSPACE/ai_apps/Drug Reporposing/README_HF.md" README.md 2>/dev/null || true
+          if [ -f Dockerfile.hf ]; then mv Dockerfile.hf Dockerfile; fi
+          git config user.name "AILIXIR Bot"
+          git config user.email "bot@ailixir.app"
+          git add -A
+          if git diff --cached --quiet; then echo "  No changes"; else git commit -m "Auto-sync: $GITHUB_SHA"; git push; fi
+
+  # ── ADMET Prediction (FastAPI + PyTorch) ───────────────────────
+  # Syncs ai_apps/ADMIT/admet_inference/ to shdwRow/ailixir-admet.
+  # Uses HF Xet for binary .ckpt model files.
+  # Requires HF_TOKEN_SHDWROW secret (shdwRow account).
+  admet:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Install git-xet for binary file support
+        run: |
+          curl --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/huggingface/xet-core/refs/heads/main/git_xet/install.sh | sh
+          git xet install
+      - name: Sync ailixir-admet
+        env:
+          HF_TOKEN_SHDWROW: ${{ secrets.HF_TOKEN_SHDWROW }}
+        run: |
+          SPACE="shdwRow/ailixir-admet"
+          REPO_URL="https://shdwRow:${HF_TOKEN_SHDWROW}@huggingface.co/spaces/${SPACE}"
+          git clone --depth 1 "$REPO_URL" /tmp/hf-space
+          cd /tmp/hf-space
+          rsync -av --delete --exclude=.git --exclude=datasets.rar "$GITHUB_WORKSPACE/ai_apps/ADMIT/admet_inference/" .
+          cp README_HF.md README.md 2>/dev/null || true
+          git config user.name "AILIXIR Bot"
+          git config user.email "bot@ailixir.app"
+          git config lfs.allowincompletepush true
+          git lfs install
+          git lfs track '*.ckpt'
+          git add -A
+          if git diff --cached --quiet; then echo "  No changes"; else git commit -m "Auto-sync: $GITHUB_SHA"; git push; fi
+
+  # ── Chemical RAG (FastAPI + ChromaDB) ─────────────────────────
+  # Syncs ai_apps/chemical-rag-system/chemical-rag-system/ to RottenShadow/ailixir-chemical-rag.
+  chemical-rag:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Sync ailixir-chemical-rag
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+        run: |
+          SPACE="RottenShadow/ailixir-chemical-rag"
+          REPO_URL="https://RottenShadow:${HF_TOKEN}@huggingface.co/spaces/${SPACE}"
+          git clone --depth 1 "$REPO_URL" /tmp/hf-space
+          cd /tmp/hf-space
+          rsync -av --delete --exclude=.git --exclude=digrams "$GITHUB_WORKSPACE/ai_apps/chemical-rag-system/chemical-rag-system/" .
+          cp README_HF.md README.md 2>/dev/null || true
+          git config user.name "AILIXIR Bot"
+          git config user.email "bot@ailixir.app"
+          git add -A
+          if git diff --cached --quiet; then echo "  No changes"; else git commit -m "Auto-sync: $GITHUB_SHA"; git push; fi
+
+  # ── Molecular Generation (FastAPI + REINVENT4) ────────────────
+  # Syncs ai_apps/generation/ to shdwRow/ailixir-generation.
+  # Renames Dockerfile.hf → Dockerfile (or Dockerfile.api → Dockerfile as fallback).
+  # Uses HF Xet for binary .ckpt, .pt, .pkl model files.
+  # Requires HF_TOKEN_SHDWROW secret (shdwRow account).
+  generation:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Install git-xet for binary file support
+        run: |
+          curl --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/huggingface/xet-core/refs/heads/main/git_xet/install.sh | sh
+          git xet install
+      - name: Sync ailixir-generation
+        env:
+          HF_TOKEN_SHDWROW: ${{ secrets.HF_TOKEN_SHDWROW }}
+        run: |
+          SPACE="shdwRow/ailixir-generation"
+          REPO_URL="https://shdwRow:${HF_TOKEN_SHDWROW}@huggingface.co/spaces/${SPACE}"
+          git clone --depth 1 "$REPO_URL" /tmp/hf-space
+          cd /tmp/hf-space
+          rsync -av --delete --exclude=.git --exclude=bundle/models "$GITHUB_WORKSPACE/ai_apps/generation/" .
+          cp "$GITHUB_WORKSPACE/ai_apps/generation/README_HF.md" README.md 2>/dev/null || true
+          if [ -f Dockerfile.hf ]; then mv Dockerfile.hf Dockerfile; elif [ -f Dockerfile.api ]; then mv Dockerfile.api Dockerfile; fi
+          git config user.name "AILIXIR Bot"
+          git config user.email "bot@ailixir.app"
+          git add -A
+          if git diff --cached --quiet; then echo "  No changes"; else git commit -m "Auto-sync: $GITHUB_SHA"; git push; fi

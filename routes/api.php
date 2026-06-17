@@ -116,8 +116,8 @@ Route::middleware('auth:sanctum')->prefix('convert-smiles')->group(function () {
 
 Route::prefix('drug-repurposing')->middleware('auth:sanctum')->group(function () {
     Route::get('targets/history',   [ScreeningController::class, 'historyTargets']);
+    Route::post('targets', [ScreeningController::class, 'targets']);
     Route::get('targets/{id}', [ScreeningController::class, 'statusTargets'])->whereNumber('id');
-    Route::get('targets/{disease_name}', [ScreeningController::class, 'targets']);
 
     Route::get('screen/history', [ScreeningController::class, 'historyScreening']);
     Route::get('screen/{id}', [ScreeningController::class, 'statusScreening'])->whereNumber('id');

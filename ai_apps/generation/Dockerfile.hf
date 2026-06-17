@@ -1,0 +1,181 @@
+FROM condaforge/miniforge3:24.11.3-0
+
+WORKDIR /app
+
+ENV DEBIAN_FRONTEND=noninteractive
+ENV PATH=/opt/conda/bin:$PATH
+ENV LD_LIBRARY_PATH=/opt/conda/envs/ailixir/lib:/opt/conda/envs/dp/lib:/opt/conda/lib:/usr/local/lib:/usr/lib/x86_64-linux-gnu
+
+SHELL ["/bin/bash", "-lc"]
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    git \
+    wget \
+    curl \
+    ca-certificates \
+    build-essential \
+    make \
+    procps \
+    ocl-icd-opencl-dev \
+    pocl-opencl-icd \
+    clinfo \
+    && rm -rf /var/lib/apt/lists/*
+
+# -----------------------------
+# Generation / REINVENT env
+# -----------------------------
+RUN conda create -n ailixir python=3.11 -y && conda clean -afy
+
+SHELL ["conda", "run", "--no-capture-output", "-n", "ailixir", "/bin/bash", "-lc"]
+
+RUN set -eux; \
+    for i in 1 2 3 4 5; do \
+      if conda install -y -c conda-forge \
+        pandas \
+        numpy \
+        scikit-learn \
+        rdkit \
+        fastapi \
+        uvicorn \
+        requests \
+        tqdm \
+        pip; then \
+        conda clean -afy; \
+        exit 0; \
+      fi; \
+      echo "conda install failed on attempt ${i}, retrying..."; \
+      conda clean -i -y || true; \
+      sleep $((i * 20)); \
+    done; \
+    echo "conda install failed after retries"; \
+    exit 1
+
+RUN git clone --depth 1 https://github.com/MolecularAI/REINVENT4.git /opt/REINVENT4 \
+    && cd /opt/REINVENT4 \
+    && python install.py cpu
+
+RUN python -c "from rdkit import Chem; print('RDKit import OK')"
+RUN python -c "import importlib.metadata as m; print('REINVENT version', m.version('reinvent'))"
+
+# Meeko provides mk_prepare_ligand.py for PDBQT ligand preparation used by docking
+# Install with required runtime dependencies because pip meeko may not pull all of them.
+RUN set -eux; \
+    for i in 1 2 3 4 5; do \
+      if conda install -y -c conda-forge meeko gemmi scipy; then \
+        conda clean -afy; \
+        which mk_prepare_ligand.py; \
+        mk_prepare_ligand.py -h >/tmp/mk_prepare_ligand_help.txt; \
+        exit 0; \
+      fi; \
+      echo "meeko install failed on attempt ${i}, retrying..."; \
+      conda clean -i -y || true; \
+      sleep $((i * 20)); \
+    done; \
+    echo "meeko install failed after retries"; \
+    exit 1
+
+# Open Babel provides obabel for MOL2 ligand export
+RUN set -eux; \
+    for i in 1 2 3 4 5; do \
+      if conda install -y -c conda-forge openbabel; then \
+        conda clean -afy; \
+        which obabel; \
+        obabel -V; \
+        exit 0; \
+      fi; \
+      echo "openbabel install failed on attempt ${i}, retrying..."; \
+      conda clean -i -y || true; \
+      sleep $((i * 20)); \
+    done; \
+    echo "openbabel install failed after retries"; \
+    exit 1
+
+
+# -----------------------------
+# DeepPurpose affinity env
+# -----------------------------
+SHELL ["/bin/bash", "-lc"]
+
+RUN conda create -n dp python=3.8 -y && conda clean -afy
+
+SHELL ["conda", "run", "--no-capture-output", "-n", "dp", "/bin/bash", "-lc"]
+
+RUN set -eux; \
+    for i in 1 2 3 4 5; do \
+      if conda install -y -c conda-forge \
+        pandas \
+        numpy \
+        scikit-learn \
+        rdkit \
+        fastapi \
+        uvicorn \
+        requests \
+        tqdm \
+        pip; then \
+        conda clean -afy; \
+        exit 0; \
+      fi; \
+      echo "conda install failed on attempt ${i}, retrying..."; \
+      conda clean -i -y || true; \
+      sleep $((i * 20)); \
+    done; \
+    echo "conda install failed after retries"; \
+    exit 1
+
+ENV PIP_DEFAULT_TIMEOUT=1000
+ENV PIP_RETRIES=10
+ENV PIP_DISABLE_PIP_VERSION_CHECK=1
+
+RUN pip install --no-cache-dir --default-timeout=1000 --retries=10 \
+    git+https://github.com/bp-kelley/descriptastorus
+
+RUN pip install --no-cache-dir --default-timeout=1000 --retries=10 \
+    torch==2.1.0 \
+    --index-url https://download.pytorch.org/whl/cpu
+
+RUN python -c "import torch; print('Torch version:', torch.__version__); print('CUDA available:', torch.cuda.is_available())"
+
+RUN pip install --no-cache-dir --default-timeout=1000 --retries=10 \
+    DeepPurpose
+
+# -----------------------------
+# AutoDock-GPU CPU/OpenCL build
+# -----------------------------
+SHELL ["/bin/bash", "-lc"]
+
+RUN set -eux; \
+    clinfo || true; \
+    rm -rf /opt/AutoDock-GPU; \
+    git clone --depth 1 https://github.com/ccsb-scripps/AutoDock-GPU.git /opt/AutoDock-GPU; \
+    cd /opt/AutoDock-GPU; \
+    make DEVICE=CPU NUMWI=1 GPU_INCLUDE_PATH=/usr/include GPU_LIBRARY_PATH=/usr/lib/x86_64-linux-gnu; \
+    find /opt/AutoDock-GPU -maxdepth 3 -type f -name "autodock_*" -print; \
+    test -f /opt/AutoDock-GPU/bin/autodock_cpu_1wi; \
+    chmod +x /opt/AutoDock-GPU/bin/autodock_cpu_1wi
+
+COPY api.py /app/api.py
+COPY bundle /app/bundle
+
+# Download model files from Hugging Face Hub (avoids GitHub LFS quota)
+RUN conda run -n ailixir pip install --no-cache-dir huggingface_hub \
+    && conda run -n ailixir python -c "from huggingface_hub import snapshot_download; snapshot_download(repo_id='shdwRow/ailixir-generation-models', repo_type='dataset', local_dir='bundle/models')"
+
+COPY start_hf.sh /app/start_hf.sh
+
+RUN sed -i 's/\r$//' /app/start_hf.sh \
+    && chmod +x /app/start_hf.sh \
+    && mkdir -p /app/outputs/jobs /app/outputs/deeppurpose \
+    && mkdir -p /home/abdullah/projects/egfr_drug_discovery/runs/deeppurpose
+
+
+ENV PUBLIC_BASE_URL=http://localhost:7860
+ENV REINVENT_DEVICE=cpu
+ENV DEEPPURPOSE_URL=http://127.0.0.1:8001/reinvent_predict
+ENV ADGPU_BIN=/opt/AutoDock-GPU/bin/autodock_cpu_1wi
+ENV PYTHON=python
+ENV LD_PRELOAD=/opt/conda/envs/ailixir/lib/libstdc++.so.6
+ENV PYTHONPATH=/app/bundle
+
+EXPOSE 7860
+
+CMD ["/app/start_hf.sh"]

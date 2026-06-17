@@ -16,12 +16,12 @@ class RunTargetLookupJob implements ShouldQueue
         $this->targetLookup->update(['status' => 'processing']);
 
         try {
-            $diseaseName = $this->targetLookup->input['disease_name'] ?? null;
-            if (!$diseaseName) {
+            $input = $this->targetLookup->input ?? [];
+            if (empty($input['disease_name'])) {
                 throw new \Exception('Disease name not found in input');
             }
 
-            $output = $screeningService->getTargets($diseaseName);
+            $output = $screeningService->getTargets($input);
 
             if (is_array($output)) {
                 unset($output['warnings']);

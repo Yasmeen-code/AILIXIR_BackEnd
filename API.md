@@ -19,6 +19,7 @@ Complete API specification for AILIXIR-Backend, including all endpoints, authent
 - [AI Agent Endpoints (Chemistry AI)](#ai-agent-endpoints-chemistry-ai)
 - [Chemical Search Endpoints](#chemical-search-endpoints)
 - [Docking API](#docking-api)
+- [Drug Repurposing API](#drug-repurposing-api)
 - [Convert SMILES API](#convert-smiles-api)
 - [User Management Endpoints](#user-management-endpoints)
 - [Awards And Scientists API](#awards-and-scientists-api)
@@ -1386,10 +1387,8 @@ curl -X POST "{base_url}/api/docking/submit" \\
 {
     "success": true,
     "message": "Docking Job Successfully Queued",
-    "data": {
-        "job_id": 123,
-        "status": "pending"
-    }
+    "job_id": 123,
+    "status": "pending"
 }
 ```
 
@@ -1407,23 +1406,23 @@ curl -X POST "{base_url}/api/docking/submit" \\
 {
     "success": true,
     "message": "Job details retrieved successfully",
-    "data": {
-        "job_id": 14,
-        "status": "completed",
-        "inputs": {
-            "protein": "EGFR",
-            "ligand": "Erlotinib"
-        },
-        "created_at": "2026-04-21T18:29:45+00:00",
-        "results": {
-            "vina_scores": [0, 0.001, 0.002],
-            "download_url": "{base_url}/api/docking/download/{job_id}"
-        }
-    }
+    "id": 5,
+    "status": "completed",
+    "protein": "EGFR",
+    "ligand": "Erlotinib",
+    "created_at": "2026-06-17T05:45:31+00:00",
+    "download_url": "{base_url}/api/docking/download/5",
+    "scores": [
+        {"pose": 1, "affinity": -6.469},
+        {"pose": 2, "affinity": -6.337},
+        {"pose": 3, "affinity": -6.163},
+        {"pose": 4, "affinity": -6.079},
+        {"pose": 5, "affinity": -5.983}
+    ]
 }
 ```
 
-If the job is not completed, the `results` block may be omitted.
+If the job is not completed, `scores` will be an empty array.
 
 ---
 
@@ -1439,29 +1438,29 @@ If the job is not completed, the `results` block may be omitted.
 {
     "success": true,
     "message": "Docking history retrieved successfully",
-    "data": {
-        "data": [
-            {
-                "job_id": 14,
-                "status": "completed",
-                "inputs": {
-                    "protein": "EGFR",
-                    "ligand": "Erlotinib"
-                },
-                "created_at": "2026-04-21T18:29:45+00:00",
-                "results": {
-                    "vina_scores": [0, 0.001, 0.002],
-                    "download_url": "{base_url}/api/docking/download/{job_id}"
-                }
-            }
-        ],
-        "pagination": {
-            "current_page": 1,
-            "per_page": 2,
-            "total": 3,
-            "last_page": 2,
-            "has_more": true
+    "results": [
+        {
+            "id": 5,
+            "status": "completed",
+            "protein": "EGFR",
+            "ligand": "Erlotinib",
+            "created_at": "2026-06-17T05:45:31+00:00",
+            "download_url": "{base_url}/api/docking/download/5",
+            "scores": [
+                {"pose": 1, "affinity": -6.469},
+                {"pose": 2, "affinity": -6.337},
+                {"pose": 3, "affinity": -6.163},
+                {"pose": 4, "affinity": -6.079},
+                {"pose": 5, "affinity": -5.983}
+            ]
         }
+    ],
+    "pagination": {
+        "current_page": 1,
+        "per_page": 2,
+        "total": 3,
+        "last_page": 2,
+        "has_more": true
     }
 }
 ```
@@ -1475,6 +1474,262 @@ If the job is not completed, the `results` block may be omitted.
     - `id` (integer)
 - Returns a file download for the completed docking result.
 - Content disposition filename: `docking_result_{id}.pdbqt`
+
+---
+
+## Drug Repurposing API
+
+### POST `/api/drug-repurposing/targets`
+
+- Auth required
+- Content type: `application/json`
+- Request body:
+    - `disease_name` (string, required)
+    - `top_n` (integer, optional, default 10, range 1–100)
+
+#### Example curl request
+
+```bash
+curl -X POST "{base_url}/api/drug-repurposing/targets" \\
+  -H "Authorization: Bearer {token}" \\
+  -H "Content-Type: application/json" \\
+  -d '{"disease_name": "Type 2 Diabetes", "top_n": 10}'
+```
+
+#### Success response
+
+```json
+{
+    "success": true,
+    "message": "Target lookup queued successfully",
+    "data": {
+        "job_id": 15,
+        "status": "pending"
+    }
+}
+```
+
+---
+
+### GET `/api/drug-repurposing/targets/{id}`
+
+- Auth required
+- Path parameter:
+    - `id` (integer)
+
+#### Success response (completed)
+
+```json
+{
+    "success": true,
+    "message": "Target lookup history retrieved successfully",
+    "data": {
+        "id": 4,
+        "input": {
+            "disease_name": "Type 2 Diabetes",
+            "top_n": 10
+        },
+        "output": {
+            "disease": "Type 2 Diabetes",
+            "disease_id": "EFO_0001360",
+            "total_targets": 10,
+            "targets": [
+                {"symbol": "KCNJ11", "name": "potassium inwardly rectifying channel subfamily J member 11", "score": 0.8651, "sequence": null, "uniprot_id": "Q14654", "pdb_ids": ["2UKM", "2UGY", "2UUG"]},
+                {"symbol": "ABCC8", "name": "ATP binding cassette subfamily C member 8", "score": 0.8648, "sequence": null, "uniprot_id": "Q09428", "pdb_ids": []},
+                {"symbol": "GCK", "name": "glucokinase", "score": 0.8612, "sequence": null, "uniprot_id": "P35557", "pdb_ids": ["1V4S", "3F9M", "4ISE"]},
+                {"symbol": "PPARG", "name": "peroxisome proliferator activated receptor gamma", "score": 0.8486, "sequence": null, "uniprot_id": "P37231", "pdb_ids": ["7AEX", "7AEW", "7AEV"]},
+                {"symbol": "INSR", "name": "insulin receptor", "score": 0.7887, "sequence": null, "uniprot_id": "P06213", "pdb_ids": ["2HR7", "3EKN", "4IBM"]},
+                {"symbol": "HNF1B", "name": "HNF1 homeobox B", "score": 0.7846, "sequence": null, "uniprot_id": "P35680", "pdb_ids": []},
+                {"symbol": "HNF1A", "name": "HNF1 homeobox A", "score": 0.7796, "sequence": null, "uniprot_id": "P20823", "pdb_ids": []},
+                {"symbol": "HNF4A", "name": "hepatocyte nuclear factor 4 alpha", "score": 0.7763, "sequence": null, "uniprot_id": "P41235", "pdb_ids": ["7D1C", "7D1D"]},
+                {"symbol": "WFS1", "name": "wolframin ER transmembrane glycoprotein", "score": 0.7695, "sequence": null, "uniprot_id": "O76024", "pdb_ids": []},
+                {"symbol": "GLP1R", "name": "glucagon like peptide 1 receptor", "score": 0.7667, "sequence": null, "uniprot_id": "P43220", "pdb_ids": []}
+            ]
+        },
+        "status": "completed"
+    }
+}
+```
+
+If the job is not completed, the `output` field will be `null`.
+
+---
+
+### GET `/api/drug-repurposing/targets/history`
+
+- Auth required
+- Query parameters:
+    - `per_page` (integer, optional, default 15)
+
+#### Response
+
+```json
+{
+    "success": true,
+    "message": "Target lookup history retrieved successfully",
+    "data": {
+        "data": [
+            {
+                "id": 4,
+                "input": {
+                    "disease_name": "Type 2 Diabetes",
+                    "top_n": 10
+                },
+                "output": {
+                    "disease": "Type 2 Diabetes",
+                    "disease_id": "EFO_0001360",
+                    "total_targets": 10,
+                    "targets": [
+                        {"symbol": "KCNJ11", "name": "potassium inwardly rectifying channel subfamily J member 11", "score": 0.8651, "sequence": null, "uniprot_id": "Q14654", "pdb_ids": ["2UKM", "2UGY", "2UUG"]},
+                        {"symbol": "GCK", "name": "glucokinase", "score": 0.8612, "sequence": null, "uniprot_id": "P35557", "pdb_ids": ["1V4S", "3F9M", "4ISE"]}
+                    ]
+                },
+                "status": "completed",
+                "created_at": "2026-06-03T07:31:42.000000Z"
+            }
+        ],
+        "pagination": {
+            "current_page": 1,
+            "per_page": 15,
+            "total": 3,
+            "last_page": 1,
+            "has_more": false
+        }
+    }
+}
+```
+
+---
+
+### POST `/api/drug-repurposing/screen`
+
+- Auth required
+- Content type: `application/json`
+- Request body:
+    - `disease_name` (string, required)
+    - `known_drugs` (array of strings, optional)
+    - `min_score` (numeric, optional, range 0–1)
+    - `top_n_targets` (integer, optional, range 1–100)
+
+#### Example curl request
+
+```bash
+curl -X POST "{base_url}/api/drug-repurposing/screen" \\
+  -H "Authorization: Bearer {token}" \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "disease_name": "Type 2 Diabetes",
+    "known_drugs": ["Metformin", "Insulin"],
+    "min_score": 0.5,
+    "top_n_targets": 10
+  }'
+```
+
+#### Success response
+
+```json
+{
+    "success": true,
+    "message": "Screening queued successfully",
+    "data": {
+        "job_id": 22,
+        "status": "pending"
+    }
+}
+```
+
+---
+
+### GET `/api/drug-repurposing/screen/{id}`
+
+- Auth required
+- Path parameter:
+    - `id` (integer)
+
+#### Success response (completed)
+
+```json
+{
+    "success": true,
+    "message": "Screening history retrieved successfully",
+    "data": {
+        "id": 22,
+        "input": {
+            "disease_name": "Type 2 Diabetes",
+            "min_score": 0.5,
+            "top_n_targets": 10,
+            "known_drugs": ["Metformin", "Insulin"]
+        },
+        "output": {
+            "disease_name": "Type 2 Diabetes",
+            "total_targets_found": 10,
+            "total_drugs_screened": 200,
+            "total_pairs_evaluated": 2000,
+            "top_candidates": [
+                {"drug_name": "Drug_CHEMBL1754", "smiles": "CC1=C(C=C(C=C1)NC(=O)C2=CC=C(C=C2)Cl)Cl", "target_symbol": "KCNJ11", "uniprot_id": "Q14654", "binding_score": 0.9821, "rank": 1, "status": "Potential Discovery"},
+                {"drug_name": "Drug_CHEMBL1754", "smiles": "CC1=C(C=C(C=C1)NC(=O)C2=CC=C(C=C2)Cl)Cl", "target_symbol": "ABCC8", "uniprot_id": "Q09428", "binding_score": 0.9765, "rank": 2, "status": "Potential Discovery"},
+                {"drug_name": "Drug_CHEMBL1754", "smiles": "CC1=C(C=C(C=C1)NC(=O)C2=CC=C(C=C2)Cl)Cl", "target_symbol": "GCK", "uniprot_id": "P35557", "binding_score": 0.9712, "rank": 3, "status": "Potential Discovery"},
+                {"drug_name": "Drug_CHEMBL1754", "smiles": "CC1=C(C=C(C=C1)NC(=O)C2=CC=C(C=C2)Cl)Cl", "target_symbol": "PPARG", "uniprot_id": "P37231", "binding_score": 0.9689, "rank": 4, "status": "Potential Discovery"},
+                {"drug_name": "Drug_CHEMBL1754", "smiles": "CC1=C(C=C(C=C1)NC(=O)C2=CC=C(C=C2)Cl)Cl", "target_symbol": "INSR", "uniprot_id": "P06213", "binding_score": 0.9634, "rank": 5, "status": "Potential Discovery"}
+            ],
+            "warnings": []
+        },
+        "status": "completed"
+    }
+}
+```
+
+If the job is not completed, the `output` field will be `null`.
+
+---
+
+### GET `/api/drug-repurposing/screen/history`
+
+- Auth required
+- Query parameters:
+    - `per_page` (integer, optional, default 15)
+
+#### Response
+
+```json
+{
+    "success": true,
+    "message": "Screening history retrieved successfully",
+    "data": {
+        "data": [
+            {
+                "id": 22,
+                "input": {
+                    "disease_name": "Type 2 Diabetes",
+                    "min_score": 0.5,
+                    "top_n_targets": 10,
+                    "known_drugs": ["Metformin", "Insulin"]
+                },
+                "output": {
+                    "disease_name": "Type 2 Diabetes",
+                    "total_targets_found": 10,
+                    "total_drugs_screened": 200,
+                    "total_pairs_evaluated": 2000,
+                    "top_candidates": [
+                        {"drug_name": "Drug_CHEMBL1754", "smiles": "CC1=C(C=C(C=C1)NC(=O)C2=CC=C(C=C2)Cl)Cl", "target_symbol": "KCNJ11", "uniprot_id": "Q14654", "binding_score": 0.9821, "rank": 1, "status": "Potential Discovery"},
+                        {"drug_name": "Drug_CHEMBL1754", "smiles": "CC1=C(C=C(C=C1)NC(=O)C2=CC=C(C=C2)Cl)Cl", "target_symbol": "ABCC8", "uniprot_id": "Q09428", "binding_score": 0.9765, "rank": 2, "status": "Potential Discovery"}
+                    ],
+                    "warnings": []
+                },
+                "status": "completed",
+                "created_at": "2026-06-02T21:35:24.000000Z"
+            }
+        ],
+        "pagination": {
+            "current_page": 1,
+            "per_page": 15,
+            "total": 5,
+            "last_page": 1,
+            "has_more": false
+        }
+    }
+}
+```
 
 ---
 
