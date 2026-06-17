@@ -1387,10 +1387,8 @@ curl -X POST "{base_url}/api/docking/submit" \\
 {
     "success": true,
     "message": "Docking Job Successfully Queued",
-    "data": {
-        "job_id": 123,
-        "status": "pending"
-    }
+    "job_id": 123,
+    "status": "pending"
 }
 ```
 
@@ -1408,23 +1406,23 @@ curl -X POST "{base_url}/api/docking/submit" \\
 {
     "success": true,
     "message": "Job details retrieved successfully",
-    "data": {
-        "job_id": 14,
-        "status": "completed",
-        "inputs": {
-            "protein": "EGFR",
-            "ligand": "Erlotinib"
-        },
-        "created_at": "2026-04-21T18:29:45+00:00",
-        "results": {
-            "vina_scores": [0, 0.001, 0.002],
-            "download_url": "{base_url}/api/docking/download/{job_id}"
-        }
-    }
+    "id": 5,
+    "status": "completed",
+    "protein": "EGFR",
+    "ligand": "Erlotinib",
+    "created_at": "2026-06-17T05:45:31+00:00",
+    "download_url": "{base_url}/api/docking/download/5",
+    "scores": [
+        {"pose": 1, "affinity": -6.469},
+        {"pose": 2, "affinity": -6.337},
+        {"pose": 3, "affinity": -6.163},
+        {"pose": 4, "affinity": -6.079},
+        {"pose": 5, "affinity": -5.983}
+    ]
 }
 ```
 
-If the job is not completed, the `results` block may be omitted.
+If the job is not completed, `scores` will be an empty array.
 
 ---
 
@@ -1440,29 +1438,29 @@ If the job is not completed, the `results` block may be omitted.
 {
     "success": true,
     "message": "Docking history retrieved successfully",
-    "data": {
-        "data": [
-            {
-                "job_id": 14,
-                "status": "completed",
-                "inputs": {
-                    "protein": "EGFR",
-                    "ligand": "Erlotinib"
-                },
-                "created_at": "2026-04-21T18:29:45+00:00",
-                "results": {
-                    "vina_scores": [0, 0.001, 0.002],
-                    "download_url": "{base_url}/api/docking/download/{job_id}"
-                }
-            }
-        ],
-        "pagination": {
-            "current_page": 1,
-            "per_page": 2,
-            "total": 3,
-            "last_page": 2,
-            "has_more": true
+    "results": [
+        {
+            "id": 5,
+            "status": "completed",
+            "protein": "EGFR",
+            "ligand": "Erlotinib",
+            "created_at": "2026-06-17T05:45:31+00:00",
+            "download_url": "{base_url}/api/docking/download/5",
+            "scores": [
+                {"pose": 1, "affinity": -6.469},
+                {"pose": 2, "affinity": -6.337},
+                {"pose": 3, "affinity": -6.163},
+                {"pose": 4, "affinity": -6.079},
+                {"pose": 5, "affinity": -5.983}
+            ]
         }
+    ],
+    "pagination": {
+        "current_page": 1,
+        "per_page": 2,
+        "total": 3,
+        "last_page": 2,
+        "has_more": true
     }
 }
 ```
