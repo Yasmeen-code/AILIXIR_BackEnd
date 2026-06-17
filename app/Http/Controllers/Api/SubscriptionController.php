@@ -7,9 +7,6 @@ use Illuminate\Support\Facades\Log;
 
 class SubscriptionController extends BaseController
 {
-    /**
-     * إنشاء جلسة دفع جديدة للاشتراك
-     */
     public function checkout(Request $request)
     {
         $request->validate([
@@ -24,7 +21,7 @@ class SubscriptionController extends BaseController
         if ($user->subscribed()) {
             return response()->json([
                 'success' => false,
-                'message' => 'أنت مشترك بالفعل في هذه الخدمة.'
+                'message' => 'You are already subscribed to a plan.'
             ], 400);
         }
 
@@ -50,21 +47,19 @@ class SubscriptionController extends BaseController
                 'success' => true,
                 'checkout_url' => $checkout->url,
                 'session_id' => $checkout->id,
-                'message' => 'تم إنشاء جلسة الدفع بنجاح'
+                'message' => 'Payment session created successfully'
             ]);
         } catch (\Exception $e) {
             Log::error('Subscription checkout error: ' . $e->getMessage());
 
             return response()->json([
                 'success' => false,
-                'message' => 'حدث خطأ أثناء إنشاء جلسة الدفع: ' . $e->getMessage()
+                'message' => 'Subscription checkout error: ' . $e->getMessage()
             ], 500);
         }
     }
 
-    /**
-     * الحصول على حالة الاشتراك الحالي
-     */
+
     public function status(Request $request)
     {
         $user = $request->user();
@@ -76,7 +71,7 @@ class SubscriptionController extends BaseController
                 'success' => true,
                 'subscribed' => false,
                 'status' => 'inactive',
-                'message' => 'ليس لديك اشتراك نشط'
+                'message' => 'You are not subscribed to any plan.'
             ]);
         }
 
@@ -99,10 +94,10 @@ class SubscriptionController extends BaseController
             'subscribed' => true,
             'status' => $status,
             'plan' => $subscription->stripe_price,
-            'start_date' => $subscription->created_at,
+            'start_date' => $subscription->created_at->toDateTimeString(),
             'end_date' => $subscription->ends_at,
             'on_trial' => $subscription->onTrial(),
-            'trial_ends_at' => $subscription->trial_ends_at,
+            'trial_ends_at' => $subscription->trial_ends_at->toDateTimeString(),
             'canceled' => $subscription->canceled(),
             'ended' => $subscription->ended(),
             'incomplete' => $subscription->incomplete(),
@@ -110,9 +105,7 @@ class SubscriptionController extends BaseController
         ]);
     }
 
-    /**
-     * إلغاء الاشتراك
-     */
+
     public function cancel(Request $request)
     {
         $user = $request->user();
@@ -123,7 +116,7 @@ class SubscriptionController extends BaseController
             if (!$subscription || !$subscription->valid()) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'ليس لديك اشتراك نشط لإلغائه'
+                    'message' => 'You are not subscribed to any plan.'
                 ], 400);
             }
 
@@ -131,7 +124,7 @@ class SubscriptionController extends BaseController
 
             return response()->json([
                 'success' => true,
-                'message' => 'تم إلغاء الاشتراك بنجاح. سيستمر حتى نهاية الفترة الحالية.',
+                'message' => 'Subscription cancelled successfully. Will continue until the end of the current period.',
                 'ends_at' => $subscription->ends_at
             ]);
         } catch (\Exception $e) {
@@ -139,14 +132,12 @@ class SubscriptionController extends BaseController
 
             return response()->json([
                 'success' => false,
-                'message' => 'حدث خطأ أثناء إلغاء الاشتراك: ' . $e->getMessage()
+                'message' => 'Subscription cancel error: ' . $e->getMessage()
             ], 500);
         }
     }
 
-    /**
-     * استئناف الاشتراك بعد الإلغاء
-     */
+
     public function resume(Request $request)
     {
         $user = $request->user();
@@ -157,7 +148,7 @@ class SubscriptionController extends BaseController
             if (!$subscription || !$subscription->canceled()) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'لا يوجد اشتراك ملغى لاستئنافه'
+                    'message' => 'You are not subscribed to any plan.'
                 ], 400);
             }
 
@@ -165,21 +156,19 @@ class SubscriptionController extends BaseController
 
             return response()->json([
                 'success' => true,
-                'message' => 'تم استئناف الاشتراك بنجاح'
+                'message' => 'Subscription resumed successfully.'
             ]);
         } catch (\Exception $e) {
             Log::error('Subscription resume error: ' . $e->getMessage());
 
             return response()->json([
                 'success' => false,
-                'message' => 'حدث خطأ أثناء استئناف الاشتراك: ' . $e->getMessage()
+                'message' => 'Subscription resume error: ' . $e->getMessage()
             ], 500);
         }
     }
 
-    /**
-     * الحصول على رابط بوابة الفواتير
-     */
+
     public function billingPortal(Request $request)
     {
         $user = $request->user();
@@ -188,7 +177,7 @@ class SubscriptionController extends BaseController
             if (!$user->stripe_id) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'ليس لديك اشتراك فعال لإدارة الفواتير'
+                    'message' => 'You do not have an active subscription to use the billing gateway'
                 ], 400);
             }
 
@@ -197,21 +186,19 @@ class SubscriptionController extends BaseController
             return response()->json([
                 'success' => true,
                 'billing_portal_url' => $portalUrl,
-                'message' => 'تم إنشاء رابط بوابة الفواتير بنجاح'
+                'message' => 'Invoicing portal link successfully created'
             ]);
         } catch (\Exception $e) {
             Log::error('Billing portal error: ' . $e->getMessage());
 
             return response()->json([
                 'success' => false,
-                'message' => 'حدث خطأ أثناء إنشاء رابط بوابة الفواتير: ' . $e->getMessage()
+                'message' => 'Billing portal error: ' . $e->getMessage()
             ], 500);
         }
     }
 
-    /**
-     * تحديث طريقة الدفع
-     */
+
     public function updatePaymentMethod(Request $request)
     {
         $user = $request->user();
@@ -220,7 +207,7 @@ class SubscriptionController extends BaseController
             if (!$user->stripe_id) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'ليس لديك اشتراك فعال لتحديث طريقة الدفع'
+                    'message' => 'You do not have an active subscription to update your payment method'
                 ], 400);
             }
 
@@ -229,7 +216,7 @@ class SubscriptionController extends BaseController
             if (!$subscription || !$subscription->valid()) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'ليس لديك اشتراك نشط لتحديث طريقة الدفع'
+                    'message' => 'You do not have an active subscription to update your payment method'
                 ], 400);
             }
 
@@ -238,21 +225,19 @@ class SubscriptionController extends BaseController
             return response()->json([
                 'success' => true,
                 'update_payment_url' => $portalUrl,
-                'message' => 'استخدم الرابط لتحديث طريقة الدفع'
+                'message' => 'Use the link to update your payment method.'
             ]);
         } catch (\Exception $e) {
             Log::error('Update payment method error: ' . $e->getMessage());
 
             return response()->json([
                 'success' => false,
-                'message' => 'حدث خطأ أثناء تحديث طريقة الدفع: ' . $e->getMessage()
+                'message' => 'Update payment method error: ' . $e->getMessage()
             ], 500);
         }
     }
 
-    /**
-     * الحصول على تاريخ الفواتير
-     */
+
     public function invoices(Request $request)
     {
         $user = $request->user();
@@ -263,7 +248,7 @@ class SubscriptionController extends BaseController
                     'success' => true,
                     'invoices' => [],
                     'count' => 0,
-                    'message' => 'ليس لديك فواتير مسجلة'
+                    'message' => 'You do not have any invoices'
                 ]);
             }
 
@@ -291,7 +276,7 @@ class SubscriptionController extends BaseController
 
             return response()->json([
                 'success' => false,
-                'message' => 'حدث خطأ أثناء جلب الفواتير: ' . $e->getMessage()
+                'message' => 'Invoices fetch error: ' . $e->getMessage()
             ], 500);
         }
     }
