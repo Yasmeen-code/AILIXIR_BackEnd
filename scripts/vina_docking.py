@@ -33,7 +33,7 @@ def main():
         energies = v.energies()
         
         output_file = ligand_file.replace('.pdbqt', '') + '_out.pdbqt'
-        v.write_poses(output_file, n_poses=1, overwrite=True)
+        v.write_poses(output_file, n_poses=n_poses, overwrite=True)
 
         result = {
             "status": "success",

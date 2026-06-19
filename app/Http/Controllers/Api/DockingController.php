@@ -12,6 +12,7 @@ use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Process;
 use Illuminate\Support\Str;
+use Laravel\Sanctum\PersonalAccessToken;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class DockingController
@@ -126,9 +127,20 @@ class DockingController
 
     public function download(Request $request, $id)
     {
+        $token = $request->bearerToken() ?? $request->query('token');
+
+        if (!$token) {
+            return $this->errorResponse('Unauthenticated', 401);
+        }
+
+        $accessToken = PersonalAccessToken::findToken($token);
+        if (!$accessToken || !$accessToken->tokenable) {
+            return $this->errorResponse('Invalid token', 401);
+        }
+
         $job = DockingJob::dockingOnly()
             ->where('id', $id)
-            ->where('user_id', $request->user()->id)
+            ->where('user_id', $accessToken->tokenable->id)
             ->first();
 
         if (! $job || $job->status !== 'completed') {

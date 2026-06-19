@@ -101,8 +101,9 @@ Route::middleware('auth:sanctum')->prefix('docking')->group(function () {
     Route::get('history', [DockingController::class, 'history']);
     Route::post('submit', [DockingController::class, 'submit']);
     Route::get('{id}', [DockingController::class, 'status']);
-    Route::get('download/{id}', [DockingController::class, 'download']);
 });
+
+Route::get('docking/download/{id}', [DockingController::class, 'download']);
 
 // ====================CONVERT SMILES====================
 
