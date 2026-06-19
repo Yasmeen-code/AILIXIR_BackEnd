@@ -92,18 +92,18 @@ class RunDockingJob implements ShouldQueue
                 throw new \Exception('Python Error: '.($outputData['message'] ?? 'Unknown script error'));
             }
 
-            if ($outputData && isset($outputData['energies'])) {
-                $outputData['vina_score'] = array_map(function ($pose) {
-                    return $pose[0] ?? null;
-                }, $outputData['energies']);
-                unset($outputData['energies']);
-            }
-
             $vinaScores = [];
-            if (isset($outputData['vina_score'])) {
-                foreach ($outputData['vina_score'] as $i => $affinity) {
-                    $vinaScores[] = ['pose' => $i + 1, 'affinity' => (float) $affinity];
+            if ($outputData && isset($outputData['energies'])) {
+                foreach ($outputData['energies'] as $pose) {
+                    $vinaScores[] = [
+                        'affinity'    => (float) ($pose[0] ?? 0.0),
+                        'inter'    => (float) ($pose[1] ?? 0.0),
+                        'intra'    => (float) ($pose[2] ?? 0.0),
+                        'torsions' => (float) ($pose[3] ?? 0.0),
+                        'unbound'  => (float) ($pose[4] ?? 0.0),
+                    ];
                 }
+                unset($outputData['energies']);
             }
 
             $this->dockingJob->update([
