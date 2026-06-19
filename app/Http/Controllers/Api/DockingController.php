@@ -8,6 +8,9 @@ use App\Jobs\RunDockingJob;
 use App\Models\DockingJob;
 use App\Traits\ApiResponseTrait;
 use Illuminate\Http\Request;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Process;
 use Illuminate\Support\Str;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
@@ -22,12 +25,10 @@ class DockingController
         if ($isSmiles) {
             $ligandPath = null;
         } else {
-            $ligandFilename = Str::random(40).'.pdbqt';
-            $ligandPath = storage_path('app/private/'.$request->file('ligand_file')->storeAs('docking', $ligandFilename));
+            $ligandPath = $this->storeAsPdbqt($request->file('ligand_file'));
         }
 
-        $proteinFilename = Str::random(40).'.pdbqt';
-        $proteinPath = storage_path('app/private/'.$request->file('protein_file')->storeAs('docking', $proteinFilename));
+        $proteinPath = $this->storeAsPdbqt($request->file('protein_file'));
 
         $job = DockingJob::create([
             'user_id' => $request->user()->id,
@@ -57,7 +58,7 @@ class DockingController
             RunDockingJob::dispatch($job, $params);
         }
 
-        return response()->json([
+        return $this->successResponse('Docking Job Successfully Queued', [
             'job_id' => $job->id,
             'status' => $job->status,
         ]);
@@ -151,5 +152,47 @@ class DockingController
             'Content-Disposition' => 'attachment; filename="docking_result_'.$job->id.'.pdbqt"',
             'Content-Length' => filesize($filePath),
         ]);
+    }
+
+    private function storeAsPdbqt(UploadedFile $file): string
+    {
+        $ext = strtolower($file->getClientOriginalExtension());
+        $filename = Str::random(40).'.pdbqt';
+        $destPath = storage_path('app/private/docking/'.$filename);
+
+        if ($ext === 'pdbqt') {
+            $file->storeAs('docking', $filename);
+        } elseif ($ext === 'pdb') {
+            $this->convertPdbToPdbqt($file->getRealPath(), $destPath);
+        } else {
+            abort(422, 'Unsupported file format: .'.$ext.'. Only .pdb and .pdbqt files are accepted.');
+        }
+
+        return $destPath;
+    }
+
+    private function convertPdbToPdbqt(string $source, string $dest): void
+    {
+        $pythonPath = env('DOCKING_PYTHON_PATH');
+        $obabel = $pythonPath ? dirname($pythonPath).'/obabel' : 'obabel';
+        if (! file_exists($obabel)) {
+            $obabel = 'obabel';
+        }
+
+        $result = Process::timeout(60)->run([
+            $obabel,
+            '-ipdb', $source,
+            '-opdbqt',
+            '-O', $dest,
+        ]);
+
+        if (! $result->successful()) {
+            Log::error('PDB-to-PDBQT conversion failed', [
+                'source' => $source,
+                'dest'   => $dest,
+                'error'  => $result->errorOutput(),
+            ]);
+            abort(500, 'Failed to convert PDB file to PDBQT format.');
+        }
     }
 }

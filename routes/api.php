@@ -248,7 +248,3 @@ Route::post('/upload-file', function (Request $request) {
     }
 });
 
-// ==================== DOCKING CI TEST ROUTES ====================
-Route::middleware('auth:sanctum')->group(function () {
-    Route::post('/docking/submit', [DockingTestController::class, 'testDockingSubmit']);
-});
