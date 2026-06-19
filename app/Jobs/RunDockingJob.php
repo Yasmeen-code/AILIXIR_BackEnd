@@ -26,7 +26,6 @@ class RunDockingJob implements ShouldQueue
      */
     public $timeout = 1800;
 
-
     /**
      * Create a new job instance.
      */
@@ -94,15 +93,23 @@ class RunDockingJob implements ShouldQueue
             }
 
             if ($outputData && isset($outputData['energies'])) {
-                $outputData['vina_score'] = array_map(function($pose) {
+                $outputData['vina_score'] = array_map(function ($pose) {
                     return $pose[0] ?? null;
                 }, $outputData['energies']);
                 unset($outputData['energies']);
             }
 
+            $vinaScores = [];
+            if (isset($outputData['vina_score'])) {
+                foreach ($outputData['vina_score'] as $i => $affinity) {
+                    $vinaScores[] = ['pose' => $i + 1, 'affinity' => (float) $affinity];
+                }
+            }
+
             $this->dockingJob->update([
                 'status' => 'completed',
-                'result_data' => $outputData ?: ['raw_output' => $fullOutput], // fallback stores raw payload
+                'result_data' => $outputData ?: ['raw_output' => $fullOutput],
+                'vina_scores' => $vinaScores,
             ]);
 
         } catch (\Exception $e) {
