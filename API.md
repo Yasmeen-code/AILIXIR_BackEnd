@@ -1413,11 +1413,9 @@ curl -X POST "{base_url}/api/docking/submit" \\
     "created_at": "2026-06-17T05:45:31+00:00",
     "download_url": "{base_url}/api/docking/download/5",
     "scores": [
-        {"pose": 1, "affinity": -6.469},
-        {"pose": 2, "affinity": -6.337},
-        {"pose": 3, "affinity": -6.163},
-        {"pose": 4, "affinity": -6.079},
-        {"pose": 5, "affinity": -5.983}
+        {"affinity": 0, "inter": 0, "intra": -2.031, "torsions": 0, "unbound": -2.031},
+        {"affinity": 0, "inter": 0, "intra": -2.031, "torsions": 0, "unbound": -2.031},
+        {"affinity": 0.001, "inter": 0, "intra": -2.031, "torsions": 0, "unbound": -2.031}
     ]
 }
 ```
@@ -1447,11 +1445,9 @@ If the job is not completed, `scores` will be an empty array.
             "created_at": "2026-06-17T05:45:31+00:00",
             "download_url": "{base_url}/api/docking/download/5",
             "scores": [
-                {"pose": 1, "affinity": -6.469},
-                {"pose": 2, "affinity": -6.337},
-                {"pose": 3, "affinity": -6.163},
-                {"pose": 4, "affinity": -6.079},
-                {"pose": 5, "affinity": -5.983}
+                {"affinity": 0, "inter": 0, "intra": -2.031, "torsions": 0, "unbound": -2.031},
+                {"affinity": 0, "inter": 0, "intra": -2.031, "torsions": 0, "unbound": -2.031},
+                {"affinity": 0.001, "inter": 0, "intra": -2.031, "torsions": 0, "unbound": -2.031}
             ]
         }
     ],
@@ -1469,10 +1465,12 @@ If the job is not completed, `scores` will be an empty array.
 
 ### GET `/api/docking/download/{id}`
 
-- Auth required
 - Path parameter:
     - `id` (integer)
-- Returns a file download for the completed docking result.
+- Query parameter (instead of Bearer header for browser link clicks):
+    - `token` (string, required) — Sanctum token
+- Accepts `Authorization: Bearer` header or `?token=` query parameter.
+- Returns a file download for the completed docking result (multi-model PDBQT with all poses).
 - Content disposition filename: `docking_result_{id}.pdbqt`
 
 ---
