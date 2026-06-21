@@ -31,14 +31,36 @@ def main():
 
         # Output energies in JSON format so PHP can parse it easily
         energies = v.energies()
-        
-        output_file = ligand_file.replace('.pdbqt', '') + '_out.pdbqt'
-        v.write_poses(output_file, n_poses=n_poses, overwrite=True)
+
+        poses_file = ligand_file.replace('.pdbqt', '') + '_out.pdbqt'
+        v.write_poses(poses_file, n_poses=n_poses, overwrite=True)
+
+        # Combined file: receptor + best docked pose in one flat view
+        complex_file = ligand_file.replace('.pdbqt', '') + '_complex_out.pdbqt'
+
+        with open(complex_file, 'w') as out:
+            # Write receptor (skip MODEL/ENDMDL)
+            with open(protein_file) as f:
+                for line in f:
+                    if not line.startswith(('MODEL', 'ENDMDL')):
+                        out.write(line)
+
+            # Write best ligand pose (first one, stripped of MODEL/ENDMDL)
+            capture = False
+            with open(poses_file) as f:
+                for line in f:
+                    if line.startswith('MODEL'):
+                        capture = True
+                        continue
+                    elif capture and line.startswith('ENDMDL'):
+                        break
+                    elif capture:
+                        out.write(line)
 
         result = {
             "status": "success",
             "energies": [list(e) for e in energies],
-            "output_file": output_file
+            "output_file": complex_file
         }
         print(json.dumps(result))
 
