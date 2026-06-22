@@ -33,15 +33,24 @@ jobs:
       - name: Configure Laravel .env
         run: |
           cp .env.example .env
-          php artisan key:generate --force
-          sed -i 's/DB_CONNECTION=.*/DB_CONNECTION=sqlite/' .env
-          sed -i 's/DB_HOST=.*//' .env
-          sed -i 's/DB_PORT=.*//' .env
-          sed -i 's/DB_DATABASE=.*/DB_DATABASE=\/tmp\/ailixir.sqlite/' .env
+          
+          # 1. Strip out the conflicting DB variables first
+          sed -i '/^DB_/d' .env
+          
+          # 2. Inject clean SQLite configurations
+          echo "DB_CONNECTION=sqlite" >> .env
+          echo "DB_DATABASE=/tmp/ailixir.sqlite" >> .env
+          
+          # 3. Add your remaining environment overrides
           echo "SESSION_DRIVER=file" >> .env
           echo "QUEUE_CONNECTION=sync" >> .env
           echo "MD_SIMULATION_URL=http://localhost:5005" >> .env
+          
+          # 4. Create the physical database file
           touch /tmp/ailixir.sqlite
+          
+          # 5. Now that the .env is perfectly valid, run artisan commands
+          php artisan key:generate --force
           php artisan migrate --force
 
       - name: Set up Docker Buildx
