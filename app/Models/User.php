@@ -84,11 +84,6 @@ class User extends Authenticatable
         ]);
     }
 
-    public function simulations()
-    {
-        return $this->hasMany(Simulation::class);
-    }
-
     public function aiJobs()
     {
         return $this->hasMany(AiJob::class);
