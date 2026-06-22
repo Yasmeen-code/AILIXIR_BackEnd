@@ -4,7 +4,7 @@ namespace App\Http\Requests\MdSimulation;
 
 use Illuminate\Foundation\Http\FormRequest;
 
-class SubmitRequest extends FormRequest
+class ProcessRequest extends FormRequest
 {
     public function authorize(): bool
     {

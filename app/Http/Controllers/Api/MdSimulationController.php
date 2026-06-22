@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
-use App\Http\Requests\MdSimulation\SubmitRequest;
+use App\Http\Requests\MdSimulation\ProcessRequest;
 use App\Models\MdSimulationJob;
 use App\Services\MdSimulationService;
 use Illuminate\Http\JsonResponse;
@@ -18,7 +18,7 @@ class MdSimulationController extends BaseController
         $this->service = $service;
     }
 
-    public function process(SubmitRequest $request): JsonResponse
+    public function process(ProcessRequest $request): JsonResponse
     {
         $protein = $request->file('protein');
         $ligand = $request->file('ligand');
