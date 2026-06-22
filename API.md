@@ -3287,7 +3287,6 @@ curl -X POST /api/md-simulation/process \
     "success": true,
     "message": "MD Simulation job submitted successfully",
     "data": {
-        "id": 1,
         "remote_job_id": "a1b2c3d4",
         "status": "processing",
         "created_at": "2026-06-22 12:00:00"
@@ -3297,7 +3296,7 @@ curl -X POST /api/md-simulation/process \
 
 ---
 
-### GET `/api/md-simulation/status/{id}`
+### GET `/api/md-simulation/status/{remoteJobId}`
 
 Poll job status. Syncs the local status from the remote service on each call.
 
@@ -3310,7 +3309,6 @@ Poll job status. Syncs the local status from the remote service on each call.
     "success": true,
     "message": "Status retrieved",
     "data": {
-        "id": 1,
         "remote_job_id": "a1b2c3d4",
         "status": "processing",
         "remote_status": "Step 2/7 — Building GAFF2 topology and solvated system",
@@ -3331,7 +3329,6 @@ Poll job status. Syncs the local status from the remote service on each call.
     "success": true,
     "message": "Status retrieved",
     "data": {
-        "id": 1,
         "remote_job_id": "a1b2c3d4",
         "status": "completed",
         "remote_status": "Success: MD Pipeline Completed",
@@ -3355,7 +3352,6 @@ Poll job status. Syncs the local status from the remote service on each call.
     "success": true,
     "message": "Status retrieved",
     "data": {
-        "id": 1,
         "remote_job_id": "a1b2c3d4",
         "status": "failed",
         "remote_status": "Failed: antechamber failed...",
@@ -3367,7 +3363,7 @@ Poll job status. Syncs the local status from the remote service on each call.
 
 ---
 
-### GET `/api/md-simulation/download/{id}`
+### GET `/api/md-simulation/download/{remoteJobId}`
 
 Download the simulation results ZIP (streamed from the remote service).
 
@@ -3377,7 +3373,7 @@ Download the simulation results ZIP (streamed from the remote service).
 
 ---
 
-### POST `/api/md-simulation/analyze/{id}`
+### POST `/api/md-simulation/analyze/{remoteJobId}`
 
 Run post-simulation analysis (RMSD, RMSF, RoG, PCA, etc.) on a completed job.
 
@@ -3398,7 +3394,7 @@ Run post-simulation analysis (RMSD, RMSF, RoG, PCA, etc.) on a completed job.
 **Example:**
 
 ```bash
-curl -X POST /api/md-simulation/analyze/1 \
+curl -X POST /api/md-simulation/analyze/a1b2c3d4 \
   -H "Authorization: Bearer {token}" \
   -H "Content-Type: application/json" \
   -d '{"rmsd_mask": "@CA", "dpi": 150}'
@@ -3411,7 +3407,6 @@ curl -X POST /api/md-simulation/analyze/1 \
     "success": true,
     "message": "Analysis triggered successfully",
     "data": {
-        "id": 1,
         "download_url": "/download_analysis/a1b2c3d4",
         "outputs": ["rmsd", "rmsf", "radgyr", "2d_rmsd", "pca", "cross_corr", "interaction_e", "prolif"]
     }
@@ -3420,7 +3415,7 @@ curl -X POST /api/md-simulation/analyze/1 \
 
 ---
 
-### GET `/api/md-simulation/download-analysis/{id}`
+### GET `/api/md-simulation/download-analysis/{remoteJobId}`
 
 Download the analysis results ZIP (streamed from the remote service).
 
@@ -3451,7 +3446,6 @@ List all MD simulation jobs for the authenticated user.
     "data": {
         "results": [
             {
-                "id": 2,
                 "remote_job_id": "x9y8z7w6",
                 "status": "completed",
                 "input_params": {
