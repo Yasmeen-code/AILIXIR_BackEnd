@@ -65,4 +65,9 @@ class MdSimulationService
             ->retry(2, 5000)
             ->get($this->baseUrl."/download_analysis/{$remoteJobId}");
     }
+
+    public function healthCheck(): Response
+    {
+        return Http::timeout(10)->get($this->baseUrl.'/health');
+    }
 }

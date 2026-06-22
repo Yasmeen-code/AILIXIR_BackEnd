@@ -18,6 +18,13 @@ class MdSimulationController extends BaseController
         $this->service = $service;
     }
 
+    public function health(): JsonResponse
+    {
+        $response = $this->service->healthCheck();
+
+        return response()->json($response->json(), $response->status());
+    }
+
     public function process(ProcessRequest $request): JsonResponse
     {
         $protein = $request->file('protein');
