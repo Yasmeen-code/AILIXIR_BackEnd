@@ -26,6 +26,7 @@ Complete API specification for AILIXIR-Backend, including all endpoints, authent
 - [News API](#news-api)
 - [Admet Prediction API](#admet-prediction-api)
 - [AI Generation API](#ai-generation-api)
+- [MD Simulation API](#md-simulation-api)
 - [Error Handling](#error-handling)
 - [Rate Limiting](#rate-limiting)
 - [Integration Examples](#integration-examples)
@@ -3227,6 +3228,255 @@ SMILES,SMILES_state,NLL,valid,canonical_smiles,mw,logp,tpsa,hbd,hba,rot_bonds,qe
 CN1CCCN(CCC(=O)Nc2ccc3nncc(-c4ccc5cncnc5c4)c3c2)C1,1,4.14,True,CN1CCCN(CCC(=O)Nc2ccc3nncc(-c4ccc5cncnc5c4)c3c2)C1,427.5120000000002,3.1636000000000006,87.14,1,7,5,0.5234216428527144,2.7645745083533857,10.726750373840332,-9.16,completed
 O=C(CCN1CCCC1)Nc1ccc2c(Nc3cccc(Cl)c3)ncnc2c1,1,6.06,True,O=C(CCN1CCCC1)Nc1ccc2c(Nc3cccc(Cl)c3)ncnc2c1,395.89400000000006,4.451200000000003,70.15,2,5,6,0.6447750051881624,2.11252799494409,8.844084739685059,-8.23,completed
 CN1CCC2C1CCN2CCC(=O)Nc1ccc2ncnc(Nc3ccc4ncncc4c3)c2c1,1,22.74,True,CN1CCC2C1CCN2CCC(=O)Nc1ccc2ncnc(Nc3ccc4ncncc4c3)c2c1,468.5650000000001,3.4236000000000013,99.17,2,8,6,0.4441562846144389,3.462932738106919,8.693540573120117,-9.2,completed
+```
+
+---
+
+## MD Simulation API
+
+Molecular Dynamics simulation of protein-ligand complexes via an external OpenMM service. All endpoints require authentication.
+
+### POST `/api/md-simulation/process`
+
+Submit a new MD simulation job.
+
+**Authentication:** Bearer token required
+
+**Content-Type:** `multipart/form-data`
+
+**Required fields:**
+
+| Field | Type | Description |
+|---|---|---|
+| `protein` | file | Protein PDB file |
+| `ligand` | file | Ligand PDB file |
+
+**Optional fields:**
+
+| Field | Type | Default | Description |
+|---|---|---|---|
+| `force_field` | string | `ff19SB` | `ff19SB` or `ff14SB` |
+| `net_charge` | integer | `0` | Ligand net formal charge |
+| `box_size` | float | `12.0` | Solvation box size (Å) |
+| `ion_type` | string | `NaCl` | `NaCl` or `KCl` |
+| `salt_conc` | float | `0.15` | Salt concentration (M) |
+| `remove_waters` | boolean | `true` | Strip crystal waters |
+| `add_hydrogens` | boolean | `true` | Add H to ligand |
+| `equil_time_ns` | float | `5.0` | Equilibration time (ns) |
+| `sim_time_ns` | float | `0.1` | Production time per stride (ns) |
+| `n_strides` | integer | `1` | Number of production strides |
+| `temperature_k` | float | `298.0` | Temperature (K) |
+| `pressure_bar` | float | `1.0` | Pressure (bar) |
+| `dt_fs` | integer | `2` | Integration timestep (fs) |
+
+**Example:**
+
+```bash
+curl -X POST /api/md-simulation/process \
+  -H "Authorization: Bearer {token}" \
+  -F "protein=@protein.pdb" \
+  -F "ligand=@ligand.pdb" \
+  -F "sim_time_ns=1.0" \
+  -F "temperature_k=310"
+```
+
+**Response (202 Accepted):**
+
+```json
+{
+    "success": true,
+    "message": "MD Simulation job submitted successfully",
+    "data": {
+        "remote_job_id": "a1b2c3d4",
+        "status": "processing",
+        "created_at": "2026-06-22 12:00:00"
+    }
+}
+```
+
+---
+
+### GET `/api/md-simulation/status/{remoteJobId}`
+
+Poll job status. Syncs the local status from the remote service on each call.
+
+**Authentication:** Bearer token required
+
+**Response (200 OK — processing):**
+
+```json
+{
+    "success": true,
+    "message": "Status retrieved",
+    "data": {
+        "remote_job_id": "a1b2c3d4",
+        "status": "processing",
+        "remote_status": "Step 2/7 — Building GAFF2 topology and solvated system",
+        "protein": "4w52.pdb",
+        "ligand": "ligand.pdb",
+        "result_meta": null,
+        "analysis_meta": null,
+        "error_message": null,
+        "created_at": "2026-06-22 12:00:00"
+    }
+}
+```
+
+**Response (200 OK — completed):**
+
+```json
+{
+    "success": true,
+    "message": "Status retrieved",
+    "data": {
+        "remote_job_id": "a1b2c3d4",
+        "status": "completed",
+        "remote_status": "Success: MD Pipeline Completed",
+        "protein": "4w52.pdb",
+        "ligand": "ligand.pdb",
+        "result_meta": {
+            "download_url": "/download/a1b2c3d4",
+            "download_analysis_url": "/download_analysis/a1b2c3d4"
+        },
+        "analysis_meta": null,
+        "error_message": null,
+        "created_at": "2026-06-22 12:00:00"
+    }
+}
+```
+
+**Response (200 OK — failed):**
+
+```json
+{
+    "success": true,
+    "message": "Status retrieved",
+    "data": {
+        "remote_job_id": "a1b2c3d4",
+        "status": "failed",
+        "remote_status": "Failed: antechamber failed...",
+        "error_message": "antechamber failed: unable to assign parameters",
+        ...
+    }
+}
+```
+
+---
+
+### GET `/api/md-simulation/download/{remoteJobId}`
+
+Download the simulation results ZIP (streamed from the remote service).
+
+**Authentication:** Bearer token required
+
+**Response (200 OK):** Binary ZIP attachment — `{job_id}_Results.zip`
+
+---
+
+### POST `/api/md-simulation/analyze/{remoteJobId}`
+
+Run post-simulation analysis (RMSD, RMSF, RoG, PCA, etc.) on a completed job.
+
+**Authentication:** Bearer token required
+
+**Content-Type:** `application/json`
+
+**Optional body fields:**
+
+| Field | Type | Default | Description |
+|---|---|---|---|
+| `rmsd_mask` | string | `@CA` | Atom selection mask for RMSD |
+| `cc_mask` | string | `@CA` | Atom selection mask for cross-correlation |
+| `skip` | integer | `1` | Frame stride for analysis |
+| `dpi` | integer | `300` | DPI for output plots |
+| `threshold` | float | `0.3` | ProLIF interaction threshold |
+
+**Example:**
+
+```bash
+curl -X POST /api/md-simulation/analyze/a1b2c3d4 \
+  -H "Authorization: Bearer {token}" \
+  -H "Content-Type: application/json" \
+  -d '{"rmsd_mask": "@CA", "dpi": 150}'
+```
+
+**Response (200 OK):**
+
+```json
+{
+    "success": true,
+    "message": "Analysis triggered successfully",
+    "data": {
+        "download_url": "/download_analysis/a1b2c3d4",
+        "outputs": ["rmsd", "rmsf", "radgyr", "2d_rmsd", "pca", "cross_corr", "interaction_e", "prolif"]
+    }
+}
+```
+
+---
+
+### GET `/api/md-simulation/download-analysis/{remoteJobId}`
+
+Download the analysis results ZIP (streamed from the remote service).
+
+**Authentication:** Bearer token required
+
+**Response (200 OK):** Binary ZIP attachment — `{job_id}_Analysis.zip`
+
+---
+
+### GET `/api/md-simulation/history`
+
+List all MD simulation jobs for the authenticated user.
+
+**Authentication:** Bearer token required
+
+**Query Parameters:**
+
+| Parameter | Type | Default | Description |
+|---|---|---|---|
+| `per_page` | integer | `15` | Results per page |
+
+**Response (200 OK):**
+
+```json
+{
+    "success": true,
+    "message": "MD Simulation history retrieved",
+    "data": {
+        "results": [
+            {
+                "remote_job_id": "x9y8z7w6",
+                "status": "completed",
+                "input_params": {
+                    "sim_time_ns": "5.0",
+                    "temperature_k": "310"
+                },
+                "protein_original_name": "1ake.pdb",
+                "ligand_original_name": "stl.pdb",
+                "result_meta": {
+                    "download_url": "/download/x9y8z7w6",
+                    "download_analysis_url": "/download_analysis/x9y8z7w6"
+                },
+                "analysis_meta": {
+                    "download_url": "/download_analysis/x9y8z7w6",
+                    "outputs": ["rmsd", "rmsf", "radgyr"]
+                },
+                "error_message": null,
+                "created_at": "2026-06-22 14:30:00",
+                "updated_at": "2026-06-22 18:45:00"
+            }
+        ],
+        "pagination": {
+            "currentPage": 1,
+            "totalPages": 1,
+            "totalResults": 3,
+            "perPage": 15,
+            "hasNextPage": false,
+            "hasPrevPage": false
+        }
+    }
+}
 ```
 
 ---

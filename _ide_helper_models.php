@@ -594,48 +594,6 @@ namespace App\Models{
 /**
  * @property int $id
  * @property int $user_id
- * @property string $protein
- * @property string|null $ligand
- * @property string $status
- * @property int $progress
- * @property string|null $error_message
- * @property string|null $trajectory
- * @property string|null $log_file
- * @property array<array-key, mixed>|null $analysis
- * @property string $force_field
- * @property float $temperature
- * @property float $simulation_time_ns
- * @property int $box_size
- * @property \Illuminate\Support\Carbon|null $created_at
- * @property \Illuminate\Support\Carbon|null $updated_at
- * @property-read \App\Models\User $user
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Simulation newModelQuery()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Simulation newQuery()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Simulation query()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Simulation whereAnalysis($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Simulation whereBoxSize($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Simulation whereCreatedAt($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Simulation whereErrorMessage($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Simulation whereForceField($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Simulation whereId($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Simulation whereLigand($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Simulation whereLogFile($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Simulation whereProgress($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Simulation whereProtein($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Simulation whereSimulationTimeNs($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Simulation whereStatus($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Simulation whereTemperature($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Simulation whereTrajectory($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Simulation whereUpdatedAt($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Simulation whereUserId($value)
- */
-	class Simulation extends \Eloquent {}
-}
-
-namespace App\Models{
-/**
- * @property int $id
- * @property int $user_id
  * @property string $status
  * @property array<array-key, mixed> $input
  * @property array<array-key, mixed>|null $output
@@ -686,8 +644,6 @@ namespace App\Models{
  * @property-read \Illuminate\Notifications\DatabaseNotificationCollection<int, \Illuminate\Notifications\DatabaseNotification> $notifications
  * @property-read int|null $notifications_count
  * @property-read \App\Models\Researcher|null $researcher
- * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Simulation> $simulations
- * @property-read int|null $simulations_count
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \Laravel\Sanctum\PersonalAccessToken> $tokens
  * @property-read int|null $tokens_count
  * @method static \Database\Factories\UserFactory factory($count = null, $state = [])
