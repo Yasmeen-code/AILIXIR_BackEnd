@@ -130,6 +130,8 @@ Route::middleware('auth:sanctum')->prefix('chemical-search')->group(function () 
 });
 
 // ==================== MD SIMULATION ====================
+Route::get('/md-simulation/health', [MdSimulationController::class, 'health']);
+
 Route::middleware('auth:sanctum')->prefix('md-simulation')->group(function () {
     Route::post('/process', [MdSimulationController::class, 'process']);
     Route::get('/history', [MdSimulationController::class, 'history']);
