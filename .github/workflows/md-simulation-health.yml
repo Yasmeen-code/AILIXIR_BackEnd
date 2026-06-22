@@ -111,16 +111,7 @@ jobs:
           RESPONSE=$(curl -sf http://localhost:8000/api/md-simulation/health)
           echo "$RESPONSE"
 
-          echo "$RESPONSE" | python3 -c "
-import json, sys
-data = json.load(sys.stdin)
-if data.get('status') == 'ok':
-    print('MD Simulation service is healthy via Laravel proxy!')
-    sys.exit(0)
-else:
-    print('Unexpected response:', json.dumps(data, indent=2))
-    sys.exit(1)
-"
+          python3 -c "import json,sys; d=json.load(sys.stdin); (print('MD Simulation service is healthy via Laravel proxy!'),sys.exit(0)) if d.get('status')=='ok' else (print('Unexpected response:',json.dumps(d,indent=2)),sys.exit(1))" <<< "$RESPONSE"
 
       - name: Dump logs on failure
         if: failure()
