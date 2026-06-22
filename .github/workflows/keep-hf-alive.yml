@@ -10,7 +10,12 @@ jobs:
     name: keep hf alive job
     runs-on: ubuntu-latest
     steps:
-      - name: Hit health endpoint
+      - name: Hit main API health endpoint
         run: |
           curl -s -o /dev/null -w "%{http_code}" \
             "https://RottenShadow-ailixir-api.hf.space/api/ai-services/health"
+
+      - name: Hit generation health endpoint
+        run: |
+          curl -s -o /dev/null -w "%{http_code}" \
+            "https://shdwrow-ailixir-generation.hf.space/health"
