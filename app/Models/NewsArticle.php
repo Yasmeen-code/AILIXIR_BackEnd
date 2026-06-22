@@ -12,6 +12,7 @@ class NewsArticle
     public string $source;
     public string $url;
     public Carbon $publishedAt;
+    public bool $isSaved;
 
     public function __construct(array $data)
     {
@@ -23,9 +24,10 @@ class NewsArticle
         $this->publishedAt = $data['published_at'] instanceof Carbon
             ? $data['published_at']
             : Carbon::parse($data['published_at']);
+        $this->isSaved = $data['is_saved'] ?? false;
     }
 
-    public static function fromModel(News $news): self
+    public static function fromModel(News $news, bool $isSaved = false): self
     {
         return new self([
             'id' => $news->id,
@@ -34,7 +36,15 @@ class NewsArticle
             'source' => $news->source,
             'url' => $news->url,
             'published_at' => $news->published_at,
+            'is_saved' => $isSaved,
         ]);
+    }
+
+    // Method جديدة: لو الـ object موجود أصلاً
+    public function withSaved(bool $isSaved): self
+    {
+        $this->isSaved = $isSaved;
+        return $this;
     }
 
     public function toArray(): array
@@ -46,6 +56,7 @@ class NewsArticle
             'source' => $this->source,
             'url' => $this->url,
             'published_at' => $this->publishedAt->toIso8601String(),
+            'is_saved' => $this->isSaved,
         ];
     }
 }
