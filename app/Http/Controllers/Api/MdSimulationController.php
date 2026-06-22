@@ -55,15 +55,10 @@ class MdSimulationController extends BaseController
             'ligand_original_name' => $ligand->getClientOriginalName(),
         ]);
 
-        return response()->json([
-            'success' => true,
-            'message' => 'MD Simulation job submitted successfully',
-            'data' => [
-                'id' => $job->id,
-                'remote_job_id' => $job->remote_job_id,
-                'status' => $job->status,
-                'created_at' => $job->created_at->toDateTimeString(),
-            ],
+        return $this->successResponse('MD Simulation job submitted successfully', [
+            'remote_job_id' => $job->remote_job_id,
+            'status' => $job->status,
+            'created_at' => $job->created_at->toDateTimeString(),
         ], 202);
     }
 
@@ -97,7 +92,6 @@ class MdSimulationController extends BaseController
         }
 
         return $this->successResponse('Status retrieved', [
-            'id' => $job->id,
             'remote_job_id' => $job->remote_job_id,
             'status' => $job->status,
             'remote_status' => $response->json('status'),
@@ -139,7 +133,6 @@ class MdSimulationController extends BaseController
         ]);
 
         return $this->successResponse('Analysis triggered successfully', [
-            'id' => $job->id,
             'download_url' => $data['download_url'] ?? null,
             'outputs' => $data['outputs'] ?? [],
         ]);
