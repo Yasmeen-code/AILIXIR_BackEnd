@@ -1,6 +1,8 @@
 name: MD Simulation Health Check
 
 on:
+  push:
+    branches: [MD-integration]
   workflow_dispatch:
 
 concurrency:
