@@ -25,6 +25,9 @@ use App\Http\Controllers\DockingTestController;
 use App\Http\Controllers\Api\GenerationController;
 use App\Http\Controllers\Api\LigandsController;
 
+use App\Http\Controllers\Api\SubscriptionController;
+use App\Http\Controllers\WebhookController;
+
 /*
 |--------------------------------------------------------------------------
 | API Routes
@@ -98,8 +101,9 @@ Route::middleware('auth:sanctum')->prefix('docking')->group(function () {
     Route::get('history', [DockingController::class, 'history']);
     Route::post('submit', [DockingController::class, 'submit']);
     Route::get('{id}', [DockingController::class, 'status']);
-    Route::get('download/{id}', [DockingController::class, 'download']);
 });
+
+Route::get('docking/download/{id}', [DockingController::class, 'download']);
 
 // ====================CONVERT SMILES====================
 
@@ -189,6 +193,18 @@ Route::middleware('auth:sanctum')->prefix('ai')->group(function () {
     Route::post('/ligands/export', [LigandsController::class, 'exportLigands']);
 });
 
+// ==================== STRIPE ====================
+Route::post('/stripe/webhook', [WebhookController::class, 'handleWebhook']);
+
+Route::middleware('auth:sanctum')->prefix('subscription')->group(function () {
+    Route::post('/checkout', [SubscriptionController::class, 'checkout']);
+    Route::get('/status', [SubscriptionController::class, 'status']);
+    Route::post('/cancel', [SubscriptionController::class, 'cancel']);
+    Route::post('/resume', [SubscriptionController::class, 'resume']);
+    Route::get('/billing-portal', [SubscriptionController::class, 'billingPortal']);
+    Route::get('/invoices', [SubscriptionController::class, 'invoices']);
+    Route::post('/update-payment-method', [SubscriptionController::class, 'updatePaymentMethod']);
+});
 
 
 
@@ -233,7 +249,3 @@ Route::post('/upload-file', function (Request $request) {
     }
 });
 
-// ==================== DOCKING CI TEST ROUTES ====================
-Route::middleware('auth:sanctum')->group(function () {
-    Route::post('/docking/submit', [DockingTestController::class, 'testDockingSubmit']);
-});

@@ -8,10 +8,11 @@ use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
 use App\Models\Researcher;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Laravel\Cashier\Billable;
 
 class User extends Authenticatable
 {
-    use HasApiTokens, HasFactory, Notifiable;
+    use HasApiTokens, HasFactory, Notifiable, Billable;
 
     protected $fillable = [
         'name',
@@ -93,10 +94,6 @@ class User extends Authenticatable
         return $this->hasMany(AiJob::class);
     }
 
-    public function admets()
-    {
-        return $this->hasMany(Admet::class);
-    }
     public function chemistryThreads(): HasMany
     {
         return $this->hasMany(ChemistryThread::class);

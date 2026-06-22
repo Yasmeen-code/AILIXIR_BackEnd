@@ -10,16 +10,10 @@ class Admet extends Model
 
     protected $fillable = [
         'smiles',
-        'user_id',
         'absorption',
         'distribution',
         'metabolism',
         'excretion',
         'toxicity',
     ];
-
-    public function user()
-    {
-        return $this->belongsTo(User::class);
-    }
 }

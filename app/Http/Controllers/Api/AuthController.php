@@ -30,8 +30,6 @@ class AuthController extends BaseController
     {
         $user = $this->userService->registerUser($request->validated());
 
-        $this->otpService->sendOtp($user, 'email_verification');
-
         return $this->successResponse(
             'Registered successfully. Please check your email for OTP verification code.',
             ['email' => $user->email]
