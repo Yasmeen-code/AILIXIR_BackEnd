@@ -96,17 +96,12 @@ jobs:
           echo "GET /api/md-simulation/health via Laravel proxy"
           RESPONSE=$(curl -sf http://localhost:8000/api/md-simulation/health)
           echo "$RESPONSE"
-
-          echo "$RESPONSE" | python3 << 'PYEOF'
-          import json, sys
-          data = json.load(sys.stdin)
-          if data.get('status') == 'ok':
-              print('MD Simulation service is healthy via Laravel proxy!')
-              sys.exit(0)
-          else:
-              print('Unexpected response:', json.dumps(data, indent=2))
-              sys.exit(1)
-          PYEOF
+          STATUS=$(echo "$RESPONSE" | python3 -c "import json,sys; print(json.load(sys.stdin).get('status'))")
+          if [ "$STATUS" != "ok" ]; then
+            echo "Expected status 'ok', got '$STATUS'"
+            exit 1
+          fi
+          echo "MD Simulation service is healthy via Laravel proxy!"
 
       - name: Dump logs on failure
         if: failure()
