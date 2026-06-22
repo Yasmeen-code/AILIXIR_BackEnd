@@ -1,32 +1,30 @@
 <?php
 
 // use App\Http\Controllers\Api\AiController;
+use App\Http\Controllers\Api\AdmetController;
+use App\Http\Controllers\Api\AiServicesIntegrationController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\AwardController;
+use App\Http\Controllers\Api\ChemicalSearchController;
+use App\Http\Controllers\Api\ChemistryController;
 use App\Http\Controllers\Api\ConvertSmilesController;
 use App\Http\Controllers\Api\DockingController;
+use App\Http\Controllers\Api\EmailVerificationController;
+use App\Http\Controllers\Api\GenerationController;
+use App\Http\Controllers\Api\LigandsController;
+use App\Http\Controllers\Api\MdSimulationController;
 use App\Http\Controllers\Api\NewsController;
+// use App\Http\Controllers\Api\OtpController;
 use App\Http\Controllers\Api\PasswordResetController;
-use App\Http\Controllers\Api\ScreeningController;
-use App\Http\Controllers\Api\SimulationController;
+// use App\Http\Controllers\Api\MdFileController;
 use App\Http\Controllers\Api\ScientistController;
+use App\Http\Controllers\Api\ScreeningController;
+use App\Http\Controllers\Api\SubscriptionController;
 use App\Http\Controllers\Api\UserController;
-use App\Http\Controllers\Api\AdmetController;
+use App\Http\Controllers\WebhookController;
 use Cloudinary\Cloudinary;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
-// use App\Http\Controllers\Api\OtpController;
-use App\Http\Controllers\Api\EmailVerificationController;
-// use App\Http\Controllers\Api\MdFileController;
-use App\Http\Controllers\Api\ChemicalSearchController;
-use App\Http\Controllers\Api\ChemistryController;
-use App\Http\Controllers\Api\AiServicesIntegrationController;
-use App\Http\Controllers\DockingTestController;
-use App\Http\Controllers\Api\GenerationController;
-use App\Http\Controllers\Api\LigandsController;
-
-use App\Http\Controllers\Api\SubscriptionController;
-use App\Http\Controllers\WebhookController;
 
 /*
 |--------------------------------------------------------------------------
@@ -116,7 +114,7 @@ Route::middleware('auth:sanctum')->prefix('convert-smiles')->group(function () {
 // ==================== DRUG REPURPOSING / SCREENING ====================
 
 Route::prefix('drug-repurposing')->middleware('auth:sanctum')->group(function () {
-    Route::get('targets/history',   [ScreeningController::class, 'historyTargets']);
+    Route::get('targets/history', [ScreeningController::class, 'historyTargets']);
     Route::post('targets', [ScreeningController::class, 'targets']);
     Route::get('targets/{id}', [ScreeningController::class, 'statusTargets'])->whereNumber('id');
 
@@ -125,19 +123,22 @@ Route::prefix('drug-repurposing')->middleware('auth:sanctum')->group(function ()
     Route::post('screen', [ScreeningController::class, 'screen']);
 });
 
-// ==================== SIMULATIONS ====================
-
-Route::prefix('simulations')->middleware('auth:sanctum')->group(function () {
-    Route::post('/run', [SimulationController::class, 'run']);
-    Route::get('/index', [SimulationController::class, 'index']);
-    Route::get('/{id}/status', [SimulationController::class, 'status']);
-    Route::delete('/{id}/delete', [SimulationController::class, 'destroy']);
-});
-
 // ==================== CHEMICAL SEARCH ====================
 Route::middleware('auth:sanctum')->prefix('chemical-search')->group(function () {
     Route::post('/', [ChemicalSearchController::class, 'store']);
     Route::post('/full-rag', [ChemicalSearchController::class, 'fullRag']);
+});
+
+// ==================== MD SIMULATION ====================
+Route::get('/md-simulation/health', [MdSimulationController::class, 'health']);
+
+Route::middleware('auth:sanctum')->prefix('md-simulation')->group(function () {
+    Route::post('/process', [MdSimulationController::class, 'process']);
+    Route::get('/history', [MdSimulationController::class, 'history']);
+    Route::get('/status/{remoteJobId}', [MdSimulationController::class, 'status']);
+    Route::post('/analyze/{remoteJobId}', [MdSimulationController::class, 'analyze']);
+    Route::get('/download/{remoteJobId}', [MdSimulationController::class, 'download']);
+    Route::get('/download-analysis/{remoteJobId}', [MdSimulationController::class, 'downloadAnalysis']);
 });
 
 // ==================== AI Agent ====================
@@ -169,7 +170,6 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('history', [ChemistryController::class, 'userHistory']);
     });
 });
-
 
 // ==================== ADMET PREDICTION ====================
 Route::middleware('auth:sanctum')->post('/admet/predict', [AdmetController::class, 'predict']);
@@ -206,8 +206,6 @@ Route::middleware('auth:sanctum')->prefix('subscription')->group(function () {
     Route::post('/update-payment-method', [SubscriptionController::class, 'updatePaymentMethod']);
 });
 
-
-
 // cloudinary file upload test route
 
 Route::post('/upload-file', function (Request $request) {
@@ -235,7 +233,7 @@ Route::post('/upload-file', function (Request $request) {
             [
                 'resource_type' => 'raw',
                 'public_id' => $originalName,
-                'filename_override' => $originalName . '.' . $extension,
+                'filename_override' => $originalName.'.'.$extension,
             ]
         );
 
@@ -248,4 +246,3 @@ Route::post('/upload-file', function (Request $request) {
         ], 500);
     }
 });
-

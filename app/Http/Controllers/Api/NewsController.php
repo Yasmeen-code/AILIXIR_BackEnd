@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Api\BaseController;
+use App\Models\NewsArticle;
 use App\Services\NewsService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -24,15 +25,25 @@ class NewsController extends BaseController
             $category = $request->get('category');
 
             $result = $this->newsService->getArticles($page, $perPage, $category);
+            $user = $request->user();
+
+            $savedIds = [];
+            if ($user) {
+                $savedIds = \App\Models\SavedArticle::where('user_id', $user->id)
+                    ->whereIn('news_id', $result['articles']->pluck('id'))
+                    ->pluck('news_id')
+                    ->toArray();
+            }
 
             $currentPage = $result['meta']['current_page'] ?? $page;
             $totalResults = $result['meta']['total'] ?? 0;
-
             $lastPage = (int) ceil($totalResults / $perPage);
             $lastPage = $lastPage > 0 ? $lastPage : 1;
 
             return $this->successResponse('Articles retrieved successfully', [
-                'results' => $result['articles']->map->toArray(),
+                'results' => $result['articles']->map(function ($article) use ($savedIds) {
+                    return $article->withSaved(in_array($article->id, $savedIds))->toArray();
+                }),
                 'pagination' => [
                     'currentPage' => $currentPage,
                     'totalPages' => $lastPage,
@@ -48,13 +59,24 @@ class NewsController extends BaseController
         }
     }
 
-    public function refresh()
+    public function refresh(Request $request)
     {
         try {
             $articles = $this->newsService->fetchNews();
+            $user = $request->user();
+
+            $savedIds = [];
+            if ($user) {
+                $savedIds = \App\Models\SavedArticle::where('user_id', $user->id)
+                    ->whereIn('news_id', $articles->pluck('id'))
+                    ->pluck('news_id')
+                    ->toArray();
+            }
 
             return $this->successResponse("Fetched {$articles->count()} new articles", [
-                'results' => $articles,
+                'results' => $articles->map(function ($article) use ($savedIds) {
+                    return $article->withSaved(in_array($article->id, $savedIds))->toArray();
+                }),
                 'pagination' => [
                     'currentPage' => 1,
                     'totalPages' => 1,
@@ -69,7 +91,6 @@ class NewsController extends BaseController
             return $this->errorResponse($e->getMessage(), 500);
         }
     }
-
     public function saveArticle(Request $request, int $articleId)
     {
         try {
@@ -191,14 +212,7 @@ class NewsController extends BaseController
                 return [
                     'saved_id' => $item->id,
                     'saved_at' => $item->created_at,
-                    'article' => [
-                        'id' => $item->news->id,
-                        'title' => $item->news->title,
-                        'summary' => $item->news->summary,
-                        'source' => $item->news->source,
-                        'url' => $item->news->url,
-                        'published_at' => $item->news->published_at,
-                    ],
+                    'article' => NewsArticle::fromModel($item->news, true)->toArray(),
                 ];
             });
 
