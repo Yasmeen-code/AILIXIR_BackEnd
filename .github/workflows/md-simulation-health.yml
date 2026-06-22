@@ -1,0 +1,135 @@
+name: MD Simulation Health Check
+
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: md-simulation-health-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  md-simulation-health-check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          lfs: true
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: mbstring, pdo_sqlite, fileinfo, bcmath, ctype, json, openssl, tokenizer, xml
+          tools: composer:v2
+
+      - name: Install Laravel dependencies
+        run: composer install --no-interaction --prefer-dist --no-progress
+
+      - name: Configure Laravel .env
+        run: |
+          cp .env.example .env
+          php artisan key:generate --force
+          sed -i 's/DB_CONNECTION=.*/DB_CONNECTION=sqlite/' .env
+          sed -i 's/DB_HOST=.*//' .env
+          sed -i 's/DB_PORT=.*//' .env
+          sed -i 's/DB_DATABASE=.*/DB_DATABASE=\/tmp\/ailixir.sqlite/' .env
+          echo "SESSION_DRIVER=file" >> .env
+          echo "QUEUE_CONNECTION=sync" >> .env
+          echo "MD_SIMULATION_URL=http://localhost:5005" >> .env
+          touch /tmp/ailixir.sqlite
+          php artisan migrate --force
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build MD simulation image
+        run: docker build -t md-simulation ai_apps/Protein-Ligand-MD-Simulation/
+
+      - name: Create Docker network for MD services
+        run: docker network create md-network
+
+      - name: Start Redis
+        run: |
+          docker run -d --name md-redis \
+            --network md-network \
+            --network-alias md-redis \
+            redis:7-alpine
+
+      - name: Start MD Simulation API
+        run: |
+          docker run -d --name md-api \
+            --network md-network \
+            -p 5005:5005 \
+            -e REDIS_HOST=md-redis \
+            -e REDIS_PORT=6379 \
+            -e USE_REDIS=true \
+            -e OPENMM_PLATFORM=CPU \
+            -e FLASK_HOST=0.0.0.0 \
+            -e FLASK_PORT=5005 \
+            -e MD_DATA_DIR=/app/data \
+            -e LOG_LEVEL=INFO \
+            md-simulation
+
+      - name: Start Laravel dev server
+        run: |
+          php artisan serve --port=8000 --host=0.0.0.0 &
+          sleep 2
+
+      - name: Wait for MD Simulation API to be healthy
+        run: |
+          echo "Waiting for MD Simulation API to be healthy..."
+          for i in $(seq 1 60); do
+            if curl -sf http://localhost:5005/health > /dev/null 2>&1; then
+              echo "MD Simulation API is healthy"
+              exit 0
+            fi
+            echo "Waiting for MD API ($i/60)..."
+            sleep 5
+          done
+          docker logs md-api
+          exit 1
+
+      - name: Wait for Laravel API to be ready
+        run: |
+          echo "Waiting for Laravel API to be ready..."
+          for i in $(seq 1 30); do
+            if curl -sf http://localhost:8000/ > /dev/null 2>&1; then
+              echo "Laravel API is ready"
+              exit 0
+            fi
+            echo "Waiting for Laravel ($i/30)..."
+            sleep 2
+          done
+          exit 1
+
+      - name: Test MD simulation health via Laravel proxy
+        run: |
+          echo "GET /api/md-simulation/health via Laravel proxy"
+          RESPONSE=$(curl -sf http://localhost:8000/api/md-simulation/health)
+          echo "$RESPONSE"
+
+          echo "$RESPONSE" | python3 -c "
+import json, sys
+data = json.load(sys.stdin)
+if data.get('status') == 'ok':
+    print('MD Simulation service is healthy via Laravel proxy!')
+    sys.exit(0)
+else:
+    print('Unexpected response:', json.dumps(data, indent=2))
+    sys.exit(1)
+"
+
+      - name: Dump logs on failure
+        if: failure()
+        run: |
+          docker logs md-api || true
+          docker logs md-redis || true
+
+      - name: Cleanup
+        if: always()
+        run: |
+          docker rm -f md-api md-redis 2>/dev/null || true
+          docker network rm md-network 2>/dev/null || true
