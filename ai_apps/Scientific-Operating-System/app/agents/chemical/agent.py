@@ -4,8 +4,8 @@ from app.config import settings
 class ChemicalAgent:
     def __init__(self):
         self.headers = {"accept": "application/json", "Content-Type": "application/json"}
-        if settings.HF_TOKEN:
-            self.headers["Authorization"] = f"Bearer {settings.HF_TOKEN}"
+        # if settings.HF_TOKEN:
+        #     self.headers["Authorization"] = f"Bearer {settings.HF_TOKEN}"
 
     async def run(self, intent: str, entities: dict) -> str:
         # استخراج المتغيرات من الـ Orchestrator
