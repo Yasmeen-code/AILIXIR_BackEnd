@@ -8,7 +8,6 @@ use App\Http\Controllers\Api\DockingController;
 use App\Http\Controllers\Api\NewsController;
 use App\Http\Controllers\Api\PasswordResetController;
 use App\Http\Controllers\Api\ScreeningController;
-use App\Http\Controllers\Api\SimulationController;
 use App\Http\Controllers\Api\ScientistController;
 use App\Http\Controllers\Api\UserController;
 use App\Http\Controllers\Api\AdmetController;
@@ -123,15 +122,6 @@ Route::prefix('drug-repurposing')->middleware('auth:sanctum')->group(function ()
     Route::get('screen/history', [ScreeningController::class, 'historyScreening']);
     Route::get('screen/{id}', [ScreeningController::class, 'statusScreening'])->whereNumber('id');
     Route::post('screen', [ScreeningController::class, 'screen']);
-});
-
-// ==================== SIMULATIONS ====================
-
-Route::prefix('simulations')->middleware('auth:sanctum')->group(function () {
-    Route::post('/run', [SimulationController::class, 'run']);
-    Route::get('/index', [SimulationController::class, 'index']);
-    Route::get('/{id}/status', [SimulationController::class, 'status']);
-    Route::delete('/{id}/delete', [SimulationController::class, 'destroy']);
 });
 
 // ==================== CHEMICAL SEARCH ====================
