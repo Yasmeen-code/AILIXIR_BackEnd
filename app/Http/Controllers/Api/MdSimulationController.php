@@ -67,9 +67,9 @@ class MdSimulationController extends BaseController
         ], 202);
     }
 
-    public function status(int $id): JsonResponse
+    public function status(string $remoteJobId): JsonResponse
     {
-        $job = MdSimulationJob::where('user_id', Auth::id())->findOrFail($id);
+        $job = MdSimulationJob::where('user_id', Auth::id())->where('remote_job_id', $remoteJobId)->firstOrFail();
 
         $response = $this->service->getJobStatus($job->remote_job_id);
 
@@ -110,9 +110,9 @@ class MdSimulationController extends BaseController
         ]);
     }
 
-    public function analyze(Request $request, int $id): JsonResponse
+    public function analyze(Request $request, string $remoteJobId): JsonResponse
     {
-        $job = MdSimulationJob::where('user_id', Auth::id())->findOrFail($id);
+        $job = MdSimulationJob::where('user_id', Auth::id())->where('remote_job_id', $remoteJobId)->firstOrFail();
 
         if (! $job->isCompleted()) {
             return $this->errorResponse('Job is not completed yet', 400);
@@ -145,9 +145,9 @@ class MdSimulationController extends BaseController
         ]);
     }
 
-    public function download(int $id): JsonResponse|\Illuminate\Http\Response
+    public function download(string $remoteJobId): JsonResponse|\Illuminate\Http\Response
     {
-        $job = MdSimulationJob::where('user_id', Auth::id())->findOrFail($id);
+        $job = MdSimulationJob::where('user_id', Auth::id())->where('remote_job_id', $remoteJobId)->firstOrFail();
 
         if (! $job->isCompleted()) {
             return $this->errorResponse('Simulation not completed yet', 400);
@@ -164,9 +164,9 @@ class MdSimulationController extends BaseController
             ->header('Content-Disposition', "attachment; filename=\"{$job->remote_job_id}_Results.zip\"");
     }
 
-    public function downloadAnalysis(int $id): JsonResponse|\Illuminate\Http\Response
+    public function downloadAnalysis(string $remoteJobId): JsonResponse|\Illuminate\Http\Response
     {
-        $job = MdSimulationJob::where('user_id', Auth::id())->findOrFail($id);
+        $job = MdSimulationJob::where('user_id', Auth::id())->where('remote_job_id', $remoteJobId)->firstOrFail();
 
         if (! $job->isCompleted()) {
             return $this->errorResponse('Simulation not completed yet', 400);

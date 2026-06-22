@@ -133,10 +133,10 @@ Route::middleware('auth:sanctum')->prefix('chemical-search')->group(function () 
 Route::middleware('auth:sanctum')->prefix('md-simulation')->group(function () {
     Route::post('/process', [MdSimulationController::class, 'process']);
     Route::get('/history', [MdSimulationController::class, 'history']);
-    Route::get('/status/{id}', [MdSimulationController::class, 'status'])->whereNumber('id');
-    Route::post('/analyze/{id}', [MdSimulationController::class, 'analyze'])->whereNumber('id');
-    Route::get('/download/{id}', [MdSimulationController::class, 'download'])->whereNumber('id');
-    Route::get('/download-analysis/{id}', [MdSimulationController::class, 'downloadAnalysis'])->whereNumber('id');
+    Route::get('/status/{remoteJobId}', [MdSimulationController::class, 'status']);
+    Route::post('/analyze/{remoteJobId}', [MdSimulationController::class, 'analyze']);
+    Route::get('/download/{remoteJobId}', [MdSimulationController::class, 'download']);
+    Route::get('/download-analysis/{remoteJobId}', [MdSimulationController::class, 'downloadAnalysis']);
 });
 
 // ==================== AI Agent ====================

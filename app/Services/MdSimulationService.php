@@ -65,21 +65,4 @@ class MdSimulationService
             ->retry(2, 5000)
             ->get($this->baseUrl."/download_analysis/{$remoteJobId}");
     }
-
-    public function checkHealth(): Response
-    {
-        return Http::timeout(10)->get($this->baseUrl.'/health');
-    }
-
-    private function statusFromRemote(string $remoteStatus): string
-    {
-        if (str_starts_with($remoteStatus, 'Success:')) {
-            return 'completed';
-        }
-        if (str_starts_with($remoteStatus, 'Failed:')) {
-            return 'failed';
-        }
-
-        return 'processing';
-    }
 }
