@@ -42,7 +42,6 @@ class NewsController extends BaseController
 
             return $this->successResponse('Articles retrieved successfully', [
                 'results' => $result['articles']->map(function ($article) use ($savedIds) {
-                    // $article هنا NewsArticle object
                     return $article->withSaved(in_array($article->id, $savedIds))->toArray();
                 }),
                 'pagination' => [

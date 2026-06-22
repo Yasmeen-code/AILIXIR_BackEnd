@@ -40,7 +40,6 @@ class NewsArticle
         ]);
     }
 
-    // Method جديدة: لو الـ object موجود أصلاً
     public function withSaved(bool $isSaved): self
     {
         $this->isSaved = $isSaved;
