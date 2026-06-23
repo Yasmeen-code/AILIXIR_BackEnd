@@ -88,6 +88,8 @@ class DockingController
         });
 
         return response()->json([
+            'success' => true,
+            'message' => 'Docking history retrieved successfully',
             'results' => $items,
             'pagination' => [
                 'current_page' => $paginator->currentPage(),
