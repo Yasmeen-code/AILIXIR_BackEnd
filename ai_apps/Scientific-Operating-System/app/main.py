@@ -519,20 +519,23 @@ def update_job_status(job_id: str, status: str, message: str = "", extra_data: d
 
     ingestion_jobs[job_id] = data
 
+    # Sync to Redis if available (graceful fallback if not)
     try:
-        if long_memory.is_redis:
+        if long_memory and hasattr(long_memory, 'is_redis') and long_memory.is_redis:
             long_memory.redis_client.set(f"rag:job:{job_id}", json.dumps(data), ex=3600)  # expires in 1 hour
     except Exception as e:
-        logger.error(f"Failed to sync job status to Redis: {e}")
+        logger.warning(f"Could not sync job status to Redis: {e} — Using in-memory storage.")
 
 def get_job_status(job_id: str) -> dict:
+    # Try Redis first if available
     try:
-        if long_memory.is_redis:
+        if long_memory and hasattr(long_memory, 'is_redis') and long_memory.is_redis:
             val = long_memory.redis_client.get(f"rag:job:{job_id}")
             if val:
                 return json.loads(val)
     except Exception as e:
-        logger.error(f"Failed to fetch job status from Redis: {e}")
+        logger.warning(f"Could not fetch job status from Redis: {e}")
+    # Fall back to in-memory storage
     return ingestion_jobs.get(job_id, {"status": "unknown", "message": "Job not found"})
 
 
@@ -594,9 +597,16 @@ async def run_background_ingest(job_id: str, filename: str, content: bytes, stra
 def run_background_ingest_job(job_id: str, filename: str, content: bytes, strategy: str):
     """
     Synchronous wrapper for RQ worker to run the async ingestion pipeline.
+    Only used when running via RQ (Redis available).
     """
     import asyncio
-    asyncio.run(run_background_ingest(job_id, filename, content, strategy))
+    try:
+        loop = asyncio.get_running_loop()
+        # Already in event loop, use create_task instead
+        asyncio.create_task(run_background_ingest(job_id, filename, content, strategy))
+    except RuntimeError:
+        # No running loop, safe to use asyncio.run
+        asyncio.run(run_background_ingest(job_id, filename, content, strategy))
 
 
 @app.post("/rag/ingest")
@@ -634,22 +644,34 @@ async def rag_ingest(
         # Initialize status as pending
         update_job_status(job_id, "pending", "Job scheduled...", {"filename": file.filename, "strategy": strategy})
 
-        # Enqueue background task via RQ
-        rq_queue.enqueue(
-            run_background_ingest_job,
-            job_id,
-            file.filename,
-            content,
-            strategy
-        )
-
-        return {
-            "status": "success",
-            "job_id": job_id,
-            "filename": file.filename,
-            "strategy": strategy,
-            "message": "Ingestion job started in background."
-        }
+        # If RQ is available, enqueue background task via Redis
+        if rq_queue:
+            rq_queue.enqueue(
+                run_background_ingest_job,
+                job_id,
+                file.filename,
+                content,
+                strategy
+            )
+            return {
+                "status": "success",
+                "job_id": job_id,
+                "filename": file.filename,
+                "strategy": strategy,
+                "message": "Ingestion job queued (running in background via Redis)."
+            }
+        else:
+            # Redis unavailable: schedule as async background task
+            logger.info(f"Redis unavailable; scheduling ingestion as async task for job {job_id}")
+            asyncio.create_task(run_background_ingest(job_id, file.filename, content, strategy))
+            
+            return {
+                "status": "success",
+                "job_id": job_id,
+                "filename": file.filename,
+                "strategy": strategy,
+                "message": "Ingestion job scheduled (running in background)."
+            }
 
     except HTTPException:
         raise
