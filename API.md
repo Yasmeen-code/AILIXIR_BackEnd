@@ -1401,7 +1401,7 @@ curl -X POST "{base_url}/api/docking/submit" \\
 - Path parameter:
     - `id` (integer)
 
-#### Success response (pending or completed)
+#### Response (completed)
 
 ```json
 {
@@ -1417,11 +1417,29 @@ curl -X POST "{base_url}/api/docking/submit" \\
         {"affinity": 0, "inter": 0, "intra": -2.031, "torsions": 0, "unbound": -2.031},
         {"affinity": 0, "inter": 0, "intra": -2.031, "torsions": 0, "unbound": -2.031},
         {"affinity": 0.001, "inter": 0, "intra": -2.031, "torsions": 0, "unbound": -2.031}
-    ]
+    ],
+    "error": null
 }
 ```
 
 If the job is not completed, `scores` will be an empty array.
+
+#### Response (failed)
+
+```json
+{
+    "success": true,
+    "message": "Job details retrieved successfully",
+    "id": 7,
+    "status": "failed",
+    "protein": "EGFR",
+    "ligand": "Erlotinib",
+    "created_at": "2026-06-17T05:45:31+00:00",
+    "download_url": "{base_url}/api/docking/download/7",
+    "scores": [],
+    "error": "\n\nPDBQT parsing error: Unknown or inappropriate tag found in flex residue or ligand.\n > ATOM      1  N   UNL     1       8.304 191.693  26.328  0.00  0.00    +0.000 N \n"
+}
+```
 
 ---
 
@@ -1449,7 +1467,8 @@ If the job is not completed, `scores` will be an empty array.
                 {"affinity": 0, "inter": 0, "intra": -2.031, "torsions": 0, "unbound": -2.031},
                 {"affinity": 0, "inter": 0, "intra": -2.031, "torsions": 0, "unbound": -2.031},
                 {"affinity": 0.001, "inter": 0, "intra": -2.031, "torsions": 0, "unbound": -2.031}
-            ]
+            ],
+            "error": null
         }
     ],
     "pagination": {
