@@ -26,10 +26,10 @@ class DockingController
         if ($isSmiles) {
             $ligandPath = null;
         } else {
-            $ligandPath = $this->storeAsPdbqt($request->file('ligand_file'));
+            $ligandPath = $this->storeAsPdbqt($request->file('ligand_file'), true);
         }
 
-        $proteinPath = $this->storeAsPdbqt($request->file('protein_file'));
+        $proteinPath = $this->storeAsPdbqt($request->file('protein_file'), false);
 
         $job = DockingJob::create([
             'user_id' => $request->user()->id,
@@ -83,10 +83,13 @@ class DockingController
                 'created_at' => $job->created_at->toIso8601String(),
                 'download_url' => url('/api/docking/download/'.$job->id),
                 'scores' => $job->vina_scores ?? [],
+                'error' => $job->status === 'failed' ? ($job->result_data['error'] ?? null) : null,
             ];
         });
 
         return response()->json([
+            'success' => true,
+            'message' => 'Docking history retrieved successfully',
             'results' => $items,
             'pagination' => [
                 'current_page' => $paginator->currentPage(),
@@ -117,6 +120,7 @@ class DockingController
             'created_at' => $job->created_at->toIso8601String(),
             'download_url' => url('/api/docking/download/'.$job->id),
             'scores' => $job->vina_scores ?? [],
+            'error' => $job->status === 'failed' ? ($job->result_data['error'] ?? null) : null,
         ];
 
         return response()->json(array_merge(
@@ -129,12 +133,12 @@ class DockingController
     {
         $token = $request->bearerToken() ?? $request->query('token');
 
-        if (!$token) {
+        if (! $token) {
             return $this->errorResponse('Unauthenticated', 401);
         }
 
         $accessToken = PersonalAccessToken::findToken($token);
-        if (!$accessToken || !$accessToken->tokenable) {
+        if (! $accessToken || ! $accessToken->tokenable) {
             return $this->errorResponse('Invalid token', 401);
         }
 
@@ -166,7 +170,7 @@ class DockingController
         ]);
     }
 
-    private function storeAsPdbqt(UploadedFile $file): string
+    private function storeAsPdbqt(UploadedFile $file, bool $isLigand): string
     {
         $ext = strtolower($file->getClientOriginalExtension());
         $filename = Str::random(40).'.pdbqt';
@@ -175,7 +179,7 @@ class DockingController
         if ($ext === 'pdbqt') {
             $file->storeAs('docking', $filename);
         } elseif ($ext === 'pdb') {
-            $this->convertPdbToPdbqt($file->getRealPath(), $destPath);
+            $this->convertPdbToPdbqt($file->getRealPath(), $destPath, $isLigand);
         } else {
             abort(422, 'Unsupported file format: .'.$ext.'. Only .pdb and .pdbqt files are accepted.');
         }
@@ -183,7 +187,7 @@ class DockingController
         return $destPath;
     }
 
-    private function convertPdbToPdbqt(string $source, string $dest): void
+    private function convertPdbToPdbqt(string $source, string $dest, bool $isLigand): void
     {
         $pythonPath = env('DOCKING_PYTHON_PATH');
         $obabel = $pythonPath ? dirname($pythonPath).'/obabel' : 'obabel';
@@ -201,10 +205,22 @@ class DockingController
         if (! $result->successful()) {
             Log::error('PDB-to-PDBQT conversion failed', [
                 'source' => $source,
-                'dest'   => $dest,
-                'error'  => $result->errorOutput(),
+                'dest' => $dest,
+                'error' => $result->errorOutput(),
             ]);
             abort(500, 'Failed to convert PDB file to PDBQT format.');
         }
+
+        $content = file_get_contents($dest);
+        $lines = explode("\n", $content);
+
+        if ($isLigand) {
+            $lines = array_map(fn ($line) => str_starts_with($line, 'ATOM') ? 'HETATM'.substr($line, 6) : $line, $lines);
+        } else {
+            $lines = array_filter($lines, fn ($line) => preg_match('/^(ATOM|HETATM)/', $line));
+            $lines = array_values($lines);
+        }
+
+        file_put_contents($dest, implode("\n", $lines));
     }
 }
