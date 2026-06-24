@@ -33,7 +33,7 @@ class MdSimulationE2ETest extends TestCase
             ->retry(3, 1000)
             ->get($this->mdBaseUrl() . '/health');
 
-        $response->assertSuccessful();
+        $this->assertTrue($response->successful());
         $this->assertSame('ok', $response->json('status'));
     }
 
@@ -182,7 +182,7 @@ class MdSimulationE2ETest extends TestCase
                 'ligand' => $ligandFile,
                 'force_field' => 'ff19SB',
                 'sim_time_ns' => 0.01,
-                'equil_time_ns' => 0.01,
+                'equil_time_ns' => 0.1,
                 'temperature_k' => 300,
             ]);
 
