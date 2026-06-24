@@ -73,32 +73,21 @@ class DockingController
         $paginator = DockingJob::dockingOnly()
             ->where('user_id', $request->user()->id)
             ->orderBy('created_at', 'desc')
-            ->paginate($perPage);
+            ->paginate($perPage)
+            ->through(function ($job) {
+                return [
+                    'id' => $job->id,
+                    'status' => $job->status,
+                    'protein' => $job->protein_name,
+                    'ligand' => $job->ligand_name,
+                    'created_at' => $job->created_at->toIso8601String(),
+                    'download_url' => url('/api/docking/download/'.$job->id),
+                    'scores' => $job->vina_scores ?? [],
+                    'error' => $job->status === 'failed' ? ($job->result_data['error'] ?? null) : null,
+                ];
+            });
 
-        $items = collect($paginator->items())->map(function ($job) {
-            return [
-                'id' => $job->id,
-                'status' => $job->status,
-                'protein' => $job->protein_name,
-                'ligand' => $job->ligand_name,
-                'created_at' => $job->created_at->toIso8601String(),
-                'download_url' => url('/api/docking/download/'.$job->id),
-                'scores' => $job->vina_scores ?? [],
-                'error' => $job->status === 'failed' ? ($job->result_data['error'] ?? null) : null,
-            ];
-        });
-
-        return $this->successResponse('Docking history retrieved successfully', [
-            'results' => $items,
-            'pagination' => [
-                'currentPage' => $paginator->currentPage(),
-                'totalPages' => $paginator->lastPage(),
-                'totalResults' => $paginator->total(),
-                'perPage' => $paginator->perPage(),
-                'hasNextPage' => $paginator->hasMorePages(),
-                'hasPrevPage' => !$paginator->onFirstPage(),
-            ],
-        ]);
+        return $this->paginatedResponse('Docking history retrieved successfully', $paginator);
     }
 
     public function status(Request $request, $id)
@@ -177,11 +166,7 @@ class DockingController
             $this->convertPdbToPdbqt($file->getRealPath(), $destPath, $isLigand);
         } else {
             throw new HttpResponseException(
-                response()->json([
-                    'success' => false,
-                    'message' => 'Unsupported file format: .'.$ext.'. Only .pdb and .pdbqt files are accepted.',
-                    'data' => null,
-                ], 422)
+                $this->errorResponse('Unsupported file format: .'.$ext.'. Only .pdb and .pdbqt files are accepted.', 422)
             );
         }
 
@@ -210,11 +195,7 @@ class DockingController
                 'error' => $result->errorOutput(),
             ]);
             throw new HttpResponseException(
-                response()->json([
-                    'success' => false,
-                    'message' => 'Failed to convert PDB file to PDBQT format.',
-                    'data' => null,
-                ], 500)
+                $this->errorResponse('Failed to convert PDB file to PDBQT format.', 500)
             );
         }
 
