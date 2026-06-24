@@ -100,7 +100,7 @@ jobs:
       - name: Run MD Simulation E2E tests
         run: |
           docker exec ailixir-laravel \
-            ./vendor/bin/phpunit --filter=MdSimulationE2ETest --log-junit=/var/www/html/junit.xml
+            ./vendor/bin/pest --filter=MdSimulationE2ETest --log-junit=/var/www/html/junit.xml
 
       - name: Copy test results from container
         if: always()
