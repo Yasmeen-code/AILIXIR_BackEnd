@@ -99,7 +99,9 @@ jobs:
 
       - name: Run MD Simulation E2E tests
         run: |
-          docker exec ailixir-laravel \
+          docker exec \
+            -e MD_E2E_BASE_URL=http://localhost:8000/api \
+            ailixir-laravel \
             ./vendor/bin/pest --filter=MdSimulationE2ETest --log-junit=/var/www/html/junit.xml
 
       - name: Copy test results from container

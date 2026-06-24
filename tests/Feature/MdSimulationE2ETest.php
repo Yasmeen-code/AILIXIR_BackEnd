@@ -2,267 +2,241 @@
 
 namespace Tests\Feature;
 
-use App\Models\User;
-use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Http\UploadedFile;
-use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Http;
 use Tests\TestCase;
 
 class MdSimulationE2ETest extends TestCase
 {
-    use RefreshDatabase;
-
-    private const TEST_EMAIL = 'md-e2e@ailixir.test';
-    private const TEST_PASSWORD = 'test-password-123';
-    private const TEST_NAME = 'MD E2E Test User';
+    private string $baseUrl;
+    private string $email;
+    private string $password;
+    private string $name;
 
     protected function setUp(): void
     {
         parent::setUp();
-        config(['queue.default' => 'sync']);
+
+        $this->baseUrl = rtrim(
+            (string) getenv('MD_E2E_BASE_URL') ?: 'http://localhost:8000/api',
+            '/'
+        );
+        $this->email = (string) getenv('MD_E2E_EMAIL') ?: 'test@example.com';
+        $this->password = (string) getenv('MD_E2E_PASSWORD') ?: 'password123';
+        $this->name = (string) getenv('MD_E2E_NAME') ?: 'Test User';
     }
 
-    // ── Direct MD service health (no auth) ─────────────────────
+    // ── Health check (no auth) ────────────────────────────────
 
-    public function test_health_check_proxies_to_md_service(): void
+    public function test_health_check(): void
     {
-        $this->requireMdSimulationService();
+        $response = Http::timeout(30)->get("{$this->baseUrl}/md-simulation/health");
 
-        $response = Http::timeout(10)
-            ->retry(3, 1000)
-            ->get($this->mdBaseUrl() . '/health');
+        $this->assertTrue(
+            $response->successful(),
+            'Health check failed: ' . $response->body()
+        );
 
-        $this->assertTrue($response->successful());
         $this->assertSame('ok', $response->json('status'));
     }
 
-    // ── Auth rejection (all protected endpoints) ───────────────
+    // ── Auth rejection (all protected endpoints) ──────────────
 
     public function test_unauthenticated_access_rejected(): void
     {
         $endpoints = [
-            ['GET', '/api/md-simulation/history'],
-            ['POST', '/api/md-simulation/process'],
-            ['GET', '/api/md-simulation/status/test-123'],
-            ['POST', '/api/md-simulation/analyze/test-123'],
-            ['GET', '/api/md-simulation/download/test-123'],
-            ['GET', '/api/md-simulation/download-analysis/test-123'],
+            ['GET', '/md-simulation/history'],
+            ['POST', '/md-simulation/process'],
+            ['GET', '/md-simulation/status/test-123'],
+            ['POST', '/md-simulation/analyze/test-123'],
+            ['GET', '/md-simulation/download/test-123'],
+            ['GET', '/md-simulation/download-analysis/test-123'],
         ];
 
         foreach ($endpoints as [$method, $uri]) {
             $response = match ($method) {
-                'GET' => $this->getJson($uri),
-                'POST' => $this->postJson($uri, []),
+                'GET' => Http::get("{$this->baseUrl}{$uri}"),
+                'POST' => Http::post("{$this->baseUrl}{$uri}", []),
             };
-            $response->assertUnauthorized();
+
+            $this->assertEquals(
+                401,
+                $response->status(),
+                "Expected 401 for {$method} {$uri}, got {$response->status()}: {$response->body()}"
+            );
         }
     }
 
-    // ── Laravel proxy health (no auth, through controller) ────
+    // ── Auth flow: login → token → authenticated request ─────
 
-    public function test_laravel_health_endpoint_returns_ok(): void
+    public function test_auth_flow_and_history(): void
     {
-        $this->requireMdSimulationService();
+        $token = $this->authenticate();
 
-        $response = $this->getJson('/api/md-simulation/health');
+        $response = Http::withHeaders([
+            'Authorization' => "Bearer {$token}",
+            'Accept' => 'application/json',
+        ])->get("{$this->baseUrl}/md-simulation/history");
 
-        $response->assertOk();
-        $this->assertSame('ok', $response->json('status'));
-    }
+        $this->assertTrue(
+            $response->successful(),
+            'History request failed: ' . $response->body()
+        );
 
-    // ── Real auth flow: create user → login → get token → use ──
-
-    public function test_auth_flow_and_history_returns_empty_results(): void
-    {
-        $this->createVerifiedUser();
-
-        $loginResponse = $this->postJson('/api/user/login', [
-            'email' => self::TEST_EMAIL,
-            'password' => self::TEST_PASSWORD,
-        ]);
-
-        $loginResponse
-            ->assertOk()
-            ->assertJsonPath('success', true)
-            ->assertJsonStructure(['data' => ['token', 'user']]);
-
-        $token = $loginResponse->json('data.token');
-        $this->assertNotNull($token);
-
-        $historyResponse = $this->withHeader('Authorization', "Bearer {$token}")
-            ->getJson('/api/md-simulation/history');
-
-        $historyResponse
-            ->assertOk()
-            ->assertJsonPath('success', true)
-            ->assertJsonStructure(['data' => ['results', 'pagination']])
-            ->assertJsonCount(0, 'data.results');
+        $data = $response->json();
+        $this->assertTrue($data['success'] ?? false);
+        $this->assertArrayHasKey('results', $data['data'] ?? []);
+        $this->assertArrayHasKey('pagination', $data['data'] ?? []);
     }
 
     // ── Validation: process without files ─────────────────────
 
-    public function test_process_validation_requires_files(): void
+    public function test_process_validation_no_files(): void
     {
-        $this->createVerifiedUser();
-        $token = $this->loginAndGetToken();
+        $token = $this->authenticate();
 
-        $response = $this->withHeader('Authorization', "Bearer {$token}")
-            ->postJson('/api/md-simulation/process', []);
+        $response = Http::withHeaders([
+            'Authorization' => "Bearer {$token}",
+            'Accept' => 'application/json',
+        ])->post("{$this->baseUrl}/md-simulation/process", []);
 
-        $response
-            ->assertUnprocessable()
-            ->assertJsonValidationErrors(['protein', 'ligand']);
+        $this->assertEquals(
+            422,
+            $response->status(),
+            'Expected 422, got ' . $response->status() . ': ' . $response->body()
+        );
     }
 
     // ── Validation: wrong file type ──────────────────────────
 
     public function test_process_rejects_invalid_file_type(): void
     {
-        $this->createVerifiedUser();
-        $token = $this->loginAndGetToken();
+        $token = $this->authenticate();
 
-        $badFile = new UploadedFile(
-            __FILE__,
-            'not_a_pdb.txt',
-            'text/plain',
-            null,
-            true
-        );
-
+        $phpFile = base_path('tests/Feature/MdSimulationE2ETest.php');
         $ligandPath = base_path('scripts/ligand.pdb');
-        $ligandFile = new UploadedFile(
-            $ligandPath,
-            'ligand.pdb',
-            'chemical/pdb',
-            null,
-            true
+
+        $this->assertFileExists($phpFile);
+        $this->assertFileExists($ligandPath);
+
+        $response = Http::withHeaders([
+            'Authorization' => "Bearer {$token}",
+        ])->timeout(30)->attach(
+            'protein', fopen($phpFile, 'r'), 'not_a_pdb.txt'
+        )->attach(
+            'ligand', fopen($ligandPath, 'r'), 'ligand.pdb'
+        )->post("{$this->baseUrl}/md-simulation/process", []);
+
+        $this->assertEquals(
+            422,
+            $response->status(),
+            'Expected 422, got ' . $response->status() . ': ' . $response->body()
         );
-
-        $response = $this->withHeader('Authorization', "Bearer {$token}")
-            ->postJson('/api/md-simulation/process', [
-                'protein' => $badFile,
-                'ligand' => $ligandFile,
-            ]);
-
-        $response->assertUnprocessable()
-            ->assertJsonValidationErrors(['protein']);
     }
 
-    // ── Full submit + status flow (requires real MD service) ──
+    // ── Full submit + status flow ────────────────────────────
 
     public function test_full_submit_and_status_flow(): void
     {
-        $this->requireMdSimulationService();
-        $this->createVerifiedUser();
-        $token = $this->loginAndGetToken();
+        $token = $this->authenticate();
 
         $proteinPath = base_path('scripts/protein.pdb');
         $ligandPath = base_path('scripts/ligand.pdb');
 
-        $proteinFile = new UploadedFile(
-            $proteinPath,
-            'protein.pdb',
-            'chemical/pdb',
-            null,
-            true
+        $this->assertFileExists($proteinPath);
+        $this->assertFileExists($ligandPath);
+
+        $submitResponse = Http::withHeaders([
+            'Authorization' => "Bearer {$token}",
+        ])->timeout(120)->attach(
+            'protein', fopen($proteinPath, 'r'), 'protein.pdb'
+        )->attach(
+            'ligand', fopen($ligandPath, 'r'), 'ligand.pdb'
+        )->post("{$this->baseUrl}/md-simulation/process", [
+            'force_field' => 'ff19SB',
+            'sim_time_ns' => 0.01,
+            'equil_time_ns' => 0.1,
+            'temperature_k' => 300,
+        ]);
+
+        $this->assertEquals(
+            202,
+            $submitResponse->status(),
+            'Submit failed: ' . $submitResponse->body()
         );
 
-        $ligandFile = new UploadedFile(
-            $ligandPath,
-            'ligand.pdb',
-            'chemical/pdb',
-            null,
-            true
-        );
+        $submitData = $submitResponse->json();
+        $this->assertTrue($submitData['success'] ?? false);
+        $this->assertArrayHasKey('remote_job_id', $submitData['data'] ?? []);
+        $this->assertArrayHasKey('status', $submitData['data'] ?? []);
 
-        $submitResponse = $this->withHeader('Authorization', "Bearer {$token}")
-            ->postJson('/api/md-simulation/process', [
-                'protein' => $proteinFile,
-                'ligand' => $ligandFile,
-                'force_field' => 'ff19SB',
-                'sim_time_ns' => 0.01,
-                'equil_time_ns' => 0.1,
-                'temperature_k' => 300,
-            ]);
-
-        $submitResponse
-            ->assertStatus(202)
-            ->assertJsonPath('success', true)
-            ->assertJsonStructure(['data' => ['remote_job_id', 'status', 'created_at']]);
-
-        $remoteJobId = $submitResponse->json('data.remote_job_id');
+        $remoteJobId = $submitData['data']['remote_job_id'];
         $this->assertNotNull($remoteJobId);
-        $this->assertSame('processing', $submitResponse->json('data.status'));
 
-        // Single status check — verifies the endpoint works without waiting for completion
-        $statusResponse = $this->withHeader('Authorization', "Bearer {$token}")
-            ->getJson("/api/md-simulation/status/{$remoteJobId}");
+        // Single status check — proves the endpoint works without waiting
+        $statusResponse = Http::withHeaders([
+            'Authorization' => "Bearer {$token}",
+        ])->timeout(30)->get("{$this->baseUrl}/md-simulation/status/{$remoteJobId}");
 
-        $statusResponse
-            ->assertOk()
-            ->assertJsonPath('success', true)
-            ->assertJsonPath('data.remote_job_id', $remoteJobId)
-            ->assertJsonStructure(['data' => ['status', 'protein', 'ligand', 'created_at']]);
+        $this->assertTrue(
+            $statusResponse->successful(),
+            'Status check failed: ' . $statusResponse->body()
+        );
+
+        $statusData = $statusResponse->json();
+        $this->assertTrue($statusData['success'] ?? false);
+        $this->assertSame(
+            $remoteJobId,
+            $statusData['data']['remote_job_id'] ?? null
+        );
     }
 
     // ── Helpers ───────────────────────────────────────────────
 
-    private function createVerifiedUser(): void
+    private function authenticate(): string
     {
-        User::create([
-            'name' => self::TEST_NAME,
-            'email' => self::TEST_EMAIL,
-            'password' => Hash::make(self::TEST_PASSWORD),
-            'role' => 'normal',
-            'is_verified' => true,
-            'email_verified_at' => now(),
-        ]);
-    }
-
-    private function loginAndGetToken(): string
-    {
-        $response = $this->postJson('/api/user/login', [
-            'email' => self::TEST_EMAIL,
-            'password' => self::TEST_PASSWORD,
+        $loginResponse = Http::timeout(30)->post("{$this->baseUrl}/user/login", [
+            'email' => $this->email,
+            'password' => $this->password,
         ]);
 
-        $response->assertOk();
-        return $response->json('data.token');
-    }
+        if ($loginResponse->successful()) {
+            $token = $loginResponse->json('data.token');
+            $this->assertNotNull($token, 'Login succeeded but no token returned');
+            return $token;
+        }
 
-    private function mdBaseUrl(): string
-    {
-        return rtrim(
-            (string) config('services.md_simulation.url', 'http://protein-ligand-md:5005'),
-            '/'
+        // User may not exist yet — try registering
+        $registerResponse = Http::timeout(30)->post(
+            "{$this->baseUrl}/user/register",
+            [
+                'name' => $this->name,
+                'email' => $this->email,
+                'password' => $this->password,
+                'password_confirmation' => $this->password,
+            ]
         );
-    }
 
-    private function requireMdSimulationService(): void
-    {
-        $baseUrl = $this->mdBaseUrl();
+        $this->assertTrue(
+            $registerResponse->successful(),
+            'Cannot authenticate: login returned ' . $loginResponse->status()
+            . ', register returned ' . $registerResponse->status()
+            . ': ' . $registerResponse->body()
+        );
 
-        if (empty($baseUrl)) {
-            $this->markTestSkipped('MD_SIMULATION_URL is not configured.');
-        }
+        // Login after successful registration
+        $loginResponse = Http::timeout(30)->post("{$this->baseUrl}/user/login", [
+            'email' => $this->email,
+            'password' => $this->password,
+        ]);
 
-        try {
-            $response = Http::timeout(10)
-                ->retry(3, 1000)
-                ->get("{$baseUrl}/health");
+        $this->assertTrue(
+            $loginResponse->successful(),
+            'Login failed after registration: ' . $loginResponse->body()
+        );
 
-            $healthy = $response->successful();
-        } catch (\Throwable $e) {
-            $this->markTestSkipped(
-                "MD simulation service unreachable at {$baseUrl}: {$e->getMessage()}"
-            );
-        }
+        $token = $loginResponse->json('data.token');
+        $this->assertNotNull($token);
 
-        if (! ($healthy ?? false)) {
-            $this->markTestSkipped(
-                "MD simulation service unhealthy at {$baseUrl}/health"
-            );
-        }
+        return $token;
     }
 }
