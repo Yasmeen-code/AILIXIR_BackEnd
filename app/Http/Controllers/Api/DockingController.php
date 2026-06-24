@@ -11,6 +11,7 @@ use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Process;
+use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Support\Str;
 use Laravel\Sanctum\PersonalAccessToken;
 use Symfony\Component\HttpFoundation\StreamedResponse;
@@ -72,33 +73,21 @@ class DockingController
         $paginator = DockingJob::dockingOnly()
             ->where('user_id', $request->user()->id)
             ->orderBy('created_at', 'desc')
-            ->paginate($perPage);
+            ->paginate($perPage)
+            ->through(function ($job) {
+                return [
+                    'id' => $job->id,
+                    'status' => $job->status,
+                    'protein' => $job->protein_name,
+                    'ligand' => $job->ligand_name,
+                    'created_at' => $job->created_at->toIso8601String(),
+                    'download_url' => url('/api/docking/download/'.$job->id),
+                    'scores' => $job->vina_scores ?? [],
+                    'error' => $job->status === 'failed' ? ($job->result_data['error'] ?? null) : null,
+                ];
+            });
 
-        $items = collect($paginator->items())->map(function ($job) {
-            return [
-                'id' => $job->id,
-                'status' => $job->status,
-                'protein' => $job->protein_name,
-                'ligand' => $job->ligand_name,
-                'created_at' => $job->created_at->toIso8601String(),
-                'download_url' => url('/api/docking/download/'.$job->id),
-                'scores' => $job->vina_scores ?? [],
-                'error' => $job->status === 'failed' ? ($job->result_data['error'] ?? null) : null,
-            ];
-        });
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Docking history retrieved successfully',
-            'results' => $items,
-            'pagination' => [
-                'current_page' => $paginator->currentPage(),
-                'per_page' => $paginator->perPage(),
-                'total' => $paginator->total(),
-                'last_page' => $paginator->lastPage(),
-                'has_more' => $paginator->hasMorePages(),
-            ],
-        ]);
+        return $this->paginatedResponse('Docking history retrieved successfully', $paginator);
     }
 
     public function status(Request $request, $id)
@@ -112,7 +101,7 @@ class DockingController
             return $this->errorResponse('Docking job not found or unauthorized', 404);
         }
 
-        $data = [
+        return $this->successResponse('Job details retrieved successfully', [
             'id' => $job->id,
             'status' => $job->status,
             'protein' => $job->protein_name,
@@ -121,12 +110,7 @@ class DockingController
             'download_url' => url('/api/docking/download/'.$job->id),
             'scores' => $job->vina_scores ?? [],
             'error' => $job->status === 'failed' ? ($job->result_data['error'] ?? null) : null,
-        ];
-
-        return response()->json(array_merge(
-            ['success' => true, 'message' => 'Job details retrieved successfully'],
-            $data
-        ));
+        ]);
     }
 
     public function download(Request $request, $id)
@@ -181,7 +165,9 @@ class DockingController
         } elseif ($ext === 'pdb') {
             $this->convertPdbToPdbqt($file->getRealPath(), $destPath, $isLigand);
         } else {
-            abort(422, 'Unsupported file format: .'.$ext.'. Only .pdb and .pdbqt files are accepted.');
+            throw new HttpResponseException(
+                $this->errorResponse('Unsupported file format: .'.$ext.'. Only .pdb and .pdbqt files are accepted.', 422)
+            );
         }
 
         return $destPath;
@@ -208,7 +194,9 @@ class DockingController
                 'dest' => $dest,
                 'error' => $result->errorOutput(),
             ]);
-            abort(500, 'Failed to convert PDB file to PDBQT format.');
+            throw new HttpResponseException(
+                $this->errorResponse('Failed to convert PDB file to PDBQT format.', 500)
+            );
         }
 
         $content = file_get_contents($dest);

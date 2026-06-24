@@ -1388,8 +1388,10 @@ curl -X POST "{base_url}/api/docking/submit" \\
 {
     "success": true,
     "message": "Docking Job Successfully Queued",
-    "job_id": 123,
-    "status": "pending"
+    "data": {
+        "job_id": 123,
+        "status": "pending"
+    }
 }
 ```
 
@@ -1407,18 +1409,20 @@ curl -X POST "{base_url}/api/docking/submit" \\
 {
     "success": true,
     "message": "Job details retrieved successfully",
-    "id": 5,
-    "status": "completed",
-    "protein": "EGFR",
-    "ligand": "Erlotinib",
-    "created_at": "2026-06-17T05:45:31+00:00",
-    "download_url": "{base_url}/api/docking/download/5",
-    "scores": [
-        {"affinity": 0, "inter": 0, "intra": -2.031, "torsions": 0, "unbound": -2.031},
-        {"affinity": 0, "inter": 0, "intra": -2.031, "torsions": 0, "unbound": -2.031},
-        {"affinity": 0.001, "inter": 0, "intra": -2.031, "torsions": 0, "unbound": -2.031}
-    ],
-    "error": null
+    "data": {
+        "id": 5,
+        "status": "completed",
+        "protein": "EGFR",
+        "ligand": "Erlotinib",
+        "created_at": "2026-06-17T05:45:31+00:00",
+        "download_url": "{base_url}/api/docking/download/5",
+        "scores": [
+            {"affinity": 0, "inter": 0, "intra": -2.031, "torsions": 0, "unbound": -2.031},
+            {"affinity": 0, "inter": 0, "intra": -2.031, "torsions": 0, "unbound": -2.031},
+            {"affinity": 0.001, "inter": 0, "intra": -2.031, "torsions": 0, "unbound": -2.031}
+        ],
+        "error": null
+    }
 }
 ```
 
@@ -1430,14 +1434,26 @@ If the job is not completed, `scores` will be an empty array.
 {
     "success": true,
     "message": "Job details retrieved successfully",
-    "id": 7,
-    "status": "failed",
-    "protein": "EGFR",
-    "ligand": "Erlotinib",
-    "created_at": "2026-06-17T05:45:31+00:00",
-    "download_url": "{base_url}/api/docking/download/7",
-    "scores": [],
-    "error": "\n\nPDBQT parsing error: Unknown or inappropriate tag found in flex residue or ligand.\n > ATOM      1  N   UNL     1       8.304 191.693  26.328  0.00  0.00    +0.000 N \n"
+    "data": {
+        "id": 7,
+        "status": "failed",
+        "protein": "EGFR",
+        "ligand": "Erlotinib",
+        "created_at": "2026-06-17T05:45:31+00:00",
+        "download_url": "{base_url}/api/docking/download/7",
+        "scores": [],
+        "error": "\n\nPDBQT parsing error: Unknown or inappropriate tag found in flex residue or ligand.\n > ATOM      1  N   UNL     1       8.304 191.693  26.328  0.00  0.00    +0.000 N \n"
+    }
+}
+```
+
+#### Error response (not found)
+
+```json
+{
+    "success": false,
+    "message": "Docking job not found or unauthorized",
+    "data": null
 }
 ```
 
@@ -1455,28 +1471,31 @@ If the job is not completed, `scores` will be an empty array.
 {
     "success": true,
     "message": "Docking history retrieved successfully",
-    "results": [
-        {
-            "id": 5,
-            "status": "completed",
-            "protein": "EGFR",
-            "ligand": "Erlotinib",
-            "created_at": "2026-06-17T05:45:31+00:00",
-            "download_url": "{base_url}/api/docking/download/5",
-            "scores": [
-                {"affinity": 0, "inter": 0, "intra": -2.031, "torsions": 0, "unbound": -2.031},
-                {"affinity": 0, "inter": 0, "intra": -2.031, "torsions": 0, "unbound": -2.031},
-                {"affinity": 0.001, "inter": 0, "intra": -2.031, "torsions": 0, "unbound": -2.031}
-            ],
-            "error": null
+    "data": {
+        "results": [
+            {
+                "id": 5,
+                "status": "completed",
+                "protein": "EGFR",
+                "ligand": "Erlotinib",
+                "created_at": "2026-06-17T05:45:31+00:00",
+                "download_url": "{base_url}/api/docking/download/5",
+                "scores": [
+                    {"affinity": 0, "inter": 0, "intra": -2.031, "torsions": 0, "unbound": -2.031},
+                    {"affinity": 0, "inter": 0, "intra": -2.031, "torsions": 0, "unbound": -2.031},
+                    {"affinity": 0.001, "inter": 0, "intra": -2.031, "torsions": 0, "unbound": -2.031}
+                ],
+                "error": null
+            }
+        ],
+        "pagination": {
+            "currentPage": 1,
+            "totalPages": 2,
+            "totalResults": 3,
+            "perPage": 2,
+            "hasNextPage": true,
+            "hasPrevPage": false
         }
-    ],
-    "pagination": {
-        "current_page": 1,
-        "per_page": 2,
-        "total": 3,
-        "last_page": 2,
-        "has_more": true
     }
 }
 ```

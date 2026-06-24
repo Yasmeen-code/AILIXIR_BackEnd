@@ -1,0 +1,139 @@
+name: MD Simulation E2E Test
+
+on:
+  push:
+    branches: [main, develop, MD-integration]
+  pull_request:
+    branches: [main]
+  schedule:
+    - cron: "0 6 * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: e2e-md-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  e2e-md-simulation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          lfs: true
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build Laravel image
+        run: docker build -t ailixir-laravel .
+
+      - name: Build MD simulation image
+        run: docker build -t md-simulation ai_apps/Protein-Ligand-MD-Simulation/
+
+      - name: Create Docker network
+        run: docker network create ailixir-md
+
+      - name: Start Redis
+        run: |
+          docker run -d --name md-redis \
+            --network ailixir-md \
+            --network-alias md-redis \
+            redis:7-alpine
+
+      - name: Start MD Simulation API
+        run: |
+          docker run -d --name md-api \
+            --network ailixir-md \
+            -p 5005:5005 \
+            -e REDIS_HOST=md-redis \
+            -e REDIS_PORT=6379 \
+            -e USE_REDIS=true \
+            -e OPENMM_PLATFORM=CPU \
+            -e FLASK_HOST=0.0.0.0 \
+            -e FLASK_PORT=5005 \
+            -e MD_DATA_DIR=/app/data \
+            -e LOG_LEVEL=INFO \
+            md-simulation
+
+      - name: Start Laravel API
+        run: |
+          docker run -d --name ailixir-laravel \
+            --network ailixir-md \
+            -p 8000:8000 \
+            --env-file docker/laravel.env \
+            -e MD_SIMULATION_URL=http://md-api:5005 \
+            -e QUEUE_CONNECTION=sync \
+            -e APP_KEY=base64:l+P8vPcH6w+2qV6vYC3h8K9xN0mR4sT5uW6xY7zA8bB= \
+            ailixir-laravel
+
+      - name: Wait for Laravel API to be ready
+        run: |
+          echo "Waiting for Laravel API to be ready..."
+          for i in $(seq 1 30); do
+            if curl -sf http://localhost:8000/ > /dev/null 2>&1; then
+              echo "Laravel API is ready"
+              exit 0
+            fi
+            echo "Waiting for Laravel ($i/30)..."
+            sleep 2
+          done
+          docker logs ailixir-laravel
+          exit 1
+
+      - name: Wait for MD Simulation API to be healthy
+        run: |
+          echo "Waiting for MD Simulation API to be healthy..."
+          for i in $(seq 1 60); do
+            if curl -sf http://localhost:5005/health > /dev/null 2>&1; then
+              echo "MD Simulation API is healthy"
+              exit 0
+            fi
+            echo "Waiting for MD API ($i/60)..."
+            sleep 5
+          done
+          docker logs md-api
+          exit 1
+
+      - name: Run MD Simulation E2E tests
+        run: |
+          docker exec \
+            -e MD_E2E_BASE_URL=http://localhost:8000/api \
+            ailixir-laravel \
+            ./vendor/bin/pest --filter=MdSimulationE2ETest --log-junit=/var/www/html/junit.xml
+
+      - name: Copy test results from container
+        if: always()
+        run: |
+          docker cp ailixir-laravel:/var/www/html/junit.xml ./junit.xml || true
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: e2e-md-test-results
+          path: junit.xml
+
+      - name: Test Summary
+        uses: test-summary/action@v2
+        if: always()
+        with:
+          paths: junit.xml
+
+      - name: Dump logs on failure
+        if: failure()
+        run: |
+          echo "=== Laravel logs ==="
+          docker logs ailixir-laravel || true
+          echo "=== MD API logs ==="
+          docker logs md-api || true
+          echo "=== Redis logs ==="
+          docker logs md-redis || true
+
+      - name: Cleanup
+        if: always()
+        run: |
+          docker rm -f ailixir-laravel md-api md-redis 2>/dev/null || true
+          docker network rm ailixir-md 2>/dev/null || true
