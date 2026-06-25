@@ -13,6 +13,7 @@ class AiJob extends Model
         'user_id',
         'job_id',
         'status',
+        'stage',
         'preset',
         'num_molecules',
         'return_top_k',

@@ -41,4 +41,11 @@ class AiServiceClient
             ->retry(5, 1000)
             ->get($this->baseUrl . "/files/jobs/{$jobId}/{$filename}");
     }
+
+    public function cancelJob(string $jobId): Response
+    {
+        return Http::timeout(30)
+            ->retry(5, 1000)
+            ->post($this->baseUrl . "/jobs/{$jobId}/cancel");
+    }
 }

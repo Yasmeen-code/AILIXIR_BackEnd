@@ -30,7 +30,6 @@ class AdmetsTableSeeder extends Seeder
         while (($row = fgetcsv($file)) !== false) {
             $data[] = [
                 'smiles'       => $row[0],
-                'user_id'      => 1,
                 'absorption'   => (float) $row[1],
                 'distribution' => (float) $row[2],
                 'metabolism'   => (float) $row[3],

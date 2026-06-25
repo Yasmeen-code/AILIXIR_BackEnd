@@ -48,6 +48,8 @@ class UserService
             return ['error' => 'Email not verified. OTP sent again.', 'code' => 403];
         }
 
+        $user->ensureHasPlan();
+
         $token = $user->createToken('auth_token')->plainTextToken;
 
         return ['user' => $user, 'token' => $token];
@@ -74,6 +76,8 @@ class UserService
                 'photo' => $googleUser['picture'] ?? null,
             ]
         );
+
+        $user->ensureHasPlan();
 
         $token = $user->createToken('auth_token')->plainTextToken;
 
