@@ -59,13 +59,12 @@ return [
         'redirect' => env('GOOGLE_REDIRECT_URI'),
     ],
 
-       'generation' => [
-    'url' => env('GENERATION_SERVICE_URL', 'http://generation:8000'),
-      ],
+    'generation' => [
+        'url' => env('GENERATION_SERVICE_URL', 'http://generation:8000'),
+    ],
     'ai' => [
         'url' => env('AI_SERVICE_URL'),
         'jwt_secret' => env('JWT_SECRET'),
     ],
-
 
 ];

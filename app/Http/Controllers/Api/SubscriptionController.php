@@ -2,254 +2,178 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Http\Requests\CheckoutRequest;
+use App\Http\Requests\SwapPlanRequest;
+use App\Models\Plan;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 
 class SubscriptionController extends BaseController
 {
-    public function checkout(Request $request)
+    /**
+     * Get all active plans.
+     */
+    public function plans(Request $request)
     {
-        $request->validate([
-            'price_id' => 'required|string',
-            'trial_days' => 'nullable|integer|min:0|max:30',
-            'success_url' => 'required|url',
-            'cancel_url' => 'required|url',
-        ]);
-
         $user = $request->user();
+        $plans = Plan::where('is_active', true)->get();
 
-        if ($user->subscribed()) {
-            return response()->json([
-                'success' => false,
-                'message' => 'You are already subscribed to a plan.'
-            ], 400);
-        }
-
-        try {
-            $subscription = $user->newSubscription('default', $request->price_id);
-
-            if ($request->has('trial_days') && $request->trial_days > 0) {
-                $subscription->trialDays($request->trial_days);
-            }
-
-            $subscription->allowPromotionCodes();
-
-            $checkout = $subscription->checkout([
-                'success_url' => $request->success_url . '?session_id={CHECKOUT_SESSION_ID}',
-                'cancel_url' => $request->cancel_url,
-                'metadata' => [
-                    'user_id' => $user->id,
-                    'platform' => 'mobile_app'
-                ]
-            ]);
-
-            return response()->json([
-                'success' => true,
-                'checkout_url' => $checkout->url,
-                'session_id' => $checkout->id,
-                'message' => 'Payment session created successfully'
-            ]);
-        } catch (\Exception $e) {
-            Log::error('Subscription checkout error: ' . $e->getMessage());
-
-            return response()->json([
-                'success' => false,
-                'message' => 'Subscription checkout error: ' . $e->getMessage()
-            ], 500);
-        }
+        return $this->successResponse('Plans retrieved successfully', [
+            'plans' => $plans,
+            'current_plan' => $user->currentPlan
+        ]);
     }
 
+    /**
+     * Create Stripe Checkout Session.
+     */
+    public function checkout(CheckoutRequest $request)
+    {
+        $user = $request->user();
 
+        $plan = Plan::findOrFail($request->plan_id);
+
+        if ($plan->isFree()) {
+            return $this->errorResponse('Free plan does not require payment.', 422);
+        }
+
+        if ($user->subscribed('default') && !$user->onTrial('default')) {
+            return $this->errorResponse('User already has an active subscription.', 422);
+        }
+
+        $checkout = $user->newSubscription('default', $plan->stripe_price_id)
+            ->checkout([
+                'success_url' => config('app.frontend_url') . '/billing/success',
+                'cancel_url' => config('app.frontend_url') . '/billing/cancel'
+            ]);
+
+        return $this->successResponse('Checkout URL retrieved successfully', [
+            'checkout_url' => $checkout->url,
+        ]);
+    }
+
+    /**
+     * Get subscription status.
+     */
     public function status(Request $request)
     {
         $user = $request->user();
 
-        $subscription = $user->subscription('default');
+        $user->ensureHasPlan();
 
-        if (!$subscription || !$subscription->valid()) {
-            return response()->json([
-                'success' => true,
-                'subscribed' => false,
-                'status' => 'inactive',
-                'message' => 'You are not subscribed to any plan.'
+        if ($user->isFree()) {
+            return $this->successResponse('Subscription status retrieved successfully', [
+                'plan' => $user->currentPlan,
+                'has_subscription' => $user->subscribed('default'),
+                'on_trial' => $user->onTrial('default'),
             ]);
         }
 
-        if ($subscription->onTrial()) {
-            $status = 'trialing';
-        } elseif ($subscription->canceled() && !$subscription->ended()) {
-            $status = 'canceled';
-        } elseif ($subscription->ended()) {
-            $status = 'ended';
-        } elseif ($subscription->incomplete()) {
-            $status = 'incomplete';
-        } elseif ($subscription->pastDue()) {
-            $status = 'past_due';
-        } else {
-            $status = 'active';
-        }
+        $subscription = $user->subscription('default');
 
-        return response()->json([
-            'success' => true,
-            'subscribed' => true,
-            'status' => $status,
-            'plan' => $subscription->stripe_price,
-            'start_date' => $subscription->created_at->toDateTimeString(),
-            'end_date' => $subscription->ends_at,
-            'on_trial' => $subscription->onTrial(),
-            'trial_ends_at' => $subscription->trial_ends_at->toDateTimeString(),
-            'canceled' => $subscription->canceled(),
-            'ended' => $subscription->ended(),
-            'incomplete' => $subscription->incomplete(),
-            'past_due' => $subscription->pastDue(),
+        return $this->successResponse('Subscription status retrieved successfully', [
+            'plan' => $user->currentPlan,
+            'has_subscription' => $user->subscribed('default'),
+            'subscription_status' => $subscription->stripe_status,
+            'on_trial' => $user->onTrial('default'),
+            'cancelled' => $subscription->canceled(),
+            'ends_at' => $subscription->ends_at,
         ]);
     }
 
+    /**
+     * Change plan.
+     */
+    public function swap(SwapPlanRequest $request)
+    {
+        $user = $request->user();
 
+        $plan = Plan::findOrFail($request->plan_id);
+
+        if ($plan->isFree()) {
+            return $this->errorResponse('Cannot swap to free plan.', 422);
+        }
+
+        if (!$user->subscribed('default')) {
+            return $this->errorResponse('No active subscription.', 404);
+        }
+
+        if ($user->currentPlan->stripe_price_id === $plan->stripe_price_id) {
+            return $this->errorResponse('You are already subscribed to this plan.', 422);
+        }
+
+        try {
+            $user->subscription('default')->swap($plan->stripe_price_id);
+            return $this->successResponse('Plan change requested successfully');
+        } catch (\Exception $e) {
+            return $this->errorResponse($e->getMessage(), 500);
+        }
+    }
+
+    /**
+     * Cancel subscription.
+     */
     public function cancel(Request $request)
     {
         $user = $request->user();
 
-        try {
-            $subscription = $user->subscription('default');
-
-            if (!$subscription || !$subscription->valid()) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'You are not subscribed to any plan.'
-                ], 400);
-            }
-
-            $subscription->cancel();
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Subscription cancelled successfully. Will continue until the end of the current period.',
-                'ends_at' => $subscription->ends_at
-            ]);
-        } catch (\Exception $e) {
-            Log::error('Subscription cancel error: ' . $e->getMessage());
-
-            return response()->json([
-                'success' => false,
-                'message' => 'Subscription cancel error: ' . $e->getMessage()
-            ], 500);
+        if ($user->currentPlan->isFree()) {
+            return $this->errorResponse('Cannot cancel free plan.', 422);
         }
+
+        if (!$user->subscribed('default')) {
+            return $this->errorResponse('No active subscription.', 404);
+        }
+
+        $subscription = $user->subscription('default');
+
+        if ($subscription->canceled()) {
+            return $this->errorResponse('Subscription already cancelled.', 422);
+        }
+
+        $subscription->cancel();
+
+        return $this->successResponse('Subscription cancelled successfully');
     }
 
-
+    /**
+     * Resume subscription.
+     */
     public function resume(Request $request)
     {
         $user = $request->user();
 
-        try {
-            $subscription = $user->subscription('default');
-
-            if (!$subscription || !$subscription->canceled()) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'You are not subscribed to any plan.'
-                ], 400);
-            }
-
-            $subscription->resume();
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Subscription resumed successfully.'
-            ]);
-        } catch (\Exception $e) {
-            Log::error('Subscription resume error: ' . $e->getMessage());
-
-            return response()->json([
-                'success' => false,
-                'message' => 'Subscription resume error: ' . $e->getMessage()
-            ], 500);
+        if ($user->currentPlan->isFree()) {
+            return $this->errorResponse('Cannot resume free plan.', 422);
         }
+
+        if (!$user->subscribed('default')) {
+            return $this->errorResponse('No active subscription.', 404);
+        }
+
+        $user->subscription('default')->resume();
+
+        return $this->successResponse('Subscription resumed successfully');
     }
 
-
-    public function billingPortal(Request $request)
-    {
-        $user = $request->user();
-
-        try {
-            if (!$user->stripe_id) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'You do not have an active subscription to use the billing gateway'
-                ], 400);
-            }
-
-            $portalUrl = $user->billingPortalUrl(url('/'));
-
-            return response()->json([
-                'success' => true,
-                'billing_portal_url' => $portalUrl,
-                'message' => 'Invoicing portal link successfully created'
-            ]);
-        } catch (\Exception $e) {
-            Log::error('Billing portal error: ' . $e->getMessage());
-
-            return response()->json([
-                'success' => false,
-                'message' => 'Billing portal error: ' . $e->getMessage()
-            ], 500);
-        }
-    }
-
-
-    public function updatePaymentMethod(Request $request)
-    {
-        $user = $request->user();
-
-        try {
-            if (!$user->stripe_id) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'You do not have an active subscription to update your payment method'
-                ], 400);
-            }
-
-            $subscription = $user->subscription('default');
-
-            if (!$subscription || !$subscription->valid()) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'You do not have an active subscription to update your payment method'
-                ], 400);
-            }
-
-            $portalUrl = $user->billingPortalUrl(url('/'));
-
-            return response()->json([
-                'success' => true,
-                'update_payment_url' => $portalUrl,
-                'message' => 'Use the link to update your payment method.'
-            ]);
-        } catch (\Exception $e) {
-            Log::error('Update payment method error: ' . $e->getMessage());
-
-            return response()->json([
-                'success' => false,
-                'message' => 'Update payment method error: ' . $e->getMessage()
-            ], 500);
-        }
-    }
-
-
+    /**
+     * Get user invoices.
+     */
     public function invoices(Request $request)
     {
         $user = $request->user();
 
+        if ($user->currentPlan->isFree()) {
+            return $this->errorResponse('Cannot get invoices for free plan.', 422);
+        }
+
+        if (!$user->subscribed('default')) {
+            return $this->errorResponse('No active subscription.', 404);
+        }
+
         try {
             if (!$user->stripe_id) {
-                return response()->json([
-                    'success' => true,
-                    'invoices' => [],
-                    'count' => 0,
-                    'message' => 'You do not have any invoices'
-                ]);
+                return $this->errorResponse('You do not have any invoices', 404);
             }
 
             $invoices = $user->invoices();
@@ -257,7 +181,7 @@ class SubscriptionController extends BaseController
             $formattedInvoices = $invoices->map(function ($invoice) {
                 return [
                     'id' => $invoice->id,
-                    'date' => $invoice->date()->toDateString(),
+                    'datetime' => $invoice->date()->toDateTimeString(),
                     'amount' => $invoice->total(),
                     'currency' => $invoice->currency,
                     'paid' => $invoice->paid,
@@ -266,18 +190,46 @@ class SubscriptionController extends BaseController
                 ];
             });
 
-            return response()->json([
-                'success' => true,
+            return $this->successResponse('Invoices fetched successfully', [
                 'invoices' => $formattedInvoices,
                 'count' => $formattedInvoices->count()
             ]);
         } catch (\Exception $e) {
             Log::error('Invoices fetch error: ' . $e->getMessage());
 
-            return response()->json([
-                'success' => false,
-                'message' => 'Invoices fetch error: ' . $e->getMessage()
-            ], 500);
+            return $this->errorResponse('Invoices fetch error: ' . $e->getMessage(), 500);
+        }
+    }
+
+    /**
+     * Get billing portal URL.
+     */
+    public function billingPortal(Request $request)
+    {
+        $user = $request->user();
+
+        if ($user->currentPlan->isFree()) {
+            return $this->errorResponse('Cannot get billing portal for free plan.', 422);
+        }
+
+        if (!$user->subscribed('default')) {
+            return $this->errorResponse('No active subscription.', 404);
+        }
+
+        try {
+            if (!$user->stripe_id) {
+                return $this->errorResponse('You do not have an active subscription to use the billing gateway', 400);
+            }
+
+            $portalUrl = $user->billingPortalUrl(url('/'));
+
+            return $this->successResponse('Billing portal link successfully created', [
+                'billing_portal_url' => $portalUrl
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Billing portal error: ' . $e->getMessage());
+
+            return $this->errorResponse('Billing portal error: ' . $e->getMessage(), 500);
         }
     }
 }

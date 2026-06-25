@@ -1,32 +1,29 @@
 <?php
 
 // use App\Http\Controllers\Api\AiController;
+use App\Http\Controllers\Api\AdmetController;
+use App\Http\Controllers\Api\AiServicesIntegrationController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\AwardController;
+use App\Http\Controllers\Api\ChemicalSearchController;
+use App\Http\Controllers\Api\ChemistryController;
 use App\Http\Controllers\Api\ConvertSmilesController;
 use App\Http\Controllers\Api\DockingController;
+use App\Http\Controllers\Api\EmailVerificationController;
+use App\Http\Controllers\Api\GenerationController;
+use App\Http\Controllers\Api\LigandsController;
 use App\Http\Controllers\Api\NewsController;
 use App\Http\Controllers\Api\PasswordResetController;
+use App\Http\Controllers\Api\ScientistController;
 use App\Http\Controllers\Api\ScreeningController;
 use App\Http\Controllers\Api\SimulationController;
-use App\Http\Controllers\Api\ScientistController;
+use App\Http\Controllers\Api\SubscriptionController;
 use App\Http\Controllers\Api\UserController;
-use App\Http\Controllers\Api\AdmetController;
+use App\Http\Controllers\DockingTestController;
+use App\Http\Controllers\StripeWebhookController;
 use Cloudinary\Cloudinary;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
-// use App\Http\Controllers\Api\OtpController;
-use App\Http\Controllers\Api\EmailVerificationController;
-// use App\Http\Controllers\Api\MdFileController;
-use App\Http\Controllers\Api\ChemicalSearchController;
-use App\Http\Controllers\Api\ChemistryController;
-use App\Http\Controllers\Api\AiServicesIntegrationController;
-use App\Http\Controllers\DockingTestController;
-use App\Http\Controllers\Api\GenerationController;
-use App\Http\Controllers\Api\LigandsController;
-
-use App\Http\Controllers\Api\SubscriptionController;
-use App\Http\Controllers\WebhookController;
 
 /*
 |--------------------------------------------------------------------------
@@ -182,6 +179,7 @@ Route::middleware('auth:sanctum')->prefix('ai')->group(function () {
         Route::middleware('job.owner')->group(function () {
             Route::get('/status/{job_id}', [GenerationController::class, 'status']);
             Route::get('/jobs/{job_id}/results', [GenerationController::class, 'results']);
+            Route::post('/jobs/{job_id}/cancel', [GenerationController::class, 'cancel']);
         });
     });
 
@@ -192,17 +190,20 @@ Route::middleware('auth:sanctum')->prefix('ai')->group(function () {
     Route::post('/ligands/export', [LigandsController::class, 'exportLigands']);
 });
 
-// ==================== STRIPE ====================
-Route::post('/stripe/webhook', [WebhookController::class, 'handleWebhook']);
+Route::post('/stripe/webhook', [StripeWebhookController::class, 'handleWebhook']);
 
-Route::middleware('auth:sanctum')->prefix('subscription')->group(function () {
-    Route::post('/checkout', [SubscriptionController::class, 'checkout']);
-    Route::get('/status', [SubscriptionController::class, 'status']);
-    Route::post('/cancel', [SubscriptionController::class, 'cancel']);
-    Route::post('/resume', [SubscriptionController::class, 'resume']);
-    Route::get('/billing-portal', [SubscriptionController::class, 'billingPortal']);
-    Route::get('/invoices', [SubscriptionController::class, 'invoices']);
-    Route::post('/update-payment-method', [SubscriptionController::class, 'updatePaymentMethod']);
+Route::middleware('auth:sanctum')->group(function () {
+    Route::get('/plans', [SubscriptionController::class, 'plans']);
+
+    Route::prefix('subscription')->group(function () {
+        Route::post('/checkout', [SubscriptionController::class, 'checkout']);
+        Route::get('/status', [SubscriptionController::class, 'status']);
+        Route::post('/swap', [SubscriptionController::class, 'swap']);
+        Route::post('/cancel', [SubscriptionController::class, 'cancel']);
+        Route::post('/resume', [SubscriptionController::class, 'resume']);
+        Route::get('/invoices', [SubscriptionController::class, 'invoices']);
+        Route::get('/billing-portal', [SubscriptionController::class, 'billingPortal']);
+    });
 });
 
 

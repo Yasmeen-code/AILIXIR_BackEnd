@@ -15,15 +15,13 @@ namespace App\Models{
 /**
  * @property int $id
  * @property string $smiles
- * @property int $user_id
  * @property float|null $absorption
  * @property float|null $distribution
  * @property float|null $metabolism
  * @property float|null $excretion
  * @property float|null $toxicity
- * @property \Illuminate\Support\Carbon $created_at
- * @property \Illuminate\Support\Carbon $updated_at
- * @property-read \App\Models\User $user
+ * @property \Illuminate\Support\Carbon|null $created_at
+ * @property \Illuminate\Support\Carbon|null $updated_at
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Admet newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Admet newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Admet query()
@@ -36,7 +34,6 @@ namespace App\Models{
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Admet whereSmiles($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Admet whereToxicity($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Admet whereUpdatedAt($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Admet whereUserId($value)
  */
 	class Admet extends \Eloquent {}
 }
@@ -57,6 +54,7 @@ namespace App\Models{
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property array<array-key, mixed>|null $ligands
+ * @property string|null $stage
  * @property-read \App\Models\User $user
  * @method static \Illuminate\Database\Eloquent\Builder<static>|AiJob completed()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|AiJob failed()
@@ -74,6 +72,7 @@ namespace App\Models{
  * @method static \Illuminate\Database\Eloquent\Builder<static>|AiJob whereNumMolecules($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|AiJob wherePreset($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|AiJob whereReturnTopK($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|AiJob whereStage($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|AiJob whereStatus($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|AiJob whereSummary($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|AiJob whereUpdatedAt($value)
@@ -331,9 +330,27 @@ namespace App\Models{
 
 namespace App\Models{
 /**
+ * @property int $id
+ * @property string $job_id
+ * @property string $status
+ * @property string $file_format
+ * @property string $smiles
+ * @property string|null $filename
+ * @property string|null $download_url
+ * @property \Illuminate\Support\Carbon|null $created_at
+ * @property \Illuminate\Support\Carbon|null $updated_at
  * @method static \Illuminate\Database\Eloquent\Builder<static>|LigandExport newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|LigandExport newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|LigandExport query()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|LigandExport whereCreatedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|LigandExport whereDownloadUrl($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|LigandExport whereFileFormat($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|LigandExport whereFilename($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|LigandExport whereId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|LigandExport whereJobId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|LigandExport whereSmiles($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|LigandExport whereStatus($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|LigandExport whereUpdatedAt($value)
  */
 	class LigandExport extends \Eloquent {}
 }
@@ -487,6 +504,39 @@ namespace App\Models{
 namespace App\Models{
 /**
  * @property int $id
+ * @property string $name
+ * @property string $type
+ * @property string|null $billing_period
+ * @property numeric $price
+ * @property string $currency
+ * @property string|null $stripe_product_id
+ * @property string|null $stripe_price_id
+ * @property bool $is_active
+ * @property string|null $description
+ * @property \Illuminate\Support\Carbon|null $created_at
+ * @property \Illuminate\Support\Carbon|null $updated_at
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Plan newModelQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Plan newQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Plan query()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Plan whereBillingPeriod($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Plan whereCreatedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Plan whereCurrency($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Plan whereDescription($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Plan whereId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Plan whereIsActive($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Plan whereName($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Plan wherePrice($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Plan whereStripePriceId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Plan whereStripeProductId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Plan whereType($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Plan whereUpdatedAt($value)
+ */
+	class Plan extends \Eloquent {}
+}
+
+namespace App\Models{
+/**
+ * @property int $id
  * @property int $user_id
  * @property string|null $specialization
  * @property string|null $university
@@ -570,11 +620,11 @@ namespace App\Models{
 /**
  * @property int $id
  * @property int $user_id
- * @property string $status
  * @property array<array-key, mixed> $input
  * @property array<array-key, mixed>|null $output
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property string $status
  * @property-read \App\Models\User $user
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ScreeningResult newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ScreeningResult newQuery()
@@ -636,11 +686,11 @@ namespace App\Models{
 /**
  * @property int $id
  * @property int $user_id
- * @property string $status
  * @property array<array-key, mixed> $input
  * @property array<array-key, mixed>|null $output
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property string $status
  * @property-read \App\Models\User $user
  * @method static \Illuminate\Database\Eloquent\Builder<static>|TargetLookup newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|TargetLookup newQuery()
@@ -666,6 +716,7 @@ namespace App\Models{
  * @property string $password
  * @property string $role
  * @property string|null $remember_token
+ * @property string|null $stripe_customer_id
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property string|null $email_verification_otp
@@ -673,8 +724,7 @@ namespace App\Models{
  * @property bool $is_verified
  * @property string|null $password_reset_otp
  * @property \Illuminate\Support\Carbon|null $password_reset_otp_expires_at
- * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Admet> $admets
- * @property-read int|null $admets_count
+ * @property int|null $current_plan_id
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\AiJob> $aiJobs
  * @property-read int|null $ai_jobs_count
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\ChemistryAnalysis> $chemistryAnalyses
@@ -688,13 +738,18 @@ namespace App\Models{
  * @property-read \App\Models\Researcher|null $researcher
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Simulation> $simulations
  * @property-read int|null $simulations_count
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \Laravel\Cashier\Subscription> $subscriptions
+ * @property-read int|null $subscriptions_count
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \Laravel\Sanctum\PersonalAccessToken> $tokens
  * @property-read int|null $tokens_count
  * @method static \Database\Factories\UserFactory factory($count = null, $state = [])
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|User hasExpiredGenericTrial()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|User newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|User newQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|User onGenericTrial()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|User query()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|User whereCreatedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|User whereCurrentPlanId($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|User whereEmail($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|User whereEmailVerificationOtp($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|User whereEmailVerificationOtpExpiresAt($value)
@@ -708,6 +763,7 @@ namespace App\Models{
  * @method static \Illuminate\Database\Eloquent\Builder<static>|User wherePasswordResetOtpExpiresAt($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|User whereRememberToken($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|User whereRole($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|User whereStripeCustomerId($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|User whereUpdatedAt($value)
  */
 	class User extends \Eloquent {}
