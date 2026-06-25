@@ -111,7 +111,6 @@ def make_file_meta(
 
     return {
         "filename": file_path.name,
-        "relative_url": relative_url,
         "download_url": f"{resolved_base_url}{relative_url}",
     }
 
@@ -533,6 +532,7 @@ def run_generate_job(job_id: str, req_data: Dict[str, Any], base_url: str):
             "error": detail,
         }, base_url=base_url)
 
+
 def rewrite_public_urls(payload: Dict[str, Any], base_url: str) -> Dict[str, Any]:
     base_url = base_url.rstrip("/")
 
@@ -546,15 +546,27 @@ def rewrite_public_urls(payload: Dict[str, Any], base_url: str) -> Dict[str, Any
     if isinstance(files, dict):
         for meta in files.values():
             if isinstance(meta, dict):
-                relative_url = meta.get("relative_url")
+                relative_url = meta.pop("relative_url", None)
+
                 if relative_url:
                     meta["download_url"] = f"{base_url}{relative_url}"
+                else:
+                    value = meta.get("download_url")
+                    if isinstance(value, str) and value.startswith(("http://localhost", "http://127.0.0.1")):
+                        path = "/" + value.split("/", 3)[3] if "/" in value[8:] else ""
+                        meta["download_url"] = f"{base_url}{path}"
 
     file_meta = payload.get("file")
     if isinstance(file_meta, dict):
-        relative_url = file_meta.get("relative_url")
+        relative_url = file_meta.pop("relative_url", None)
+
         if relative_url:
             file_meta["download_url"] = f"{base_url}{relative_url}"
+        else:
+            value = file_meta.get("download_url")
+            if isinstance(value, str) and value.startswith(("http://localhost", "http://127.0.0.1")):
+                path = "/" + value.split("/", 3)[3] if "/" in value[8:] else ""
+                file_meta["download_url"] = f"{base_url}{path}"
 
     return payload
 
