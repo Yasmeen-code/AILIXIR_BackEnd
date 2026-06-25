@@ -106,12 +106,12 @@ def make_file_meta(
     base_url: str | None = None,
 ) -> Dict[str, str]:
     rel_path = file_path.relative_to(JOBS_DIR / job_id).as_posix()
-    relative_url = f"/files/jobs/{job_id}/{rel_path}"
+    file_url = f"/files/jobs/{job_id}/{rel_path}"
     resolved_base_url = (base_url or get_public_base_url(request)).rstrip("/")
 
     return {
         "filename": file_path.name,
-        "download_url": f"{resolved_base_url}{relative_url}",
+        "download_url": f"{resolved_base_url}{file_url}",
     }
 
 def clean_record(record: Dict[str, Any]) -> Dict[str, Any]:
@@ -546,27 +546,17 @@ def rewrite_public_urls(payload: Dict[str, Any], base_url: str) -> Dict[str, Any
     if isinstance(files, dict):
         for meta in files.values():
             if isinstance(meta, dict):
-                relative_url = meta.pop("relative_url", None)
-
-                if relative_url:
-                    meta["download_url"] = f"{base_url}{relative_url}"
-                else:
-                    value = meta.get("download_url")
-                    if isinstance(value, str) and value.startswith(("http://localhost", "http://127.0.0.1")):
-                        path = "/" + value.split("/", 3)[3] if "/" in value[8:] else ""
-                        meta["download_url"] = f"{base_url}{path}"
+                value = meta.get("download_url")
+                if isinstance(value, str) and value.startswith(("http://localhost", "http://127.0.0.1")):
+                    path = "/" + value.split("/", 3)[3] if "/" in value[8:] else ""
+                    meta["download_url"] = f"{base_url}{path}"
 
     file_meta = payload.get("file")
     if isinstance(file_meta, dict):
-        relative_url = file_meta.pop("relative_url", None)
-
-        if relative_url:
-            file_meta["download_url"] = f"{base_url}{relative_url}"
-        else:
-            value = file_meta.get("download_url")
-            if isinstance(value, str) and value.startswith(("http://localhost", "http://127.0.0.1")):
-                path = "/" + value.split("/", 3)[3] if "/" in value[8:] else ""
-                file_meta["download_url"] = f"{base_url}{path}"
+        value = file_meta.get("download_url")
+        if isinstance(value, str) and value.startswith(("http://localhost", "http://127.0.0.1")):
+            path = "/" + value.split("/", 3)[3] if "/" in value[8:] else ""
+            file_meta["download_url"] = f"{base_url}{path}"
 
     return payload
 
