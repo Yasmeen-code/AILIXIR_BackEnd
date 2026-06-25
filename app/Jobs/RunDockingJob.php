@@ -26,7 +26,6 @@ class RunDockingJob implements ShouldQueue
      */
     public $timeout = 1800;
 
-
     /**
      * Create a new job instance.
      */
@@ -86,23 +85,31 @@ class RunDockingJob implements ShouldQueue
                 if (empty(trim($errorMessage))) {
                     $errorMessage = trim($fullOutput) ?: 'Unknown Error / Empty Output';
                 }
-                throw new \Exception('Process Failed: '.$errorMessage);
+                throw new \Exception(trim($errorMessage));
             }
 
             if (isset($outputData['status']) && $outputData['status'] === 'error') {
-                throw new \Exception('Python Error: '.($outputData['message'] ?? 'Unknown script error'));
+                throw new \Exception($outputData['message'] ?? 'Unknown script error');
             }
 
+            $vinaScores = [];
             if ($outputData && isset($outputData['energies'])) {
-                $outputData['vina_score'] = array_map(function($pose) {
-                    return $pose[0] ?? null;
-                }, $outputData['energies']);
+                foreach ($outputData['energies'] as $pose) {
+                    $vinaScores[] = [
+                        'affinity' => (float) ($pose[0] ?? 0.0),
+                        'inter' => (float) ($pose[1] ?? 0.0),
+                        'intra' => (float) ($pose[2] ?? 0.0),
+                        'torsions' => (float) ($pose[3] ?? 0.0),
+                        'unbound' => (float) ($pose[4] ?? 0.0),
+                    ];
+                }
                 unset($outputData['energies']);
             }
 
             $this->dockingJob->update([
                 'status' => 'completed',
-                'result_data' => $outputData ?: ['raw_output' => $fullOutput], // fallback stores raw payload
+                'result_data' => $outputData ?: ['raw_output' => $fullOutput],
+                'vina_scores' => $vinaScores,
             ]);
 
         } catch (\Exception $e) {

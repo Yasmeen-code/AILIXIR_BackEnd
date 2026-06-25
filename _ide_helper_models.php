@@ -686,6 +686,9 @@ namespace App\Models{
 /**
  * @property int $id
  * @property int $user_id
+
+ * @property string $status
+
  * @property array<array-key, mixed> $input
  * @property array<array-key, mixed>|null $output
  * @property \Illuminate\Support\Carbon|null $created_at

@@ -20,5 +20,20 @@ class AppServiceProvider extends ServiceProvider
         Gate::define('max-features', [SubscriptionPolicy::class, 'accessMaxFeatures']);
 
         Gate::define('active-subscription', [SubscriptionPolicy::class, 'hasSubscription']);
+        $this->ensureDirectoriesExist();
+    }
+
+    private function ensureDirectoriesExist(): void
+    {
+        $directories = [
+            storage_path('app/private/docking'),
+            storage_path('app/private/docking/generated'),
+        ];
+
+        foreach ($directories as $dir) {
+            if (! is_dir($dir)) {
+                mkdir($dir, 0755, true);
+            }
+        }
     }
 }

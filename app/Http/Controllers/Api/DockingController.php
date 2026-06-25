@@ -3,61 +3,47 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Requests\Docking\SubmitDockingRequest;
+use App\Jobs\ConvertSmilesJob;
 use App\Jobs\RunDockingJob;
 use App\Models\DockingJob;
 use App\Traits\ApiResponseTrait;
 use Illuminate\Http\Request;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Process;
+use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Support\Str;
+use Laravel\Sanctum\PersonalAccessToken;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class DockingController
 {
     use ApiResponseTrait;
 
-    /**
-     * Submit a docking job (accepts ligand file OR SMILES string).
-     */
     public function submit(SubmitDockingRequest $request)
     {
         $isSmiles = $request->filled('ligand_smiles');
 
-        // ---- Handle Ligand ----
         if ($isSmiles) {
-            // SMILES → PDBQT conversion (synchronous, fast ~1-3s)
-            $conversion = $this->convertSmilesToPdbqt($request->ligand_smiles);
-
-            if ($conversion['status'] === 'error') {
-                return $this->errorResponse(
-                    'SMILES conversion failed: ' . $conversion['message'],
-                    422
-                );
-            }
-
-            $ligandPath = $conversion['output_file'];
+            $ligandPath = null;
         } else {
-            $ligandFilename = Str::random(40) . '.pdbqt';
-            $ligandPath = storage_path('app/private/' . $request->file('ligand_file')->storeAs('docking', $ligandFilename));
+            $ligandPath = $this->storeAsPdbqt($request->file('ligand_file'), true);
         }
 
-        // ---- Handle Protein ----
-        $proteinFilename = Str::random(40) . '.pdbqt';
-        $proteinPath = storage_path('app/private/' . $request->file('protein_file')->storeAs('docking', $proteinFilename));
+        $proteinPath = $this->storeAsPdbqt($request->file('protein_file'), false);
 
-        // ---- Create Database Record ----
         $job = DockingJob::create([
-            'user_id'      => $request->user()->id,
-            'input_type'   => $isSmiles ? 'smiles' : 'file',
-            'smiles'       => $isSmiles ? $request->ligand_smiles : null,
+            'user_id' => $request->user()->id,
+            'input_type' => $isSmiles ? 'smiles' : 'file',
+            'smiles' => $isSmiles ? $request->ligand_smiles : null,
             'protein_name' => $request->protein_name,
-            'ligand_name'  => $request->ligand_name,
+            'ligand_name' => $request->ligand_name,
             'protein_path' => $proteinPath,
-            'ligand_path'  => $ligandPath,
-            'status'       => 'pending',
+            'ligand_path' => $ligandPath,
+            'status' => 'pending',
         ]);
 
-        // ---- Dispatch background docking job ----
-        RunDockingJob::dispatch($job, [
+        $params = [
             'center_x' => $request->center_x,
             'center_y' => $request->center_y,
             'center_z' => $request->center_z,
@@ -66,113 +52,83 @@ class DockingController
             'box_size_z' => $request->box_size_z,
             'exhaustiveness' => $request->exhaustiveness ?? 8,
             'n_poses' => $request->n_poses ?? 5,
-        ]);
+        ];
 
-        return response()->json([
+        if ($isSmiles) {
+            ConvertSmilesJob::dispatch($job, $request->ligand_smiles, $params);
+        } else {
+            RunDockingJob::dispatch($job, $params);
+        }
+
+        return $this->successResponse('Docking Job Successfully Queued', [
             'job_id' => $job->id,
             'status' => $job->status,
         ]);
     }
 
-    /**
-     * List all docking jobs for the authenticated user (excludes SMILES-only conversion jobs).
-     */
     public function history(Request $request)
     {
         $perPage = min((int) $request->query('per_page', 15), 100);
 
-        $paginator = DockingJob::where('user_id', $request->user()->id)
-            ->where(function ($q) {
-                // Exclude SMILES-only conversion jobs (those belong to convert-smiles)
-                $q->where('input_type', '!=', 'smiles')
-                  ->orWhereNotNull('protein_name');
-            })
+        $paginator = DockingJob::dockingOnly()
+            ->where('user_id', $request->user()->id)
             ->orderBy('created_at', 'desc')
-            ->paginate($perPage);
+            ->paginate($perPage)
+            ->through(function ($job) {
+                return [
+                    'id' => $job->id,
+                    'status' => $job->status,
+                    'protein' => $job->protein_name,
+                    'ligand' => $job->ligand_name,
+                    'created_at' => $job->created_at->toIso8601String(),
+                    'download_url' => url('/api/docking/download/'.$job->id),
+                    'scores' => $job->vina_scores ?? [],
+                    'error' => $job->status === 'failed' ? ($job->result_data['error'] ?? null) : null,
+                ];
+            });
 
-        $items = collect($paginator->items())->map(function ($job) {
-            $scores = [];
-            if ($job->status === 'completed' && $job->result_data) {
-                foreach (($job->result_data['vina_score'] ?? []) as $i => $affinity) {
-                    $scores[] = ['pose' => $i + 1, 'affinity' => (float) $affinity];
-                }
-            }
-
-            return [
-                'id'           => $job->id,
-                'status'       => $job->status,
-                'protein'      => $job->protein_name,
-                'ligand'       => $job->ligand_name,
-                'created_at'   => $job->created_at->toIso8601String(),
-                'download_url' => url('/api/docking/download/' . $job->id),
-                'scores'       => $scores,
-            ];
-        });
-
-        return response()->json([
-            'results'    => $items,
-            'pagination' => [
-                'current_page' => $paginator->currentPage(),
-                'per_page'     => $paginator->perPage(),
-                'total'        => $paginator->total(),
-                'last_page'    => $paginator->lastPage(),
-                'has_more'     => $paginator->hasMorePages(),
-            ],
-        ]);
+        return $this->paginatedResponse('Docking history retrieved successfully', $paginator);
     }
 
-    /**
-     * Get docking job status.
-     */
     public function status(Request $request, $id)
     {
-        $job = DockingJob::where('id', $id)
+        $job = DockingJob::dockingOnly()
+            ->where('id', $id)
             ->where('user_id', $request->user()->id)
-            ->where(function ($q) {
-                $q->where('input_type', '!=', 'smiles')
-                  ->orWhereNotNull('protein_name');
-            })
             ->first();
 
         if (! $job) {
             return $this->errorResponse('Docking job not found or unauthorized', 404);
         }
 
-        // Build results block (only when job is completed)
-        $scores = [];
-        if ($job->status === 'completed' && $job->result_data) {
-            foreach (($job->result_data['vina_score'] ?? []) as $i => $affinity) {
-                $scores[] = ['pose' => $i + 1, 'affinity' => (float) $affinity];
-            }
-        }
-
-        $data = [
-            'id'           => $job->id,
-            'status'       => $job->status,
-            'protein'      => $job->protein_name,
-            'ligand'       => $job->ligand_name,
-            'created_at'   => $job->created_at->toIso8601String(),
-            'download_url' => url('/api/docking/download/' . $job->id),
-            'scores'       => $scores,
-        ];
-
-        return response()->json(array_merge(
-            ['success' => true, 'message' => 'Job details retrieved successfully'],
-            $data
-        ));
+        return $this->successResponse('Job details retrieved successfully', [
+            'id' => $job->id,
+            'status' => $job->status,
+            'protein' => $job->protein_name,
+            'ligand' => $job->ligand_name,
+            'created_at' => $job->created_at->toIso8601String(),
+            'download_url' => url('/api/docking/download/'.$job->id),
+            'scores' => $job->vina_scores ?? [],
+            'error' => $job->status === 'failed' ? ($job->result_data['error'] ?? null) : null,
+        ]);
     }
 
-    /**
-     * Download docking result or converted PDBQT.
-     */
     public function download(Request $request, $id)
     {
-        $job = DockingJob::where('id', $id)
-            ->where('user_id', $request->user()->id)
-            ->where(function ($q) {
-                $q->where('input_type', '!=', 'smiles')
-                  ->orWhereNotNull('protein_name');
-            })
+        $token = $request->bearerToken() ?? $request->query('token');
+
+        if (! $token) {
+            return $this->errorResponse('Unauthenticated', 401);
+        }
+
+        $accessToken = PersonalAccessToken::findToken($token);
+        if (! $accessToken || ! $accessToken->tokenable) {
+            return $this->errorResponse('Invalid token', 401);
+        }
+
+        $job = DockingJob::dockingOnly()
+            ->where('id', $id)
+            ->where('user_id', $accessToken->tokenable->id)
             ->first();
 
         if (! $job || $job->status !== 'completed') {
@@ -185,68 +141,74 @@ class DockingController
             return $this->errorResponse('File not found on server', 404);
         }
 
-        return response()->download($filePath, 'docking_result_' . $job->id . '.pdbqt', [
-            'Content-Disposition' => 'attachment; filename="docking_result_' . $job->id . '.pdbqt"',
+        return new StreamedResponse(function () use ($filePath) {
+            $stream = fopen($filePath, 'rb');
+            if ($stream) {
+                fpassthru($stream);
+                fclose($stream);
+            }
+        }, 200, [
+            'Content-Type' => 'application/octet-stream',
+            'Content-Disposition' => 'attachment; filename="docking_result_'.$job->id.'.pdbqt"',
+            'Content-Length' => filesize($filePath),
         ]);
     }
 
-    /**
-     * Internal helper: run the SMILES → PDBQT Python conversion.
-     *
-     * @return array{status: string, output_file?: string, message?: string}
-     */
-    private function convertSmilesToPdbqt(string $smiles): array
+    private function storeAsPdbqt(UploadedFile $file, bool $isLigand): string
     {
-        $pythonPath = env('DOCKING_PYTHON_PATH', base_path('vina_env/bin/python'));
-        $scriptPath = env('SMILES_SCRIPT_PATH', base_path('scripts/smiles_to_pdbqt.py'));
+        $ext = strtolower($file->getClientOriginalExtension());
+        $filename = Str::random(40).'.pdbqt';
+        $destPath = storage_path('app/private/docking/'.$filename);
 
-        // Generate unique output path
-        $outputFilename = Str::random(40) . '.pdbqt';
-        $outputDir = storage_path('app/private/docking/generated');
-        $outputPath = $outputDir . '/' . $outputFilename;
-
-        // Ensure output directory exists
-        if (! is_dir($outputDir)) {
-            mkdir($outputDir, 0755, true);
+        if ($ext === 'pdbqt') {
+            $file->storeAs('docking', $filename);
+        } elseif ($ext === 'pdb') {
+            $this->convertPdbToPdbqt($file->getRealPath(), $destPath, $isLigand);
+        } else {
+            throw new HttpResponseException(
+                $this->errorResponse('Unsupported file format: .'.$ext.'. Only .pdb and .pdbqt files are accepted.', 422)
+            );
         }
 
-        $cmd = sprintf(
-            '%s %s %s %s',
-            escapeshellarg($pythonPath),
-            escapeshellarg($scriptPath),
-            escapeshellarg($smiles),
-            escapeshellarg($outputPath)
-        );
+        return $destPath;
+    }
 
-        try {
-            $result = Process::timeout(120)->run($cmd);
-
-            $outputData = null;
-            $fullOutput = $result->output();
-
-            if (preg_match('/\{"status":\s*"(success|error)".*\}/s', $fullOutput, $matches)) {
-                $outputData = json_decode($matches[0], true);
-            }
-
-            if (! $result->successful()) {
-                $errorMsg = $outputData['message'] ?? $result->errorOutput() ?: 'Unknown conversion error';
-                Log::error('SMILES conversion failed', ['smiles' => $smiles, 'error' => $errorMsg]);
-                return ['status' => 'error', 'message' => $errorMsg];
-            }
-
-            if ($outputData && $outputData['status'] === 'success') {
-                return $outputData;
-            }
-
-            if ($outputData && $outputData['status'] === 'error') {
-                return $outputData;
-            }
-
-            return ['status' => 'error', 'message' => 'Unexpected output from conversion script'];
-
-        } catch (\Exception $e) {
-            Log::error('SMILES conversion exception', ['smiles' => $smiles, 'error' => $e->getMessage()]);
-            return ['status' => 'error', 'message' => $e->getMessage()];
+    private function convertPdbToPdbqt(string $source, string $dest, bool $isLigand): void
+    {
+        $pythonPath = env('DOCKING_PYTHON_PATH');
+        $obabel = $pythonPath ? dirname($pythonPath).'/obabel' : 'obabel';
+        if (! file_exists($obabel)) {
+            $obabel = 'obabel';
         }
+
+        $result = Process::timeout(60)->run([
+            $obabel,
+            '-ipdb', $source,
+            '-opdbqt',
+            '-O', $dest,
+        ]);
+
+        if (! $result->successful()) {
+            Log::error('PDB-to-PDBQT conversion failed', [
+                'source' => $source,
+                'dest' => $dest,
+                'error' => $result->errorOutput(),
+            ]);
+            throw new HttpResponseException(
+                $this->errorResponse('Failed to convert PDB file to PDBQT format.', 500)
+            );
+        }
+
+        $content = file_get_contents($dest);
+        $lines = explode("\n", $content);
+
+        if ($isLigand) {
+            $lines = array_map(fn ($line) => str_starts_with($line, 'ATOM') ? 'HETATM'.substr($line, 6) : $line, $lines);
+        } else {
+            $lines = array_filter($lines, fn ($line) => preg_match('/^(ATOM|HETATM)/', $line));
+            $lines = array_values($lines);
+        }
+
+        file_put_contents($dest, implode("\n", $lines));
     }
 }

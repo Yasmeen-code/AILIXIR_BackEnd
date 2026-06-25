@@ -13,7 +13,7 @@ return [
     | a conventional file to locate the various service credentials.
     |
     */
-    #AI agent
+    // AI agent
     'chemistry' => [
         'base_url' => env('CHEMISTRY_API_BASE_URL', 'https://bronchial-carpentry-football.ngrok-free.dev'),
         'timeout' => env('CHEMISTRY_API_TIMEOUT', 60),
@@ -57,6 +57,12 @@ return [
         'client_id' => env('GOOGLE_CLIENT_ID'),
         'client_secret' => env('GOOGLE_CLIENT_SECRET'),
         'redirect' => env('GOOGLE_REDIRECT_URI'),
+    ],
+
+
+    'md_simulation' => [
+        'url' => env('MD_SIMULATION_URL', 'http://protein-ligand-md:5005'),
+        'timeout' => env('MD_SIMULATION_TIMEOUT', 3600),
     ],
 
     'generation' => [
