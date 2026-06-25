@@ -176,7 +176,7 @@ class SubscriptionController extends BaseController
             $subscription->swap($plan->stripe_price_id);
 
             return $this->successResponse('Plan changed successfully', [
-                'new_plan' => $plan->name,
+                'new_plan' => $plan,
                 'effective_date' => now()->toDateTimeString(),
             ]);
         } catch (ApiErrorException $e) {
@@ -277,28 +277,16 @@ class SubscriptionController extends BaseController
             $invoices = $user->invoices();
 
             $formattedInvoices = $invoices->map(function ($invoice) {
+                $currency = strtoupper($invoice->currency ?? 'USD');
+
                 return [
                     'id' => $invoice->id,
                     'number' => $invoice->number,
                     'date' => $invoice->date()->toDateTimeString(),
                     'amount' => $invoice->total(),
-                    'amount_display' => $invoice->total() / 100 . ' ' . strtoupper($invoice->currency),
-                    'currency' => strtoupper($invoice->currency),
+                    'currency' => $currency,
                     'status' => $invoice->status,
-                    'paid' => $invoice->paid,
-                    'pdf_url' => $invoice->pdfUrl(),
                     'hosted_invoice_url' => $invoice->hosted_invoice_url,
-                    'lines' => $invoice->lines->data->map(function ($line) {
-                        return [
-                            'description' => $line->description,
-                            'amount' => $line->amount,
-                            'quantity' => $line->quantity,
-                            'period' => [
-                                'start' => date('Y-m-d', $line->period->start),
-                                'end' => date('Y-m-d', $line->period->end),
-                            ]
-                        ];
-                    }),
                 ];
             });
 
