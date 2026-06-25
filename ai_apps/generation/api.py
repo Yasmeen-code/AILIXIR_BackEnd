@@ -477,6 +477,7 @@ def run_generate_job(job_id: str, req_data: Dict[str, Any], base_url: str):
         result_payload = {
             "job_id": job_id,
             "status": "completed",
+            "stage": "completed",
             "preset": req.preset,
             "docking_mode": req.docking_mode,
             "summary": {
@@ -559,6 +560,19 @@ def rewrite_public_urls(payload: Dict[str, Any], base_url: str) -> Dict[str, Any
             file_meta["download_url"] = f"{base_url}{path}"
 
     return payload
+
+def load_completed_result_payload(job_id: str, base_url: str) -> Dict[str, Any] | None:
+    result_path = JOBS_DIR / job_id / "generated_results.json"
+
+    if not result_path.exists():
+        return None
+
+    payload = json.loads(result_path.read_text(encoding="utf-8"))
+
+    payload["status"] = payload.get("status") or "completed"
+    payload["stage"] = payload.get("stage") or "completed"
+
+    return rewrite_public_urls(payload, base_url)
 
 # -----------------------------
 # Endpoints
@@ -825,6 +839,12 @@ def submit_generate(req: GenerateRequest, background_tasks: BackgroundTasks, req
 def get_job_status(job_id: str, request: Request):
     base_url = get_public_base_url(request)
     status = read_job_status(job_id, base_url=base_url)
+
+    if status.get("status") == "completed":
+        payload = load_completed_result_payload(job_id, base_url)
+        if payload is not None:
+            return payload
+
     return rewrite_public_urls(status, base_url)
 
 @app.post("/jobs/{job_id}/cancel", status_code=202)
@@ -866,9 +886,8 @@ def get_job_result(job_id: str, request: Request):
     if status.get("status") != "completed":
         return JSONResponse(status_code=202, content=rewrite_public_urls(status, base_url))
 
-    result_path = JOBS_DIR / job_id / "generated_results.json"
-    if not result_path.exists():
+    payload = load_completed_result_payload(job_id, base_url)
+    if payload is None:
         raise HTTPException(status_code=404, detail="Result file not found.")
 
-    payload = json.loads(result_path.read_text(encoding="utf-8"))
-    return rewrite_public_urls(payload, base_url)
+    return payload
