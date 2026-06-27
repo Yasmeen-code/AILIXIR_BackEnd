@@ -1,6 +1,5 @@
 <?php
 
-// use App\Http\Controllers\Api\AiController;
 use App\Http\Controllers\Api\AdmetController;
 use App\Http\Controllers\Api\AiServicesIntegrationController;
 use App\Http\Controllers\Api\AuthController;
@@ -17,10 +16,8 @@ use App\Http\Controllers\Api\NewsController;
 use App\Http\Controllers\Api\PasswordResetController;
 use App\Http\Controllers\Api\ScientistController;
 use App\Http\Controllers\Api\ScreeningController;
-use App\Http\Controllers\Api\SimulationController;
 use App\Http\Controllers\Api\SubscriptionController;
 use App\Http\Controllers\Api\UserController;
-use App\Http\Controllers\DockingTestController;
 use App\Http\Controllers\StripeWebhookController;
 use Cloudinary\Cloudinary;
 use Illuminate\Http\Request;
