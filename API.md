@@ -1417,9 +1417,27 @@ curl -X POST "{base_url}/api/docking/submit" \\
         "created_at": "2026-06-17T05:45:31+00:00",
         "download_url": "{base_url}/api/docking/download/5",
         "scores": [
-            {"affinity": 0, "inter": 0, "intra": -2.031, "torsions": 0, "unbound": -2.031},
-            {"affinity": 0, "inter": 0, "intra": -2.031, "torsions": 0, "unbound": -2.031},
-            {"affinity": 0.001, "inter": 0, "intra": -2.031, "torsions": 0, "unbound": -2.031}
+            {
+                "affinity": 0,
+                "inter": 0,
+                "intra": -2.031,
+                "torsions": 0,
+                "unbound": -2.031
+            },
+            {
+                "affinity": 0,
+                "inter": 0,
+                "intra": -2.031,
+                "torsions": 0,
+                "unbound": -2.031
+            },
+            {
+                "affinity": 0.001,
+                "inter": 0,
+                "intra": -2.031,
+                "torsions": 0,
+                "unbound": -2.031
+            }
         ],
         "error": null
     }
@@ -1481,9 +1499,27 @@ If the job is not completed, `scores` will be an empty array.
                 "created_at": "2026-06-17T05:45:31+00:00",
                 "download_url": "{base_url}/api/docking/download/5",
                 "scores": [
-                    {"affinity": 0, "inter": 0, "intra": -2.031, "torsions": 0, "unbound": -2.031},
-                    {"affinity": 0, "inter": 0, "intra": -2.031, "torsions": 0, "unbound": -2.031},
-                    {"affinity": 0.001, "inter": 0, "intra": -2.031, "torsions": 0, "unbound": -2.031}
+                    {
+                        "affinity": 0,
+                        "inter": 0,
+                        "intra": -2.031,
+                        "torsions": 0,
+                        "unbound": -2.031
+                    },
+                    {
+                        "affinity": 0,
+                        "inter": 0,
+                        "intra": -2.031,
+                        "torsions": 0,
+                        "unbound": -2.031
+                    },
+                    {
+                        "affinity": 0.001,
+                        "inter": 0,
+                        "intra": -2.031,
+                        "torsions": 0,
+                        "unbound": -2.031
+                    }
                 ],
                 "error": null
             }
@@ -1571,16 +1607,86 @@ curl -X POST "{base_url}/api/drug-repurposing/targets" \\
             "disease_id": "EFO_0001360",
             "total_targets": 10,
             "targets": [
-                {"symbol": "KCNJ11", "name": "potassium inwardly rectifying channel subfamily J member 11", "score": 0.8651, "sequence": null, "uniprot_id": "Q14654", "pdb_ids": ["2UKM", "2UGY", "2UUG"]},
-                {"symbol": "ABCC8", "name": "ATP binding cassette subfamily C member 8", "score": 0.8648, "sequence": null, "uniprot_id": "Q09428", "pdb_ids": []},
-                {"symbol": "GCK", "name": "glucokinase", "score": 0.8612, "sequence": null, "uniprot_id": "P35557", "pdb_ids": ["1V4S", "3F9M", "4ISE"]},
-                {"symbol": "PPARG", "name": "peroxisome proliferator activated receptor gamma", "score": 0.8486, "sequence": null, "uniprot_id": "P37231", "pdb_ids": ["7AEX", "7AEW", "7AEV"]},
-                {"symbol": "INSR", "name": "insulin receptor", "score": 0.7887, "sequence": null, "uniprot_id": "P06213", "pdb_ids": ["2HR7", "3EKN", "4IBM"]},
-                {"symbol": "HNF1B", "name": "HNF1 homeobox B", "score": 0.7846, "sequence": null, "uniprot_id": "P35680", "pdb_ids": []},
-                {"symbol": "HNF1A", "name": "HNF1 homeobox A", "score": 0.7796, "sequence": null, "uniprot_id": "P20823", "pdb_ids": []},
-                {"symbol": "HNF4A", "name": "hepatocyte nuclear factor 4 alpha", "score": 0.7763, "sequence": null, "uniprot_id": "P41235", "pdb_ids": ["7D1C", "7D1D"]},
-                {"symbol": "WFS1", "name": "wolframin ER transmembrane glycoprotein", "score": 0.7695, "sequence": null, "uniprot_id": "O76024", "pdb_ids": []},
-                {"symbol": "GLP1R", "name": "glucagon like peptide 1 receptor", "score": 0.7667, "sequence": null, "uniprot_id": "P43220", "pdb_ids": []}
+                {
+                    "symbol": "KCNJ11",
+                    "name": "potassium inwardly rectifying channel subfamily J member 11",
+                    "score": 0.8651,
+                    "sequence": null,
+                    "uniprot_id": "Q14654",
+                    "pdb_ids": ["2UKM", "2UGY", "2UUG"]
+                },
+                {
+                    "symbol": "ABCC8",
+                    "name": "ATP binding cassette subfamily C member 8",
+                    "score": 0.8648,
+                    "sequence": null,
+                    "uniprot_id": "Q09428",
+                    "pdb_ids": []
+                },
+                {
+                    "symbol": "GCK",
+                    "name": "glucokinase",
+                    "score": 0.8612,
+                    "sequence": null,
+                    "uniprot_id": "P35557",
+                    "pdb_ids": ["1V4S", "3F9M", "4ISE"]
+                },
+                {
+                    "symbol": "PPARG",
+                    "name": "peroxisome proliferator activated receptor gamma",
+                    "score": 0.8486,
+                    "sequence": null,
+                    "uniprot_id": "P37231",
+                    "pdb_ids": ["7AEX", "7AEW", "7AEV"]
+                },
+                {
+                    "symbol": "INSR",
+                    "name": "insulin receptor",
+                    "score": 0.7887,
+                    "sequence": null,
+                    "uniprot_id": "P06213",
+                    "pdb_ids": ["2HR7", "3EKN", "4IBM"]
+                },
+                {
+                    "symbol": "HNF1B",
+                    "name": "HNF1 homeobox B",
+                    "score": 0.7846,
+                    "sequence": null,
+                    "uniprot_id": "P35680",
+                    "pdb_ids": []
+                },
+                {
+                    "symbol": "HNF1A",
+                    "name": "HNF1 homeobox A",
+                    "score": 0.7796,
+                    "sequence": null,
+                    "uniprot_id": "P20823",
+                    "pdb_ids": []
+                },
+                {
+                    "symbol": "HNF4A",
+                    "name": "hepatocyte nuclear factor 4 alpha",
+                    "score": 0.7763,
+                    "sequence": null,
+                    "uniprot_id": "P41235",
+                    "pdb_ids": ["7D1C", "7D1D"]
+                },
+                {
+                    "symbol": "WFS1",
+                    "name": "wolframin ER transmembrane glycoprotein",
+                    "score": 0.7695,
+                    "sequence": null,
+                    "uniprot_id": "O76024",
+                    "pdb_ids": []
+                },
+                {
+                    "symbol": "GLP1R",
+                    "name": "glucagon like peptide 1 receptor",
+                    "score": 0.7667,
+                    "sequence": null,
+                    "uniprot_id": "P43220",
+                    "pdb_ids": []
+                }
             ]
         },
         "status": "completed"
@@ -1617,8 +1723,22 @@ If the job is not completed, the `output` field will be `null`.
                     "disease_id": "EFO_0001360",
                     "total_targets": 10,
                     "targets": [
-                        {"symbol": "KCNJ11", "name": "potassium inwardly rectifying channel subfamily J member 11", "score": 0.8651, "sequence": null, "uniprot_id": "Q14654", "pdb_ids": ["2UKM", "2UGY", "2UUG"]},
-                        {"symbol": "GCK", "name": "glucokinase", "score": 0.8612, "sequence": null, "uniprot_id": "P35557", "pdb_ids": ["1V4S", "3F9M", "4ISE"]}
+                        {
+                            "symbol": "KCNJ11",
+                            "name": "potassium inwardly rectifying channel subfamily J member 11",
+                            "score": 0.8651,
+                            "sequence": null,
+                            "uniprot_id": "Q14654",
+                            "pdb_ids": ["2UKM", "2UGY", "2UUG"]
+                        },
+                        {
+                            "symbol": "GCK",
+                            "name": "glucokinase",
+                            "score": 0.8612,
+                            "sequence": null,
+                            "uniprot_id": "P35557",
+                            "pdb_ids": ["1V4S", "3F9M", "4ISE"]
+                        }
                     ]
                 },
                 "status": "completed",
@@ -1703,11 +1823,51 @@ curl -X POST "{base_url}/api/drug-repurposing/screen" \\
             "total_drugs_screened": 200,
             "total_pairs_evaluated": 2000,
             "top_candidates": [
-                {"drug_name": "Drug_CHEMBL1754", "smiles": "CC1=C(C=C(C=C1)NC(=O)C2=CC=C(C=C2)Cl)Cl", "target_symbol": "KCNJ11", "uniprot_id": "Q14654", "binding_score": 0.9821, "rank": 1, "status": "Potential Discovery"},
-                {"drug_name": "Drug_CHEMBL1754", "smiles": "CC1=C(C=C(C=C1)NC(=O)C2=CC=C(C=C2)Cl)Cl", "target_symbol": "ABCC8", "uniprot_id": "Q09428", "binding_score": 0.9765, "rank": 2, "status": "Potential Discovery"},
-                {"drug_name": "Drug_CHEMBL1754", "smiles": "CC1=C(C=C(C=C1)NC(=O)C2=CC=C(C=C2)Cl)Cl", "target_symbol": "GCK", "uniprot_id": "P35557", "binding_score": 0.9712, "rank": 3, "status": "Potential Discovery"},
-                {"drug_name": "Drug_CHEMBL1754", "smiles": "CC1=C(C=C(C=C1)NC(=O)C2=CC=C(C=C2)Cl)Cl", "target_symbol": "PPARG", "uniprot_id": "P37231", "binding_score": 0.9689, "rank": 4, "status": "Potential Discovery"},
-                {"drug_name": "Drug_CHEMBL1754", "smiles": "CC1=C(C=C(C=C1)NC(=O)C2=CC=C(C=C2)Cl)Cl", "target_symbol": "INSR", "uniprot_id": "P06213", "binding_score": 0.9634, "rank": 5, "status": "Potential Discovery"}
+                {
+                    "drug_name": "Drug_CHEMBL1754",
+                    "smiles": "CC1=C(C=C(C=C1)NC(=O)C2=CC=C(C=C2)Cl)Cl",
+                    "target_symbol": "KCNJ11",
+                    "uniprot_id": "Q14654",
+                    "binding_score": 0.9821,
+                    "rank": 1,
+                    "status": "Potential Discovery"
+                },
+                {
+                    "drug_name": "Drug_CHEMBL1754",
+                    "smiles": "CC1=C(C=C(C=C1)NC(=O)C2=CC=C(C=C2)Cl)Cl",
+                    "target_symbol": "ABCC8",
+                    "uniprot_id": "Q09428",
+                    "binding_score": 0.9765,
+                    "rank": 2,
+                    "status": "Potential Discovery"
+                },
+                {
+                    "drug_name": "Drug_CHEMBL1754",
+                    "smiles": "CC1=C(C=C(C=C1)NC(=O)C2=CC=C(C=C2)Cl)Cl",
+                    "target_symbol": "GCK",
+                    "uniprot_id": "P35557",
+                    "binding_score": 0.9712,
+                    "rank": 3,
+                    "status": "Potential Discovery"
+                },
+                {
+                    "drug_name": "Drug_CHEMBL1754",
+                    "smiles": "CC1=C(C=C(C=C1)NC(=O)C2=CC=C(C=C2)Cl)Cl",
+                    "target_symbol": "PPARG",
+                    "uniprot_id": "P37231",
+                    "binding_score": 0.9689,
+                    "rank": 4,
+                    "status": "Potential Discovery"
+                },
+                {
+                    "drug_name": "Drug_CHEMBL1754",
+                    "smiles": "CC1=C(C=C(C=C1)NC(=O)C2=CC=C(C=C2)Cl)Cl",
+                    "target_symbol": "INSR",
+                    "uniprot_id": "P06213",
+                    "binding_score": 0.9634,
+                    "rank": 5,
+                    "status": "Potential Discovery"
+                }
             ],
             "warnings": []
         },
@@ -1748,8 +1908,24 @@ If the job is not completed, the `output` field will be `null`.
                     "total_drugs_screened": 200,
                     "total_pairs_evaluated": 2000,
                     "top_candidates": [
-                        {"drug_name": "Drug_CHEMBL1754", "smiles": "CC1=C(C=C(C=C1)NC(=O)C2=CC=C(C=C2)Cl)Cl", "target_symbol": "KCNJ11", "uniprot_id": "Q14654", "binding_score": 0.9821, "rank": 1, "status": "Potential Discovery"},
-                        {"drug_name": "Drug_CHEMBL1754", "smiles": "CC1=C(C=C(C=C1)NC(=O)C2=CC=C(C=C2)Cl)Cl", "target_symbol": "ABCC8", "uniprot_id": "Q09428", "binding_score": 0.9765, "rank": 2, "status": "Potential Discovery"}
+                        {
+                            "drug_name": "Drug_CHEMBL1754",
+                            "smiles": "CC1=C(C=C(C=C1)NC(=O)C2=CC=C(C=C2)Cl)Cl",
+                            "target_symbol": "KCNJ11",
+                            "uniprot_id": "Q14654",
+                            "binding_score": 0.9821,
+                            "rank": 1,
+                            "status": "Potential Discovery"
+                        },
+                        {
+                            "drug_name": "Drug_CHEMBL1754",
+                            "smiles": "CC1=C(C=C(C=C1)NC(=O)C2=CC=C(C=C2)Cl)Cl",
+                            "target_symbol": "ABCC8",
+                            "uniprot_id": "Q09428",
+                            "binding_score": 0.9765,
+                            "rank": 2,
+                            "status": "Potential Discovery"
+                        }
                     ],
                     "warnings": []
                 },
@@ -2473,14 +2649,16 @@ curl -X POST /api/ai/generation/run \\
 {
     "success": true,
     "message": "Generation job started successfully",
-    "job_id": "gen_20260602_174612_90c1b1",
-    "status": "running",
-    "preset": "egfr_generator",
-    "num_molecules": 5,
-    "return_top_k": 5,
-    "docking_mode": "all",
-    "dock_top_k": 5,
-    "created_at": "2026-06-02 17:46:10"
+    "data": {
+        "job_id": "gen_20260627_192907_58c7f5",
+        "status": "running",
+        "preset": "egfr_generator",
+        "num_molecules": 5,
+        "return_top_k": 5,
+        "docking_mode": "off",
+        "dock_top_k": 0,
+        "created_at": "2026-06-27 19:29:05"
+    }
 }
 ```
 
@@ -2502,14 +2680,113 @@ curl -X GET /api/ai/generation/status/gen_20260602_174612_90c1b1 \\
 ```json
 {
     "success": true,
-    "job_id": "gen_20260602_174612_90c1b1",
-    "status": "completed",
-    "preset": "egfr_generator",
-    "num_molecules": 5,
-    "return_top_k": 5,
-    "docking_mode": "all",
-    "dock_top_k": 5,
-    "created_at": "2026-06-02 17:46:10"
+    "message": "Generation job status",
+    "data": {
+        "job_id": "gen_20260627_192907_58c7f5",
+        "status": "completed",
+        "stage": "completed",
+        "preset": "egfr_generator",
+        "num_molecules": 5,
+        "return_top_k": 5,
+        "docking_mode": "off",
+        "dock_top_k": 0,
+        "summary": {
+            "num_requested": 5,
+            "num_generated": 4,
+            "num_valid": 4,
+            "num_returned": 4,
+            "num_docked": 0
+        },
+        "files": {
+            "csv": {
+                "filename": "generated_results.csv",
+                "download_url": "https://shdwrow-ailixir-generation.hf.space/files/jobs/gen_20260627_192907_58c7f5/generated_results.csv"
+            },
+            "json": {
+                "filename": "generated_results.json",
+                "download_url": "https://shdwrow-ailixir-generation.hf.space/files/jobs/gen_20260627_192907_58c7f5/generated_results.json"
+            }
+        },
+        "ligands": [
+            {
+                "SMILES": "CN1CCCN(CCC(=O)Nc2ccc3nncc(-c4ccc5cncnc5c4)c3c2)C1",
+                "SMILES_state": 1,
+                "NLL": 4.57,
+                "valid": true,
+                "canonical_smiles": "CN1CCCN(CCC(=O)Nc2ccc3nncc(-c4ccc5cncnc5c4)c3c2)C1",
+                "mw": 427.5120000000002,
+                "logp": 3.1636000000000006,
+                "tpsa": 87.14,
+                "hbd": 1,
+                "hba": 7,
+                "rot_bonds": 5,
+                "qed": 0.5234216428527144,
+                "sa_score": 2.7645745083533857,
+                "pred_pAff_mean": 10.726751327514648,
+                "docking_score": null,
+                "docking_status": "not_run",
+                "rank": 1
+            },
+            {
+                "SMILES": "CN1CCN(CCC(=O)Nc2ccc3nncc(-c4ccc5cncnc5c4)c3c2)CC1",
+                "SMILES_state": 1,
+                "NLL": 5.39,
+                "valid": true,
+                "canonical_smiles": "CN1CCN(CCC(=O)Nc2ccc3nncc(-c4ccc5cncnc5c4)c3c2)CC1",
+                "mw": 427.5120000000002,
+                "logp": 2.8160000000000007,
+                "tpsa": 87.14,
+                "hbd": 1,
+                "hba": 7,
+                "rot_bonds": 5,
+                "qed": 0.5240018720180243,
+                "sa_score": 2.567665997715085,
+                "pred_pAff_mean": 10.247249603271484,
+                "docking_score": null,
+                "docking_status": "not_run",
+                "rank": 2
+            },
+            {
+                "SMILES": "O=C(CCc1ccncc1)Nc1ccc2nncc(-c3ccc4nncn4c3)c2c1",
+                "SMILES_state": 1,
+                "NLL": 12.24,
+                "valid": true,
+                "canonical_smiles": "O=C(CCc1ccncc1)Nc1ccc2nncc(-c3ccc4nncn4c3)c2c1",
+                "mw": 395.4260000000001,
+                "logp": 3.3058000000000014,
+                "tpsa": 97.96,
+                "hbd": 1,
+                "hba": 6,
+                "rot_bonds": 5,
+                "qed": 0.4902723648859505,
+                "sa_score": 2.652044473533349,
+                "pred_pAff_mean": 8.516275405883789,
+                "docking_score": null,
+                "docking_status": "not_run",
+                "rank": 3
+            },
+            {
+                "SMILES": "CCC(=O)Nc1cccc(-c2cnnc3ccc(NC(=O)CCN4CCOCC4)cc23)c1",
+                "SMILES_state": 1,
+                "NLL": 6.54,
+                "valid": true,
+                "canonical_smiles": "CCC(=O)Nc1cccc(-c2cnnc3ccc(NC(=O)CCN4CCOCC4)cc23)c1",
+                "mw": 433.51200000000034,
+                "logp": 3.3061000000000016,
+                "tpsa": 96.45,
+                "hbd": 2,
+                "hba": 6,
+                "rot_bonds": 7,
+                "qed": 0.593505953472874,
+                "sa_score": 2.37134883917013,
+                "pred_pAff_mean": 7.571469783782959,
+                "docking_score": null,
+                "docking_status": "not_run",
+                "rank": 4
+            }
+        ],
+        "created_at": "2026-06-27 19:29:05"
+    }
 }
 ```
 
@@ -2531,126 +2808,149 @@ curl -X GET /api/ai/generation/jobs/gen_20260602_174612_90c1b1/results \\
 ```json
 {
     "success": true,
-    "job_id": "gen_20260602_174612_90c1b1",
-    "status": "completed",
-    "preset": "egfr_generator",
-    "num_molecules": 5,
-    "return_top_k": 5,
-    "docking_mode": "all",
-    "dock_top_k": 5,
-    "summary": {
-        "num_requested": 5,
-        "num_generated": 5,
-        "num_valid": 5,
-        "num_returned": 5,
-        "num_docked": 5
-    },
-    "files": {
-        "csv": {
-            "filename": "generated_results.csv"
+    "message": "Generation job results",
+    "data": {
+        "job_id": "gen_20260627_192907_58c7f5",
+        "status": "completed",
+        "stage": "completed",
+        "preset": "egfr_generator",
+        "num_molecules": 5,
+        "return_top_k": 5,
+        "docking_mode": "off",
+        "dock_top_k": 0,
+        "summary": {
+            "num_requested": 5,
+            "num_generated": 4,
+            "num_valid": 4,
+            "num_returned": 4,
+            "num_docked": 0
         },
-        "json": {
-            "filename": "generated_results.json"
-        }
-    },
-    "ligands": [
-        {
-            "SMILES": "CCN1CCN(CCC(=O)Nc2ccc3nncc(-c4ccc5ncncc5c4)c3c2)C1",
-            "SMILES_state": 1,
-            "NLL": 8.24,
-            "valid": true,
-            "canonical_smiles": "CCN1CCN(CCC(=O)Nc2ccc3nncc(-c4ccc5ncncc5c4)c3c2)C1",
-            "mw": 427.5120000000002,
-            "logp": 3.1636000000000006,
-            "tpsa": 87.14,
-            "hbd": 1,
-            "hba": 7,
-            "rot_bonds": 6,
-            "qed": 0.505688822717197,
-            "sa_score": 2.715858141741272,
-            "pred_pAff_mean": 10.734132766723633,
-            "docking_score": -8.91,
-            "docking_status": "completed",
-            "rank": 1
+        "files": {
+            "csv": {
+                "filename": "generated_results.csv",
+                "download_url": "https://shdwrow-ailixir-generation.hf.space/files/jobs/gen_20260627_192907_58c7f5/generated_results.csv"
+            },
+            "json": {
+                "filename": "generated_results.json",
+                "download_url": "https://shdwrow-ailixir-generation.hf.space/files/jobs/gen_20260627_192907_58c7f5/generated_results.json"
+            }
         },
-        {
-            "SMILES": "Cn1cnc2ccc(Nc3ncnc4ccc(NC(=O)CCN5CCC5)cc34)cc21",
-            "SMILES_state": 1,
-            "NLL": 5.32,
-            "valid": true,
-            "canonical_smiles": "Cn1cnc2ccc(Nc3ncnc4ccc(NC(=O)CCN5CCC5)cc34)cc21",
-            "mw": 401.4740000000003,
-            "logp": 3.2944000000000013,
-            "tpsa": 87.96999999999998,
-            "hbd": 2,
-            "hba": 6,
-            "rot_bonds": 6,
-            "qed": 0.5154635202823702,
-            "sa_score": 2.404394987645352,
-            "pred_pAff_mean": 9.775605201721191,
-            "docking_score": -8.27,
-            "docking_status": "completed",
-            "rank": 2
-        },
-        {
-            "SMILES": "CN1CCCN(CCC(=O)Nc2ccc3nncc(-c4ccc5cnccc5c4)c3c2)C1",
-            "SMILES_state": 1,
-            "NLL": 5.95,
-            "valid": true,
-            "canonical_smiles": "CN1CCCN(CCC(=O)Nc2ccc3nncc(-c4ccc5cnccc5c4)c3c2)C1",
-            "mw": 426.5240000000002,
-            "logp": 3.768600000000002,
-            "tpsa": 74.25,
-            "hbd": 1,
-            "hba": 6,
-            "rot_bonds": 5,
-            "qed": 0.523710400747619,
-            "sa_score": 2.669701840595609,
-            "pred_pAff_mean": 9.587095260620115,
-            "docking_score": -10.25,
-            "docking_status": "completed",
-            "rank": 3
-        },
-        {
-            "SMILES": "CN1CCCN(CCC(=O)Nc2ccc3nncc(-c4ccc5cnnnc5c4)c3c2)C1",
-            "SMILES_state": 1,
-            "NLL": 8.32,
-            "valid": true,
-            "canonical_smiles": "CN1CCCN(CCC(=O)Nc2ccc3nncc(-c4ccc5cnnnc5c4)c3c2)C1",
-            "mw": 428.5000000000002,
-            "logp": 2.5586,
-            "tpsa": 100.03,
-            "hbd": 1,
-            "hba": 8,
-            "rot_bonds": 5,
-            "qed": 0.5177099598248629,
-            "sa_score": 2.917413951888572,
-            "pred_pAff_mean": 8.804740905761719,
-            "docking_score": -10.15,
-            "docking_status": "completed",
-            "rank": 4
-        },
-        {
-            "SMILES": "O=C(CN1CCNCC1)Nc1ccc2nncc(-c3ccc4cnncc4c3)c2c1",
-            "SMILES_state": 1,
-            "NLL": 8.41,
-            "valid": true,
-            "canonical_smiles": "O=C(CN1CCNCC1)Nc1ccc2nncc(-c3ccc4cnncc4c3)c2c1",
-            "mw": 399.45800000000014,
-            "logp": 2.0836999999999994,
-            "tpsa": 95.93,
-            "hbd": 2,
-            "hba": 7,
-            "rot_bonds": 4,
-            "qed": 0.5423758682727866,
-            "sa_score": 2.665545251407164,
-            "pred_pAff_mean": 7.531160354614258,
-            "docking_score": -9.5,
-            "docking_status": "completed",
-            "rank": 5
-        }
-    ],
-    "created_at": "2026-06-02 17:46:10"
+        "ligands": [
+            {
+                "SMILES": "CN1CCCN(CCC(=O)Nc2ccc3nncc(-c4ccc5cncnc5c4)c3c2)C1",
+                "SMILES_state": 1,
+                "NLL": 4.57,
+                "valid": true,
+                "canonical_smiles": "CN1CCCN(CCC(=O)Nc2ccc3nncc(-c4ccc5cncnc5c4)c3c2)C1",
+                "mw": 427.5120000000002,
+                "logp": 3.1636000000000006,
+                "tpsa": 87.14,
+                "hbd": 1,
+                "hba": 7,
+                "rot_bonds": 5,
+                "qed": 0.5234216428527144,
+                "sa_score": 2.7645745083533857,
+                "pred_pAff_mean": 10.726751327514648,
+                "docking_score": null,
+                "docking_status": "not_run",
+                "rank": 1
+            },
+            {
+                "SMILES": "CN1CCN(CCC(=O)Nc2ccc3nncc(-c4ccc5cncnc5c4)c3c2)CC1",
+                "SMILES_state": 1,
+                "NLL": 5.39,
+                "valid": true,
+                "canonical_smiles": "CN1CCN(CCC(=O)Nc2ccc3nncc(-c4ccc5cncnc5c4)c3c2)CC1",
+                "mw": 427.5120000000002,
+                "logp": 2.8160000000000007,
+                "tpsa": 87.14,
+                "hbd": 1,
+                "hba": 7,
+                "rot_bonds": 5,
+                "qed": 0.5240018720180243,
+                "sa_score": 2.567665997715085,
+                "pred_pAff_mean": 10.247249603271484,
+                "docking_score": null,
+                "docking_status": "not_run",
+                "rank": 2
+            },
+            {
+                "SMILES": "O=C(CCc1ccncc1)Nc1ccc2nncc(-c3ccc4nncn4c3)c2c1",
+                "SMILES_state": 1,
+                "NLL": 12.24,
+                "valid": true,
+                "canonical_smiles": "O=C(CCc1ccncc1)Nc1ccc2nncc(-c3ccc4nncn4c3)c2c1",
+                "mw": 395.4260000000001,
+                "logp": 3.3058000000000014,
+                "tpsa": 97.96,
+                "hbd": 1,
+                "hba": 6,
+                "rot_bonds": 5,
+                "qed": 0.4902723648859505,
+                "sa_score": 2.652044473533349,
+                "pred_pAff_mean": 8.516275405883789,
+                "docking_score": null,
+                "docking_status": "not_run",
+                "rank": 3
+            },
+            {
+                "SMILES": "CCC(=O)Nc1cccc(-c2cnnc3ccc(NC(=O)CCN4CCOCC4)cc23)c1",
+                "SMILES_state": 1,
+                "NLL": 6.54,
+                "valid": true,
+                "canonical_smiles": "CCC(=O)Nc1cccc(-c2cnnc3ccc(NC(=O)CCN4CCOCC4)cc23)c1",
+                "mw": 433.51200000000034,
+                "logp": 3.3061000000000016,
+                "tpsa": 96.45,
+                "hbd": 2,
+                "hba": 6,
+                "rot_bonds": 7,
+                "qed": 0.593505953472874,
+                "sa_score": 2.37134883917013,
+                "pred_pAff_mean": 7.571469783782959,
+                "docking_score": null,
+                "docking_status": "not_run",
+                "rank": 4
+            }
+        ],
+        "created_at": "2026-06-27 19:29:05"
+    }
+}
+```
+
+---
+
+### POST `/api/ai/generation/jobs/{job_id}/cancel`
+
+**Authentication:** Bearer token required
+
+**Example:**
+
+```bash
+curl -X POST http://localhost:8080/api/ai/generation/jobs/{job_id}/cancel \
+  -H "Authorization: Bearer {token}"
+```
+
+**Response: Status:Completed**
+
+```json
+{
+    "success": false,
+    "message": "Cannot cancel a completed job",
+    "data": null
+}
+```
+
+**Response: Status:No Completed**
+
+```json
+{
+    "success": true,
+    "message": "Job cancelled successfully",
+    "data": {
+        "job_id": "gen_20260627_193543_01b810",
+        "status": "cancelled"
+    }
 }
 ```
 
@@ -3211,13 +3511,14 @@ curl -X POST http://localhost:8080/api/ai/ligands/export \
 ```json
 {
     "success": true,
+    "message": "Ligands exported successfully",
     "data": {
-        "job_id": "lig_20260602_184722_a19639",
+        "job_id": "lig_20260627_193222_e57b0b",
         "status": "completed",
-        "smiles": "CCO",
-        "format": "pdbqt",
-        "filename": "ligand_3d.pdbqt",
-        "created_at": "2026-06-02 18:47:22"
+        "format": "pdb",
+        "filename": "ligand_3d.pdb",
+        "smiles": "CCC",
+        "download_url": "https://shdwrow-ailixir-generation.hf.space/files/jobs/lig_20260627_193222_e57b0b/ligand_3d.pdb"
     }
 }
 ```
@@ -3284,28 +3585,28 @@ Submit a new MD simulation job.
 
 **Required fields:**
 
-| Field | Type | Description |
-|---|---|---|
+| Field     | Type | Description      |
+| --------- | ---- | ---------------- |
 | `protein` | file | Protein PDB file |
-| `ligand` | file | Ligand PDB file |
+| `ligand`  | file | Ligand PDB file  |
 
 **Optional fields:**
 
-| Field | Type | Default | Description |
-|---|---|---|---|
-| `force_field` | string | `ff19SB` | `ff19SB` or `ff14SB` |
-| `net_charge` | integer | `0` | Ligand net formal charge |
-| `box_size` | float | `12.0` | Solvation box size (Å) |
-| `ion_type` | string | `NaCl` | `NaCl` or `KCl` |
-| `salt_conc` | float | `0.15` | Salt concentration (M) |
-| `remove_waters` | boolean | `true` | Strip crystal waters |
-| `add_hydrogens` | boolean | `true` | Add H to ligand |
-| `equil_time_ns` | float | `5.0` | Equilibration time (ns) |
-| `sim_time_ns` | float | `0.1` | Production time per stride (ns) |
-| `n_strides` | integer | `1` | Number of production strides |
-| `temperature_k` | float | `298.0` | Temperature (K) |
-| `pressure_bar` | float | `1.0` | Pressure (bar) |
-| `dt_fs` | integer | `2` | Integration timestep (fs) |
+| Field           | Type    | Default  | Description                     |
+| --------------- | ------- | -------- | ------------------------------- |
+| `force_field`   | string  | `ff19SB` | `ff19SB` or `ff14SB`            |
+| `net_charge`    | integer | `0`      | Ligand net formal charge        |
+| `box_size`      | float   | `12.0`   | Solvation box size (Å)          |
+| `ion_type`      | string  | `NaCl`   | `NaCl` or `KCl`                 |
+| `salt_conc`     | float   | `0.15`   | Salt concentration (M)          |
+| `remove_waters` | boolean | `true`   | Strip crystal waters            |
+| `add_hydrogens` | boolean | `true`   | Add H to ligand                 |
+| `equil_time_ns` | float   | `5.0`    | Equilibration time (ns)         |
+| `sim_time_ns`   | float   | `0.1`    | Production time per stride (ns) |
+| `n_strides`     | integer | `1`      | Number of production strides    |
+| `temperature_k` | float   | `298.0`  | Temperature (K)                 |
+| `pressure_bar`  | float   | `1.0`    | Pressure (bar)                  |
+| `dt_fs`         | integer | `2`      | Integration timestep (fs)       |
 
 **Example:**
 
@@ -3421,13 +3722,13 @@ Run post-simulation analysis (RMSD, RMSF, RoG, PCA, etc.) on a completed job.
 
 **Optional body fields:**
 
-| Field | Type | Default | Description |
-|---|---|---|---|
-| `rmsd_mask` | string | `@CA` | Atom selection mask for RMSD |
-| `cc_mask` | string | `@CA` | Atom selection mask for cross-correlation |
-| `skip` | integer | `1` | Frame stride for analysis |
-| `dpi` | integer | `300` | DPI for output plots |
-| `threshold` | float | `0.3` | ProLIF interaction threshold |
+| Field       | Type    | Default | Description                               |
+| ----------- | ------- | ------- | ----------------------------------------- |
+| `rmsd_mask` | string  | `@CA`   | Atom selection mask for RMSD              |
+| `cc_mask`   | string  | `@CA`   | Atom selection mask for cross-correlation |
+| `skip`      | integer | `1`     | Frame stride for analysis                 |
+| `dpi`       | integer | `300`   | DPI for output plots                      |
+| `threshold` | float   | `0.3`   | ProLIF interaction threshold              |
 
 **Example:**
 
@@ -3446,7 +3747,16 @@ curl -X POST /api/md-simulation/analyze/a1b2c3d4 \
     "message": "Analysis triggered successfully",
     "data": {
         "download_url": "/download_analysis/a1b2c3d4",
-        "outputs": ["rmsd", "rmsf", "radgyr", "2d_rmsd", "pca", "cross_corr", "interaction_e", "prolif"]
+        "outputs": [
+            "rmsd",
+            "rmsf",
+            "radgyr",
+            "2d_rmsd",
+            "pca",
+            "cross_corr",
+            "interaction_e",
+            "prolif"
+        ]
     }
 }
 ```
@@ -3471,9 +3781,9 @@ List all MD simulation jobs for the authenticated user.
 
 **Query Parameters:**
 
-| Parameter | Type | Default | Description |
-|---|---|---|---|
-| `per_page` | integer | `15` | Results per page |
+| Parameter  | Type    | Default | Description      |
+| ---------- | ------- | ------- | ---------------- |
+| `per_page` | integer | `15`    | Results per page |
 
 **Response (200 OK):**
 
