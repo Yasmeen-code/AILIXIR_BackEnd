@@ -191,6 +191,8 @@ Route::middleware('auth:sanctum')->prefix('ai')->group(function () {
     Route::post('/ligands/export', [LigandsController::class, 'exportLigands']);
 });
 
+
+// ==================== STRIPE ====================
 Route::post('/stripe/webhook', [StripeWebhookController::class, 'handleWebhook']);
 
 Route::middleware('auth:sanctum')->group(function () {
@@ -234,7 +236,7 @@ Route::post('/upload-file', function (Request $request) {
             [
                 'resource_type' => 'raw',
                 'public_id' => $originalName,
-                'filename_override' => $originalName.'.'.$extension,
+                'filename_override' => $originalName . '.' . $extension,
             ]
         );
 
