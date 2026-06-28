@@ -3599,14 +3599,19 @@ Submit a new MD simulation job.
 | `box_size`      | float   | `12.0`   | Solvation box size (Å)          |
 | `ion_type`      | string  | `NaCl`   | `NaCl` or `KCl`                 |
 | `salt_conc`     | float   | `0.15`   | Salt concentration (M)          |
-| `remove_waters` | boolean | `true`   | Strip crystal waters            |
-| `add_hydrogens` | boolean | `true`   | Add H to ligand                 |
+| `remove_waters` | boolean | `True`   | Strip crystal waters            |
+| `add_hydrogens` | boolean | `True`   | Add H to ligand                 |
 | `equil_time_ns` | float   | `5.0`    | Equilibration time (ns)         |
 | `sim_time_ns`   | float   | `0.1`    | Production time per stride (ns) |
 | `n_strides`     | integer | `1`      | Number of production strides    |
 | `temperature_k` | float   | `298.0`  | Temperature (K)                 |
 | `pressure_bar`  | float   | `1.0`    | Pressure (bar)                  |
 | `dt_fs`         | integer | `2`      | Integration timestep (fs)       |
+
+**Note:**
+when you send boolean values(True or False) multipart/form-data cast it to string unless you use json, in this case you should use:
+1 as True 
+0 as False 
 
 **Example:**
 
