@@ -4,10 +4,12 @@ google-generativeai
 python-dotenv
 langchain-core 
 rdkit
-matplotlib pillow
+matplotlib 
 langgraph-checkpoint-sqlite
 chembl-webresource-client
 vina
-fastapi uvicorn 
+fastapi 
 python-multipart
 meeko 
+uvicorn 
+pillow
