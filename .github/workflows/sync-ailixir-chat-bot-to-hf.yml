@@ -18,6 +18,15 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v6
 
+      - name: Install Hugging Face CLI
+        run: pip install -U "huggingface_hub[cli]"
+
+      - name: Add Gemini key to Hugging Face Space secrets
+        run: |
+          hf spaces secrets add shdwRow/ailixir-chat-bot \
+            -s GEMINI_API_KEY="${{ secrets.GEMINI_API_KEY }}" \
+            --token "${{ secrets.HF_TOKEN }}"
+
       - name: Sync chat bot service to Hugging Face Space
         uses: huggingface/hub-sync@v0.1.0
         with:
