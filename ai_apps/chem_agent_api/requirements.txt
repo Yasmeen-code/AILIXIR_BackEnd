@@ -14,3 +14,4 @@ meeko
 uvicorn 
 pillow
 langchain_google_genai
+pandas
