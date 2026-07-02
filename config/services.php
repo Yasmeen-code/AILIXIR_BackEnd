@@ -15,7 +15,7 @@ return [
     */
     // AI agent
     'chemistry' => [
-        'base_url' => env('CHEMISTRY_API_BASE_URL', 'https://bronchial-carpentry-football.ngrok-free.dev'),
+        'base_url' => env('CHEMISTRY_API_BASE_URL', 'https://shdwrow-ailixir-chat-bot.hf.space/'),
         'timeout' => env('CHEMISTRY_API_TIMEOUT', 60),
     ],
 
