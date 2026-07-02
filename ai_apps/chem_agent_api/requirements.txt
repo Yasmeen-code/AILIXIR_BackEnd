@@ -1,0 +1,17 @@
+langchain
+langgraph
+google-generativeai
+python-dotenv
+langchain-core 
+rdkit
+matplotlib 
+langgraph-checkpoint-sqlite
+chembl-webresource-client
+vina
+fastapi 
+python-multipart
+meeko 
+uvicorn 
+pillow
+langchain_google_genai
+pandas

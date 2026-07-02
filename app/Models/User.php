@@ -7,6 +7,7 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
 use App\Models\Researcher;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Laravel\Cashier\Billable;
 
@@ -25,7 +26,7 @@ class User extends Authenticatable
         'password_reset_otp',
         'password_reset_otp_expires_at',
         'last_otp_sent_at',
-
+        'current_plan_id',
     ];
     protected $hidden = [
         'password',
@@ -102,5 +103,82 @@ class User extends Authenticatable
     public function chemistryCsvJobs(): HasMany
     {
         return $this->hasMany(ChemistryCsvJob::class);
+    }
+
+    public function currentPlan(): BelongsTo
+    {
+        return $this->belongsTo(Plan::class, 'current_plan_id');
+    }
+
+    public function isFree(): bool
+    {
+        return $this->currentPlan?->type === 'free';
+    }
+
+    public function isPro(): bool
+    {
+        return $this->currentPlan?->type === 'pro';
+    }
+
+    public function isMax(): bool
+    {
+        return $this->currentPlan?->type === 'max';
+    }
+
+    public function hasActiveSubscription(): bool
+    {
+        return $this->subscribed('default');
+    }
+
+    protected static function booted(): void
+    {
+        static::created(function (User $user) {
+
+            $freePlan = Plan::where(
+                'type',
+                'free'
+            )->first();
+
+            if ($freePlan) {
+                $user->update([
+                    'current_plan_id' => $freePlan->id,
+                ]);
+            }
+        });
+    }
+
+    public function ensureHasPlan(): void
+    {
+        if ($this->current_plan_id !== null) {
+            return;
+        }
+
+        $freePlan = Plan::where('type', 'free')->first();
+
+        if ($freePlan) {
+            $this->update([
+                'current_plan_id' => $freePlan->id,
+            ]);
+        }
+    }
+
+    public function syncCurrentPlan(): void
+    {
+        $subscription = $this->subscription('default');
+
+        if (! $subscription) {
+            return;
+        }
+
+        $plan = Plan::where(
+            'stripe_price_id',
+            $subscription->stripe_price
+        )->first();
+
+        if ($plan && $this->current_plan_id !== $plan->id) {
+            $this->update([
+                'current_plan_id' => $plan->id,
+            ]);
+        }
     }
 }

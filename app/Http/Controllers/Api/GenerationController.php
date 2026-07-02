@@ -14,6 +14,12 @@ class GenerationController extends BaseController
 {
     private AiServiceClient $aiServiceClient;
 
+    private const NON_CANCELLABLE_STATUSES = [
+        'completed',
+        'failed',
+        'cancelled'
+    ];
+
     public function __construct(AiServiceClient $aiServiceClient)
     {
         $this->aiServiceClient = $aiServiceClient;
@@ -62,6 +68,10 @@ class GenerationController extends BaseController
     {
         $aiJob = $this->getAiJobFromRequest($request, $jobId);
 
+        if ($aiJob->status === 'cancelled') {
+            return $this->errorResponse('Job was cancelled', 410);
+        }
+
         $response = $this->aiServiceClient->fetchResults($jobId);
 
         if ($response->failed()) {
@@ -83,10 +93,7 @@ class GenerationController extends BaseController
         $response = $this->aiServiceClient->downloadFile($jobId, $safeFilename);
 
         if ($response->failed()) {
-            return response()->json([
-                'success' => false,
-                'message' => 'File not found'
-            ], 404);
+            return $this->errorResponse('File not found', 404);
         }
 
         return $this->fileDownloadResponse($response, $safeFilename);
@@ -98,6 +105,33 @@ class GenerationController extends BaseController
     public function history(Request $request): JsonResponse
     {
         return $this->jobHistoryResponse($request);
+    }
+
+    /**
+     * Cancel job
+     */
+    public function cancel(Request $request, string $jobId): JsonResponse
+    {
+        $aiJob = $this->getAiJobFromRequest($request, $jobId);
+
+        if (in_array($aiJob->status, self::NON_CANCELLABLE_STATUSES)) {
+            return $this->errorResponse("Cannot cancel a {$aiJob->status} job", 400);
+        }
+
+        $response = $this->aiServiceClient->cancelJob($jobId);
+
+        if ($response->failed()) {
+            return $this->errorResponse('Failed to cancel job', $response->status());
+        }
+
+        $aiJob->update([
+            'status' => 'cancelled'
+        ]);
+
+        return $this->successResponse('Job cancelled successfully', [
+            'job_id' => $aiJob->job_id,
+            'status' => 'cancelled'
+        ]);
     }
 
     // ========== Private Helper Methods ==========
@@ -134,12 +168,27 @@ class GenerationController extends BaseController
 
     private function syncJobStatusFromService(AiJob $aiJob): void
     {
+        if ($aiJob->status === 'cancelled') {
+            return;
+        }
+
         $response = $this->aiServiceClient->getJobStatus($aiJob->job_id);
 
         if ($response->successful()) {
             $newStatus = $response->json('status');
+
+            $aiJob->update([
+                'stage' => $response->json('stage')
+            ]);
+
             if ($newStatus && $newStatus !== $aiJob->status) {
-                $aiJob->update(['status' => $newStatus]);
+                $aiJob->update([
+                    'status' => $newStatus,
+                ]);
+            }
+
+            if ($newStatus === 'completed') {
+                $this->updateAiJobWithResults($aiJob, $response->json());
             }
         }
     }
@@ -151,6 +200,7 @@ class GenerationController extends BaseController
             'summary' => $data['summary'] ?? null,
             'files' => $data['files'] ?? null,
             'ligands' => $data['results'] ?? null,
+            'stage' => $data['stage'] ?? null
         ]);
     }
 
@@ -158,25 +208,17 @@ class GenerationController extends BaseController
 
     private function aiServiceErrorResponse($response): JsonResponse
     {
-        return response()->json([
-            'success' => false,
-            'message' => 'AI service error: ' . $response->body(),
-        ], $response->status());
+        return $this->errorResponse('AI service error: ' . $response->body(), $response->status());
     }
 
     private function missingJobIdResponse(): JsonResponse
     {
-        return response()->json([
-            'success' => false,
-            'message' => 'AI service did not return a job ID'
-        ], 500);
+        return $this->errorResponse('AI service did not return a job ID', 500);
     }
 
     private function jobStartedResponse(AiJob $aiJob): JsonResponse
     {
-        return response()->json([
-            'success' => true,
-            'message' => 'Generation job started successfully',
+        return $this->successResponse('Generation job started successfully', [
             'job_id' => $aiJob->job_id,
             'status' => $aiJob->status,
             'preset' => $aiJob->preset,
@@ -190,51 +232,53 @@ class GenerationController extends BaseController
 
     private function jobStatusResponse(AiJob $aiJob): JsonResponse
     {
-        return response()->json([
-            'success' => true,
+        $generationJob = [
             'job_id' => $aiJob->job_id,
             'status' => $aiJob->status,
+            'stage' => $aiJob->stage,
             'preset' => $aiJob->preset,
             'num_molecules' => $aiJob->num_molecules,
             'return_top_k' => $aiJob->return_top_k,
             'docking_mode' => $aiJob->docking_mode,
             'dock_top_k' => $aiJob->dock_top_k,
-            'created_at' => $aiJob->created_at->toDateTimeString(),
-        ]);
+        ];
+        if ($aiJob->status === 'completed') {
+            $generationJob['summary'] = $aiJob->getSummaryStats();
+            $generationJob['files'] = $this->buildFileList($aiJob->files);
+            $generationJob['ligands'] = $aiJob->ligands;
+        }
+        $generationJob['created_at'] = $aiJob->created_at->toDateTimeString();
+        return $this->successResponse('Generation job status', $generationJob);
     }
 
     private function handleResultsFailure($response, AiJob $aiJob): JsonResponse
     {
         if ($response->status() === 404) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Results not ready yet',
-                'status' => $aiJob->status
-            ], 202);
+            return $this->errorResponse('Results not ready yet', 202);
         }
 
-        return response()->json([
-            'success' => false,
-            'message' => 'Failed to fetch results',
-        ], $response->status());
+        return $this->errorResponse('Failed to fetch results', $response->status());
     }
 
     private function jobResultsResponse(AiJob $aiJob, array $ligands): JsonResponse
     {
-        return response()->json([
-            'success' => true,
+        $results = [
             'job_id' => $aiJob->job_id,
             'status' => $aiJob->status,
+            'stage' => $aiJob->stage,
             'preset' => $aiJob->preset,
             'num_molecules' => $aiJob->num_molecules,
             'return_top_k' => $aiJob->return_top_k,
             'docking_mode' => $aiJob->docking_mode,
             'dock_top_k' => $aiJob->dock_top_k,
-            'summary' => $aiJob->getSummaryStats(),
-            'files' => $this->buildFileList($aiJob->files ?? []),
-            'ligands' => $ligands,
-            'created_at' => $aiJob->created_at->toDateTimeString(),
-        ]);
+        ];
+        if ($aiJob->status === 'completed') {
+            $results['summary'] = $aiJob->getSummaryStats();
+            $results['files'] = $this->buildFileList($aiJob->files);
+            $results['ligands'] = $ligands;
+        }
+        $results['created_at'] = $aiJob->created_at->toDateTimeString();
+        return $this->successResponse('Generation job results', $results);
     }
 
     private function buildFileList(array $files): array
@@ -243,7 +287,8 @@ class GenerationController extends BaseController
 
         foreach ($files as $type => $fileInfo) {
             $fileList[$type] = [
-                'filename' => $fileInfo['filename'] ?? "{$type}_results.csv"
+                'filename' => $fileInfo['filename'] ?? "{$type}_results.csv",
+                'download_url' => $fileInfo['download_url']
             ];
         }
 

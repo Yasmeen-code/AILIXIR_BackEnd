@@ -28,3 +28,10 @@ __pycache__/
 *.sqlite
 *.sqlite-wal
 *.sqlite-shm
+
+ai_apps/chem_agent_api/.env
+ai_apps/chem_agent_api/_pycache_/
+ai_apps/chem_agent_api/pycache/
+ai_apps/chem_agent_api/*.db
+ai_apps/chem_agent_api/*.db-shm
+ai_apps/chem_agent_api/*.db-wal

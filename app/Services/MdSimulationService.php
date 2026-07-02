@@ -19,7 +19,7 @@ class MdSimulationService
 
     public function submitJob(string $proteinPath, string $proteinName, string $ligandPath, string $ligandName, array $params): Response
     {
-        $http = Http::timeout(120)->retry(3, 2000);
+        $http = Http::timeout(120);
 
         $http = $http->attach(
             'protein',

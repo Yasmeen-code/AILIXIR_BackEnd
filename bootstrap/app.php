@@ -20,7 +20,9 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->trustProxies(at: '*');
         $middleware->alias([
             'job.owner' => App\Http\Middleware\CheckJobOwnership::class,
-            'subscribed' => App\Http\Middleware\Subscribed::class
+            'subscribed' => \App\Http\Middleware\EnsureActiveSubscription::class,
+            'pro' => \App\Http\Middleware\EnsureProPlan::class,
+            'max' => \App\Http\Middleware\EnsureMaxPlan::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

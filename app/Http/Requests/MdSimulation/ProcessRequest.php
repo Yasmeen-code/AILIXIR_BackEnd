@@ -14,8 +14,8 @@ class ProcessRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'protein' => 'required|file|mimes:pdb|max:51200',
-            'ligand' => 'required|file|mimes:pdb|max:10240',
+            'protein' => 'required|file|extensions:pdb|max:51200',
+            'ligand' => 'required|file|extensions:pdb|max:10240',
             'force_field' => 'nullable|string|in:ff19SB,ff14SB',
             'net_charge' => 'nullable|integer|min:-10|max:10',
             'box_size' => 'nullable|numeric|min:6|max:30',

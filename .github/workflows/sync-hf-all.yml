@@ -178,3 +178,53 @@ jobs:
           git config user.email "bot@ailixir.app"
           git add -A
           if git diff --cached --quiet; then echo "  No changes"; else git commit -m "Auto-sync: $GITHUB_SHA"; git push; fi
+
+  chat-bot:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install Hugging Face CLI
+        run: pip install -U "huggingface_hub[cli]"
+
+      - name: Add Gemini key to Hugging Face Space secrets
+        env:
+          HF_TOKEN_SHDWROW: ${{ secrets.HF_TOKEN_SHDWROW }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: |
+          hf spaces secrets add shdwRow/ailixir-chat-bot \
+            -s GEMINI_API_KEY="$GEMINI_API_KEY" \
+            --token "$HF_TOKEN_SHDWROW"
+
+      - name: Sync ailixir-chat-bot
+        env:
+          HF_TOKEN_SHDWROW: ${{ secrets.HF_TOKEN_SHDWROW }}
+        run: |
+          SPACE="shdwRow/ailixir-chat-bot"
+          REPO_URL="https://shdwRow:${HF_TOKEN_SHDWROW}@huggingface.co/spaces/${SPACE}"
+
+          git clone --depth 1 "$REPO_URL" /tmp/hf-chat-bot
+          cd /tmp/hf-chat-bot
+
+          rsync -av --delete \
+            --exclude=.git \
+            --exclude=.env \
+            --exclude=__pycache__ \
+            --exclude='*.pyc' \
+            --exclude='*.db' \
+            --exclude='*.db-shm' \
+            --exclude='*.db-wal' \
+            "$GITHUB_WORKSPACE/ai_apps/chem_agent_api/" .
+
+          git config user.name "AILIXIR Bot"
+          git config user.email "bot@ailixir.app"
+
+          git add -A
+          if git diff --cached --quiet; then
+            echo "No changes"
+          else
+            git commit -m "Auto-sync chat bot: $GITHUB_SHA"
+            git push
+          fi

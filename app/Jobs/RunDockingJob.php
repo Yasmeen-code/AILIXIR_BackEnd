@@ -85,22 +85,22 @@ class RunDockingJob implements ShouldQueue
                 if (empty(trim($errorMessage))) {
                     $errorMessage = trim($fullOutput) ?: 'Unknown Error / Empty Output';
                 }
-                throw new \Exception('Process Failed: '.$errorMessage);
+                throw new \Exception(trim($errorMessage));
             }
 
             if (isset($outputData['status']) && $outputData['status'] === 'error') {
-                throw new \Exception('Python Error: '.($outputData['message'] ?? 'Unknown script error'));
+                throw new \Exception($outputData['message'] ?? 'Unknown script error');
             }
 
             $vinaScores = [];
             if ($outputData && isset($outputData['energies'])) {
                 foreach ($outputData['energies'] as $pose) {
                     $vinaScores[] = [
-                        'affinity'    => (float) ($pose[0] ?? 0.0),
-                        'inter'    => (float) ($pose[1] ?? 0.0),
-                        'intra'    => (float) ($pose[2] ?? 0.0),
+                        'affinity' => (float) ($pose[0] ?? 0.0),
+                        'inter' => (float) ($pose[1] ?? 0.0),
+                        'intra' => (float) ($pose[2] ?? 0.0),
                         'torsions' => (float) ($pose[3] ?? 0.0),
-                        'unbound'  => (float) ($pose[4] ?? 0.0),
+                        'unbound' => (float) ($pose[4] ?? 0.0),
                     ];
                 }
                 unset($outputData['energies']);

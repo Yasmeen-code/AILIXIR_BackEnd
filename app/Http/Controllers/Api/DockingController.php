@@ -11,6 +11,7 @@ use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Process;
+use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Support\Str;
 use Laravel\Sanctum\PersonalAccessToken;
 use Symfony\Component\HttpFoundation\StreamedResponse;
@@ -26,10 +27,10 @@ class DockingController
         if ($isSmiles) {
             $ligandPath = null;
         } else {
-            $ligandPath = $this->storeAsPdbqt($request->file('ligand_file'));
+            $ligandPath = $this->storeAsPdbqt($request->file('ligand_file'), true);
         }
 
-        $proteinPath = $this->storeAsPdbqt($request->file('protein_file'));
+        $proteinPath = $this->storeAsPdbqt($request->file('protein_file'), false);
 
         $job = DockingJob::create([
             'user_id' => $request->user()->id,
@@ -72,30 +73,21 @@ class DockingController
         $paginator = DockingJob::dockingOnly()
             ->where('user_id', $request->user()->id)
             ->orderBy('created_at', 'desc')
-            ->paginate($perPage);
+            ->paginate($perPage)
+            ->through(function ($job) {
+                return [
+                    'id' => $job->id,
+                    'status' => $job->status,
+                    'protein' => $job->protein_name,
+                    'ligand' => $job->ligand_name,
+                    'created_at' => $job->created_at->toIso8601String(),
+                    'download_url' => url('/api/docking/download/'.$job->id),
+                    'scores' => $job->vina_scores ?? [],
+                    'error' => $job->status === 'failed' ? ($job->result_data['error'] ?? null) : null,
+                ];
+            });
 
-        $items = collect($paginator->items())->map(function ($job) {
-            return [
-                'id' => $job->id,
-                'status' => $job->status,
-                'protein' => $job->protein_name,
-                'ligand' => $job->ligand_name,
-                'created_at' => $job->created_at->toIso8601String(),
-                'download_url' => url('/api/docking/download/'.$job->id),
-                'scores' => $job->vina_scores ?? [],
-            ];
-        });
-
-        return response()->json([
-            'results' => $items,
-            'pagination' => [
-                'current_page' => $paginator->currentPage(),
-                'per_page' => $paginator->perPage(),
-                'total' => $paginator->total(),
-                'last_page' => $paginator->lastPage(),
-                'has_more' => $paginator->hasMorePages(),
-            ],
-        ]);
+        return $this->paginatedResponse('Docking history retrieved successfully', $paginator);
     }
 
     public function status(Request $request, $id)
@@ -109,7 +101,7 @@ class DockingController
             return $this->errorResponse('Docking job not found or unauthorized', 404);
         }
 
-        $data = [
+        return $this->successResponse('Job details retrieved successfully', [
             'id' => $job->id,
             'status' => $job->status,
             'protein' => $job->protein_name,
@@ -117,24 +109,20 @@ class DockingController
             'created_at' => $job->created_at->toIso8601String(),
             'download_url' => url('/api/docking/download/'.$job->id),
             'scores' => $job->vina_scores ?? [],
-        ];
-
-        return response()->json(array_merge(
-            ['success' => true, 'message' => 'Job details retrieved successfully'],
-            $data
-        ));
+            'error' => $job->status === 'failed' ? ($job->result_data['error'] ?? null) : null,
+        ]);
     }
 
     public function download(Request $request, $id)
     {
         $token = $request->bearerToken() ?? $request->query('token');
 
-        if (!$token) {
+        if (! $token) {
             return $this->errorResponse('Unauthenticated', 401);
         }
 
         $accessToken = PersonalAccessToken::findToken($token);
-        if (!$accessToken || !$accessToken->tokenable) {
+        if (! $accessToken || ! $accessToken->tokenable) {
             return $this->errorResponse('Invalid token', 401);
         }
 
@@ -166,7 +154,7 @@ class DockingController
         ]);
     }
 
-    private function storeAsPdbqt(UploadedFile $file): string
+    private function storeAsPdbqt(UploadedFile $file, bool $isLigand): string
     {
         $ext = strtolower($file->getClientOriginalExtension());
         $filename = Str::random(40).'.pdbqt';
@@ -175,15 +163,17 @@ class DockingController
         if ($ext === 'pdbqt') {
             $file->storeAs('docking', $filename);
         } elseif ($ext === 'pdb') {
-            $this->convertPdbToPdbqt($file->getRealPath(), $destPath);
+            $this->convertPdbToPdbqt($file->getRealPath(), $destPath, $isLigand);
         } else {
-            abort(422, 'Unsupported file format: .'.$ext.'. Only .pdb and .pdbqt files are accepted.');
+            throw new HttpResponseException(
+                $this->errorResponse('Unsupported file format: .'.$ext.'. Only .pdb and .pdbqt files are accepted.', 422)
+            );
         }
 
         return $destPath;
     }
 
-    private function convertPdbToPdbqt(string $source, string $dest): void
+    private function convertPdbToPdbqt(string $source, string $dest, bool $isLigand): void
     {
         $pythonPath = env('DOCKING_PYTHON_PATH');
         $obabel = $pythonPath ? dirname($pythonPath).'/obabel' : 'obabel';
@@ -201,10 +191,24 @@ class DockingController
         if (! $result->successful()) {
             Log::error('PDB-to-PDBQT conversion failed', [
                 'source' => $source,
-                'dest'   => $dest,
-                'error'  => $result->errorOutput(),
+                'dest' => $dest,
+                'error' => $result->errorOutput(),
             ]);
-            abort(500, 'Failed to convert PDB file to PDBQT format.');
+            throw new HttpResponseException(
+                $this->errorResponse('Failed to convert PDB file to PDBQT format.', 500)
+            );
         }
+
+        $content = file_get_contents($dest);
+        $lines = explode("\n", $content);
+
+        if ($isLigand) {
+            $lines = array_map(fn ($line) => str_starts_with($line, 'ATOM') ? 'HETATM'.substr($line, 6) : $line, $lines);
+        } else {
+            $lines = array_filter($lines, fn ($line) => preg_match('/^(ATOM|HETATM)/', $line));
+            $lines = array_values($lines);
+        }
+
+        file_put_contents($dest, implode("\n", $lines));
     }
 }

@@ -1,6 +1,7 @@
 import os
 import json
 import time
+import threading
 import uuid
 import shutil
 import subprocess
@@ -105,13 +106,12 @@ def make_file_meta(
     base_url: str | None = None,
 ) -> Dict[str, str]:
     rel_path = file_path.relative_to(JOBS_DIR / job_id).as_posix()
-    relative_url = f"/files/jobs/{job_id}/{rel_path}"
+    file_url = f"/files/jobs/{job_id}/{rel_path}"
     resolved_base_url = (base_url or get_public_base_url(request)).rstrip("/")
 
     return {
         "filename": file_path.name,
-        "relative_url": relative_url,
-        "download_url": f"{resolved_base_url}{relative_url}",
+        "download_url": f"{resolved_base_url}{file_url}",
     }
 
 def clean_record(record: Dict[str, Any]) -> Dict[str, Any]:
@@ -152,19 +152,112 @@ def dataframe_to_public_records(df: pd.DataFrame) -> List[Dict[str, Any]]:
         records.append(item)
     return records
 
+class JobCancelled(Exception):
+    pass
 
-def run_cmd(cmd: List[str], cwd: Optional[Path] = None, timeout: Optional[int] = None):
-    result = subprocess.run(
+
+ACTIVE_PROCESSES: Dict[str, subprocess.Popen] = {}
+ACTIVE_PROCESSES_LOCK = threading.Lock()
+
+
+def cancel_flag_path(job_id: str) -> Path:
+    return JOBS_DIR / job_id / "cancel.requested"
+
+
+def is_cancel_requested(job_id: str) -> bool:
+    return cancel_flag_path(job_id).exists()
+
+
+def request_job_cancel(job_id: str) -> None:
+    job_dir = JOBS_DIR / job_id
+    job_dir.mkdir(parents=True, exist_ok=True)
+    cancel_flag_path(job_id).touch(exist_ok=True)
+
+
+def raise_if_cancelled(job_id: str) -> None:
+    if is_cancel_requested(job_id):
+        raise JobCancelled(f"Job {job_id} was cancelled.")
+
+
+def terminate_active_process(job_id: str) -> bool:
+    with ACTIVE_PROCESSES_LOCK:
+        proc = ACTIVE_PROCESSES.get(job_id)
+
+    if proc is None or proc.poll() is not None:
+        return False
+
+    proc.terminate()
+    return True
+
+def run_cmd(
+    cmd: List[str],
+    cwd: Optional[Path] = None,
+    timeout: Optional[int] = None,
+    job_id: Optional[str] = None,
+):
+    if job_id:
+        raise_if_cancelled(job_id)
+
+    if not job_id:
+        return subprocess.run(
+            cmd,
+            cwd=str(cwd) if cwd else None,
+            text=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            timeout=timeout,
+            check=False,
+        )
+
+    started_at = time.time()
+
+    proc = subprocess.Popen(
         cmd,
         cwd=str(cwd) if cwd else None,
         text=True,
         stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT,
-        timeout=timeout,
-        check=False,
     )
-    return result
 
+    with ACTIVE_PROCESSES_LOCK:
+        ACTIVE_PROCESSES[job_id] = proc
+
+    stdout = ""
+
+    try:
+        while True:
+            try:
+                stdout, _ = proc.communicate(timeout=1)
+                break
+            except subprocess.TimeoutExpired:
+                if is_cancel_requested(job_id):
+                    proc.terminate()
+                    try:
+                        stdout, _ = proc.communicate(timeout=10)
+                    except subprocess.TimeoutExpired:
+                        proc.kill()
+                        stdout, _ = proc.communicate()
+
+                    raise JobCancelled(f"Job {job_id} was cancelled while command was running.")
+
+                if timeout is not None and (time.time() - started_at) > timeout:
+                    proc.kill()
+                    stdout, _ = proc.communicate()
+                    raise subprocess.TimeoutExpired(cmd, timeout, output=stdout)
+
+        if is_cancel_requested(job_id):
+            raise JobCancelled(f"Job {job_id} was cancelled.")
+
+        return subprocess.CompletedProcess(
+            args=cmd,
+            returncode=proc.returncode,
+            stdout=stdout,
+            stderr=None,
+        )
+
+    finally:
+        with ACTIVE_PROCESSES_LOCK:
+            ACTIVE_PROCESSES.pop(job_id, None)
 
 def canonicalize_smiles(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
@@ -331,6 +424,8 @@ def run_generate_job(job_id: str, req_data: Dict[str, Any], base_url: str):
     try:
         req = GenerateRequest(**req_data)
 
+        raise_if_cancelled(job_id)
+
         write_job_status(job_id, {
             "status": "running",
             "stage": "sampling",
@@ -340,7 +435,10 @@ def run_generate_job(job_id: str, req_data: Dict[str, Any], base_url: str):
 
         runtime_config = write_runtime_sampling_config(job_dir, req.num_molecules)
 
-        run_reinvent_sampling(runtime_config, job_dir)
+        raise_if_cancelled(job_id)
+        run_reinvent_sampling(runtime_config, job_dir, job_id)
+
+        raise_if_cancelled(job_id)
 
         write_job_status(job_id, {
             "status": "running",
@@ -349,7 +447,9 @@ def run_generate_job(job_id: str, req_data: Dict[str, Any], base_url: str):
             "request": req_data,
         }, base_url=base_url)
 
-        enriched_csv = run_enrichment(job_dir, req.return_top_k)
+        enriched_csv = run_enrichment(job_dir, req.return_top_k, job_id)
+
+        raise_if_cancelled(job_id)
 
         write_job_status(job_id, {
             "status": "running",
@@ -358,7 +458,9 @@ def run_generate_job(job_id: str, req_data: Dict[str, Any], base_url: str):
             "request": req_data,
         }, base_url=base_url)
 
-        final_csv = run_optional_docking(job_dir, enriched_csv, req)
+        final_csv = run_optional_docking(job_dir, enriched_csv, req, job_id)
+
+        raise_if_cancelled(job_id)
 
         df = pd.read_csv(final_csv)
 
@@ -375,6 +477,7 @@ def run_generate_job(job_id: str, req_data: Dict[str, Any], base_url: str):
         result_payload = {
             "job_id": job_id,
             "status": "completed",
+            "stage": "completed",
             "preset": req.preset,
             "docking_mode": req.docking_mode,
             "summary": {
@@ -408,6 +511,14 @@ def run_generate_job(job_id: str, req_data: Dict[str, Any], base_url: str):
             "files": result_payload["files"],
         }, base_url=base_url)
 
+    except JobCancelled:
+        write_job_status(job_id, {
+            "status": "cancelled",
+            "stage": "cancelled",
+            "message": "Generation job cancelled by user.",
+            "request": req_data,
+        }, base_url=base_url)
+
     except Exception as e:
         if isinstance(e, HTTPException):
             detail = e.detail
@@ -436,17 +547,32 @@ def rewrite_public_urls(payload: Dict[str, Any], base_url: str) -> Dict[str, Any
     if isinstance(files, dict):
         for meta in files.values():
             if isinstance(meta, dict):
-                relative_url = meta.get("relative_url")
-                if relative_url:
-                    meta["download_url"] = f"{base_url}{relative_url}"
+                value = meta.get("download_url")
+                if isinstance(value, str) and value.startswith(("http://localhost", "http://127.0.0.1")):
+                    path = "/" + value.split("/", 3)[3] if "/" in value[8:] else ""
+                    meta["download_url"] = f"{base_url}{path}"
 
     file_meta = payload.get("file")
     if isinstance(file_meta, dict):
-        relative_url = file_meta.get("relative_url")
-        if relative_url:
-            file_meta["download_url"] = f"{base_url}{relative_url}"
+        value = file_meta.get("download_url")
+        if isinstance(value, str) and value.startswith(("http://localhost", "http://127.0.0.1")):
+            path = "/" + value.split("/", 3)[3] if "/" in value[8:] else ""
+            file_meta["download_url"] = f"{base_url}{path}"
 
     return payload
+
+def load_completed_result_payload(job_id: str, base_url: str) -> Dict[str, Any] | None:
+    result_path = JOBS_DIR / job_id / "generated_results.json"
+
+    if not result_path.exists():
+        return None
+
+    payload = json.loads(result_path.read_text(encoding="utf-8"))
+
+    payload["status"] = payload.get("status") or "completed"
+    payload["stage"] = payload.get("stage") or "completed"
+
+    return rewrite_public_urls(payload, base_url)
 
 # -----------------------------
 # Endpoints
@@ -582,10 +708,10 @@ def find_reinvent_command() -> List[str]:
     return [os.getenv("PYTHON", "python"), "-m", "reinvent.Reinvent"]
 
 
-def run_reinvent_sampling(runtime_config: Path, job_dir: Path):
+def run_reinvent_sampling(runtime_config: Path, job_dir: Path, job_id: str):
     cmd = find_reinvent_command() + ["-l", str(job_dir / "reinvent_sampling.log"), str(runtime_config)]
 
-    result = run_cmd(cmd, cwd=BUNDLE_DIR, timeout=1800)
+    result = run_cmd(cmd, cwd=BUNDLE_DIR, timeout=1800, job_id=job_id)
 
     log_path = job_dir / "reinvent_command_output.log"
     log_path.write_text(result.stdout or "", encoding="utf-8", errors="replace")
@@ -601,7 +727,7 @@ def run_reinvent_sampling(runtime_config: Path, job_dir: Path):
         )
 
 
-def run_enrichment(job_dir: Path, return_top_k: int) -> Path:
+def run_enrichment(job_dir: Path, return_top_k: int, job_id: str) -> Path:
     input_csv = job_dir / "generated_smiles.csv"
     enriched_csv = job_dir / "generated_smiles_enriched.csv"
 
@@ -621,7 +747,7 @@ def run_enrichment(job_dir: Path, return_top_k: int) -> Path:
         "--top-k", str(return_top_k),
     ]
 
-    result = run_cmd(cmd, cwd=BUNDLE_DIR, timeout=1800)
+    result = run_cmd(cmd, cwd=BUNDLE_DIR, timeout=1800, job_id=job_id)
 
     (job_dir / "enrichment.log").write_text(result.stdout or "", encoding="utf-8", errors="replace")
 
@@ -638,7 +764,7 @@ def run_enrichment(job_dir: Path, return_top_k: int) -> Path:
     return enriched_csv
 
 
-def run_optional_docking(job_dir: Path, enriched_csv: Path, req: GenerateRequest) -> Path:
+def run_optional_docking(job_dir: Path, enriched_csv: Path, req: GenerateRequest, job_id: str) -> Path:
     final_csv = job_dir / "generated_results.csv"
 
     script = BUNDLE_DIR / "tools" / "dock_enriched.py"
@@ -666,7 +792,7 @@ def run_optional_docking(job_dir: Path, enriched_csv: Path, req: GenerateRequest
             )
         cmd += ["--adgpu-bin", ADGPU_BIN]
 
-    result = run_cmd(cmd, cwd=BUNDLE_DIR, timeout=7200)
+    result = run_cmd(cmd, cwd=BUNDLE_DIR, timeout=7200, job_id=job_id)
 
     (job_dir / "docking.log").write_text(result.stdout or "", encoding="utf-8", errors="replace")
 
@@ -713,8 +839,41 @@ def submit_generate(req: GenerateRequest, background_tasks: BackgroundTasks, req
 def get_job_status(job_id: str, request: Request):
     base_url = get_public_base_url(request)
     status = read_job_status(job_id, base_url=base_url)
+
+    if status.get("status") == "completed":
+        payload = load_completed_result_payload(job_id, base_url)
+        if payload is not None:
+            return payload
+
     return rewrite_public_urls(status, base_url)
 
+@app.post("/jobs/{job_id}/cancel", status_code=202)
+def cancel_job(job_id: str, request: Request):
+    base_url = get_public_base_url(request)
+    job_dir = JOBS_DIR / job_id
+
+    if not job_dir.exists():
+        raise HTTPException(status_code=404, detail="Job not found.")
+
+    status = read_job_status(job_id, base_url=base_url)
+    current_status = status.get("status")
+
+    if current_status in {"completed", "failed", "cancelled"}:
+        status["message"] = f"Job already {current_status}."
+        return rewrite_public_urls(status, base_url)
+
+    request_job_cancel(job_id)
+    process_terminated = terminate_active_process(job_id)
+
+    write_job_status(job_id, {
+        "status": "cancel_requested",
+        "stage": status.get("stage", "cancel_requested"),
+        "message": "Cancellation requested. The job will stop at the next safe checkpoint.",
+        "process_terminated": process_terminated,
+        "request": status.get("request"),
+    }, base_url=base_url)
+
+    return rewrite_public_urls(read_job_status(job_id, base_url=base_url), base_url)
 
 @app.get("/jobs/{job_id}/result")
 def get_job_result(job_id: str, request: Request):
@@ -727,9 +886,8 @@ def get_job_result(job_id: str, request: Request):
     if status.get("status") != "completed":
         return JSONResponse(status_code=202, content=rewrite_public_urls(status, base_url))
 
-    result_path = JOBS_DIR / job_id / "generated_results.json"
-    if not result_path.exists():
+    payload = load_completed_result_payload(job_id, base_url)
+    if payload is None:
         raise HTTPException(status_code=404, detail="Result file not found.")
 
-    payload = json.loads(result_path.read_text(encoding="utf-8"))
-    return rewrite_public_urls(payload, base_url)
+    return payload

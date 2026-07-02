@@ -7,16 +7,11 @@ use Illuminate\Database\Eloquent\Model;
 class LigandExport extends Model
 {
     protected $fillable = [
-        'user_id',
         'job_id',
         'status',
         'file_format',
         'smiles',
-        'filename'
+        'filename',
+        'download_url'
     ];
-
-    public function user()
-    {
-        return $this->belongsTo(User::class);
-    }
 }
