@@ -32,4 +32,8 @@ class ChemistryThread extends Model
     {
         return $this->hasMany(ChemistryAnalysis::class);
     }
+    public function csvJobs(): HasMany
+    {
+        return $this->hasMany(ChemistryCsvJob::class, 'chemistry_thread_id');
+    }
 }

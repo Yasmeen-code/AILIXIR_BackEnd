@@ -147,6 +147,7 @@ Route::middleware('auth:sanctum')->group(function () {
         // Threads
         Route::post('thread', [ChemistryController::class, 'createThread']);
         Route::get('threads', [ChemistryController::class, 'listThreads']);
+        Route::post('/thread-messages', [ChemistryController::class, 'threadMessages']);
 
         // Chat
         Route::post('chat', [ChemistryController::class, 'chat']);

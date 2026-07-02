@@ -118,7 +118,7 @@ class ChemistryController extends BaseController
     // ==================== Analyze SMILES ====================
     public function analyzeSmiles(Request $request): JsonResponse
     {
-        $user = auth()->user();
+        $user = Auth::user();
 
         $request->validate([
             'smiles' => 'required|string|max:1000',
@@ -166,7 +166,7 @@ class ChemistryController extends BaseController
         return $this->saveAndRespond($result, $user->id, 'docking', $request->input('docking_data'), $thread?->id);
     }
 
-    // ==================== CSV ====================
+    // ==================== CSV (معدل) ====================
     public function uploadCsv(Request $request): JsonResponse
     {
         $user = Auth::user();
@@ -174,10 +174,24 @@ class ChemistryController extends BaseController
         $request->validate([
             'file' => 'required|file|mimes:csv,txt|max:2048',
             'analysis_type' => 'nullable|in:full,quick,admet,classify',
+            'thread_id' => 'required|string|max:255', // ← أصبح required
         ]);
 
         $file = $request->file('file');
         $analysisType = $request->input('analysis_type', 'full');
+        $threadId = $request->input('thread_id');
+
+        // ← Validate thread belongs to user
+        $thread = ChemistryThread::where('user_id', $user->id)
+            ->where('thread_id', $threadId)
+            ->first();
+
+        if (!$thread) {
+            return response()->json([
+                'success' => false,
+                'error' => 'Thread not found or access denied',
+            ], 403);
+        }
 
         $result = $this->chemistryService->uploadCsv($file, $analysisType);
 
@@ -197,12 +211,16 @@ class ChemistryController extends BaseController
 
         $job = ChemistryCsvJob::create([
             'user_id' => $user->id,
+            'chemistry_thread_id' => $thread->id, // ← جديد: ربط بالـ thread
             'job_id' => $apiJobId,
             'filename' => $file->getClientOriginalName(),
             'analysis_type' => $analysisType,
             'total_rows' => $totalRows,
             'status' => 'queued',
         ]);
+
+        // ← Update thread last_used_at
+        $thread->update(['last_used_at' => now()]);
 
         return response()->json([
             'success' => true,
@@ -282,16 +300,19 @@ class ChemistryController extends BaseController
             ], 400);
         }
 
-        if ($job->result_file_path && Storage::exists($job->result_file_path)) {
-            return Storage::download($job->result_file_path);
+        if ($job->result_content) {
+            return response($job->result_content)
+                ->header('Content-Type', 'text/csv')
+                ->header('Content-Disposition', 'attachment; filename="results_' . $jobId . '.csv"');
         }
 
         $result = $this->chemistryService->getCsvResults($jobId);
 
         if (is_string($result)) {
-            $path = "chemistry_results/{$jobId}.csv";
-            Storage::put($path, $result);
-            $job->update(['result_file_path' => $path]);
+            $job->update([
+                'result_content' => $result,
+                'result_file_path' => null,
+            ]);
 
             return response($result)
                 ->header('Content-Type', 'text/csv')
@@ -301,22 +322,36 @@ class ChemistryController extends BaseController
         return response()->json(new ChemistryResponseResource($result));
     }
 
-    public function listJobs(): JsonResponse
+    public function listJobs(Request $request): JsonResponse
     {
-        $jobs = Auth::user()->chemistryCsvJobs()
-            ->orderBy('created_at', 'desc')
-            ->get([
-                'id',
-                'job_id',
-                'filename',
-                'analysis_type',
-                'status',
-                'total_rows',
-                'completed_rows',
-                'failed_rows',
-                'progress_percent',
-                'created_at'
-            ]);
+        $user = Auth::user();
+
+        $query = $user->chemistryCsvJobs()
+            ->orderBy('created_at', 'desc');
+
+        if ($request->has('thread_id')) {
+            $thread = ChemistryThread::where('user_id', $user->id)
+                ->where('thread_id', $request->input('thread_id'))
+                ->first();
+
+            if ($thread) {
+                $query->where('chemistry_thread_id', $thread->id);
+            }
+        }
+
+        $jobs = $query->get([
+            'id',
+            'job_id',
+            'chemistry_thread_id',
+            'filename',
+            'analysis_type',
+            'status',
+            'total_rows',
+            'completed_rows',
+            'failed_rows',
+            'progress_percent',
+            'created_at'
+        ]);
 
         return response()->json([
             'success' => true,
@@ -375,6 +410,61 @@ class ChemistryController extends BaseController
         ]);
     }
 
+    // ==================== Thread Messages ====================
+    public function threadMessages(Request $request): JsonResponse
+    {
+        $user = Auth::user();
+
+        $request->validate([
+            'thread_id' => 'required|string|max:255',
+        ]);
+
+        $threadId = $request->input('thread_id');
+
+        $thread = ChemistryThread::where('user_id', $user->id)
+            ->where('thread_id', $threadId)
+            ->first();
+
+        if (!$thread) {
+            return response()->json([
+                'success' => false,
+                'error' => 'Thread not found or access denied',
+            ], 403);
+        }
+
+        $messages = ChemistryAnalysis::where('user_id', $user->id)
+            ->where('chemistry_thread_id', $thread->id)
+            ->orderBy('created_at', 'asc')
+            ->get(['id', 'type', 'input_data', 'response', 'status', 'created_at']);
+
+        $csvJobs = ChemistryCsvJob::where('user_id', $user->id)
+            ->where('chemistry_thread_id', $thread->id)
+            ->orderBy('created_at', 'asc')
+            ->get([
+                'id',
+                'job_id',
+                'filename',
+                'analysis_type',
+                'status',
+                'total_rows',
+                'completed_rows',
+                'failed_rows',
+                'progress_percent',
+                'result_content',
+                'created_at',
+                'completed_at'
+            ]);
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'thread_id' => $thread->thread_id,
+                'title' => $thread->title,
+                'messages' => $messages,
+                'csv_jobs' => $csvJobs,
+            ],
+        ]);
+    }
     // ==================== Helper Methods ====================
     private function validateThread(int $userId, ?string $threadId): ?ChemistryThread
     {

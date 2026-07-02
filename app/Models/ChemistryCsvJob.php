@@ -12,6 +12,7 @@ class ChemistryCsvJob extends Model
 
     protected $fillable = [
         'user_id',
+        'chemistry_thread_id',
         'job_id',
         'filename',
         'analysis_type',
@@ -21,6 +22,7 @@ class ChemistryCsvJob extends Model
         'progress_percent',
         'status',
         'result_file_path',
+        'result_content',
         'error_message',
         'started_at',
         'completed_at',
