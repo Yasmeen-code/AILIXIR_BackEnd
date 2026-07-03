@@ -72,7 +72,7 @@ class ChemistryController extends BaseController
         ]);
     }
 
-    // ==================== Chat ====================
+    // ==================== Chat (معدل: title من أول سؤال) ====================
     public function chat(ChemistryChatRequest $request): JsonResponse
     {
         $user = Auth::user();
@@ -90,7 +90,20 @@ class ChemistryController extends BaseController
                 ], 403);
             }
 
-            $thread->update(['last_used_at' => now()]);
+            // ← لو الـ title لسه "New Conversation"، غيريه لأول سؤال
+            if ($thread->title === 'New Conversation') {
+                $message = $request->input('message');
+                $newTitle = mb_strlen($message) > 50
+                    ? mb_substr($message, 0, 50) . '...'
+                    : $message;
+
+                $thread->update([
+                    'title' => $newTitle,
+                    'last_used_at' => now(),
+                ]);
+            } else {
+                $thread->update(['last_used_at' => now()]);
+            }
         }
 
         $result = $this->chemistryService->chat(
@@ -166,7 +179,7 @@ class ChemistryController extends BaseController
         return $this->saveAndRespond($result, $user->id, 'docking', $request->input('docking_data'), $thread?->id);
     }
 
-    // ==================== CSV (معدل) ====================
+    // ==================== CSV (معدل: required thread_id) ====================
     public function uploadCsv(Request $request): JsonResponse
     {
         $user = Auth::user();
@@ -174,14 +187,14 @@ class ChemistryController extends BaseController
         $request->validate([
             'file' => 'required|file|mimes:csv,txt|max:2048',
             'analysis_type' => 'nullable|in:full,quick,admet,classify',
-            'thread_id' => 'required|string|max:255', // ← أصبح required
+            'thread_id' => 'required|string|max:255',
         ]);
 
         $file = $request->file('file');
         $analysisType = $request->input('analysis_type', 'full');
         $threadId = $request->input('thread_id');
 
-        // ← Validate thread belongs to user
+        // Validate thread belongs to user
         $thread = ChemistryThread::where('user_id', $user->id)
             ->where('thread_id', $threadId)
             ->first();
@@ -211,7 +224,7 @@ class ChemistryController extends BaseController
 
         $job = ChemistryCsvJob::create([
             'user_id' => $user->id,
-            'chemistry_thread_id' => $thread->id, // ← جديد: ربط بالـ thread
+            'chemistry_thread_id' => $thread->id,
             'job_id' => $apiJobId,
             'filename' => $file->getClientOriginalName(),
             'analysis_type' => $analysisType,
@@ -219,7 +232,7 @@ class ChemistryController extends BaseController
             'status' => 'queued',
         ]);
 
-        // ← Update thread last_used_at
+        // Update thread last_used_at
         $thread->update(['last_used_at' => now()]);
 
         return response()->json([
@@ -300,6 +313,7 @@ class ChemistryController extends BaseController
             ], 400);
         }
 
+        // ← Return content from DB if available
         if ($job->result_content) {
             return response($job->result_content)
                 ->header('Content-Type', 'text/csv')
@@ -309,6 +323,7 @@ class ChemistryController extends BaseController
         $result = $this->chemistryService->getCsvResults($jobId);
 
         if (is_string($result)) {
+            // ← Store content in DB instead of file path
             $job->update([
                 'result_content' => $result,
                 'result_file_path' => null,
@@ -329,6 +344,7 @@ class ChemistryController extends BaseController
         $query = $user->chemistryCsvJobs()
             ->orderBy('created_at', 'desc');
 
+        // Optional: filter by thread_id
         if ($request->has('thread_id')) {
             $thread = ChemistryThread::where('user_id', $user->id)
                 ->where('thread_id', $request->input('thread_id'))
@@ -410,7 +426,7 @@ class ChemistryController extends BaseController
         ]);
     }
 
-    // ==================== Thread Messages ====================
+    // ==================== Thread Messages (جديد) ====================
     public function threadMessages(Request $request): JsonResponse
     {
         $user = Auth::user();
@@ -432,11 +448,13 @@ class ChemistryController extends BaseController
             ], 403);
         }
 
+        // Chat/analysis messages
         $messages = ChemistryAnalysis::where('user_id', $user->id)
             ->where('chemistry_thread_id', $thread->id)
             ->orderBy('created_at', 'asc')
             ->get(['id', 'type', 'input_data', 'response', 'status', 'created_at']);
 
+        // CSV jobs related to this thread
         $csvJobs = ChemistryCsvJob::where('user_id', $user->id)
             ->where('chemistry_thread_id', $thread->id)
             ->orderBy('created_at', 'asc')
@@ -465,6 +483,7 @@ class ChemistryController extends BaseController
             ],
         ]);
     }
+
     // ==================== Helper Methods ====================
     private function validateThread(int $userId, ?string $threadId): ?ChemistryThread
     {
