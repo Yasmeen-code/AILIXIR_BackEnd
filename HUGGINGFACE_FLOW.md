@@ -24,7 +24,8 @@
 - **Migrations:** Run automatically via `entrypoint.sh` on startup
 
 ### Two HF Accounts
-- **`RottenShadow`** (main): Backend API, Chemical RAG, Drug Repurposing
+- **`Ailixir-AI-Team`**: Backend API
+- **`RottenShadow`**: Chemical RAG, Drug Repurposing
 - **`shdwRow`** (secondary): ADMET, Generation
 - **Why:** HF Spaces free tier puts unused spaces to sleep; spreading across 2 accounts keeps more services warm
 
@@ -40,7 +41,7 @@
 
 ## 3. Per-Service Details
 
-### Backend API (`RottenShadow/ailixir-api`)
+### Backend API (`Ailixir-AI-Team/ailixir-api`)
 - **Tech:** Laravel 12 + PHP 8.3 CLI
 - **Port:** 7860 (HF default)
 - **Dockerfile:** Multi-stage (composer → vite → runtime)
@@ -91,7 +92,7 @@
 
 | Job | HF Space | Account | Token | Notes |
 |-----|----------|---------|-------|-------|
-| `backend` | `ailixir-api` | RottenShadow | `HF_TOKEN` | Excludes `ai_apps/`, `database/ailixir.sqlite`, `storage/` |
+| `backend` | `ailixir-api` | Ailixir-AI-Team | `HF_TOKEN_AILIXIR` | Excludes `ai_apps/`, `database/ailixir.sqlite`, `storage/` |
 | `drug-repurposing` | `ailixir-drug-repurposing` | RottenShadow | `HF_TOKEN` | Renames `Dockerfile.hf` → `Dockerfile` |
 | `admet` | `ailixir-admet` | shdwRow | `HF_TOKEN_SHDWROW` | LFS + Xet for `.ckpt` |
 | `chemical-rag` | `ailixir-chemical-rag` | RottenShadow | `HF_TOKEN` | |
@@ -120,7 +121,8 @@
 ### Required GitHub Secrets
 | Secret | Used by |
 |--------|---------|
-| `HF_TOKEN` | backend, drug-repurposing, chemical-rag |
+| `HF_TOKEN` | drug-repurposing, chemical-rag |
+| `HF_TOKEN_AILIXIR` | backend |
 | `HF_TOKEN_SHDWROW` | admet, generation |
 | `GOOGLE_CLIENT_ID` | backend .env |
 | `GOOGLE_CLIENT_SECRET` | backend .env |
@@ -133,7 +135,7 @@
 RUN_MODE=hf
 APP_KEY=base64:...
 AI_INTEGRATION_ROUTES_ENABLED=true
-APP_URL=https://RottenShadow-ailixir-api.hf.space
+APP_URL=https://Ailixir-AI-Team-ailixir-api.hf.space
 APP_DEBUG=true
 QUEUE_CONNECTION=sync
 ADMET_AI_URL=https://shdwRow-ailixir-admet.hf.space
@@ -142,7 +144,7 @@ DRUG_REPURPOSING_URL=https://RottenShadow-ailixir-drug-repurposing.hf.space
 GENERATION_SERVICE_URL=https://shdwRow-ailixir-generation.hf.space
 GOOGLE_CLIENT_ID=...
 GOOGLE_CLIENT_SECRET=...
-GOOGLE_REDIRECT_URI=https://RottenShadow-ailixir-api.hf.space/api/user/auth/google
+GOOGLE_REDIRECT_URI=https://Ailixir-AI-Team-ailixir-api.hf.space/api/user/auth/google
 CLOUDINARY_CLOUD_NAME=dummy_cloud
 CLOUDINARY_API_KEY=dummy_key
 CLOUDINARY_API_SECRET=dummy_secret

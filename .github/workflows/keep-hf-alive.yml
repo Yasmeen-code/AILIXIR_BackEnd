@@ -13,7 +13,7 @@ jobs:
       - name: Hit main API health endpoint
         run: |
           curl -s -o /dev/null -w "%{http_code}" \
-            "https://RottenShadow-ailixir-api.hf.space/api/ai-services/health"
+            "https://Ailixir-AI-Team-ailixir-api.hf.space/api/ai-services/health"
 
       - name: Hit generation health endpoint
         run: |

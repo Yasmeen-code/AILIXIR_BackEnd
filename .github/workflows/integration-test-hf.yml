@@ -24,7 +24,7 @@ jobs:
         run: |
           echo "Waiting for ailixir-api HF Space..."
           for i in $(seq 1 60); do
-            if curl -sf https://RottenShadow-ailixir-api.hf.space/ > /dev/null 2>&1; then
+            if curl -sf https://Ailixir-AI-Team-ailixir-api.hf.space/ > /dev/null 2>&1; then
               echo "ailixir-api is up"
               sleep 5
               exit 0
@@ -79,7 +79,7 @@ jobs:
       - name: Login and get Bearer token
         run: |
           echo "POST /api/user/login"
-          HTTP_CODE=$(curl -s -o login.json -w "%{http_code}" -X POST https://RottenShadow-ailixir-api.hf.space/api/user/login \
+          HTTP_CODE=$(curl -s -o login.json -w "%{http_code}" -X POST https://Ailixir-AI-Team-ailixir-api.hf.space/api/user/login \
             -H "Content-Type: application/json" \
             -d '{"email":"salehyasmeen080@gmail.com","password":"123456789"}')
           echo "HTTP Status: $HTTP_CODE"
@@ -119,7 +119,7 @@ jobs:
         run: |
           TOKEN=$(cat token.txt)
           echo "GET /api/ai-services/health"
-          HTTP_CODE=$(curl -s -o health.json -w "%{http_code}" https://RottenShadow-ailixir-api.hf.space/api/ai-services/health \
+          HTTP_CODE=$(curl -s -o health.json -w "%{http_code}" https://Ailixir-AI-Team-ailixir-api.hf.space/api/ai-services/health \
             -H "Authorization: Bearer $TOKEN")
           echo "HTTP Status: $HTTP_CODE"
           cat health.json
@@ -137,7 +137,7 @@ jobs:
         run: |
           TOKEN=$(cat token.txt)
           echo "POST /api/admet/predict"
-          HTTP_CODE=$(curl -s -o admet.json -w "%{http_code}" -X POST https://RottenShadow-ailixir-api.hf.space/api/admet/predict \
+          HTTP_CODE=$(curl -s -o admet.json -w "%{http_code}" -X POST https://Ailixir-AI-Team-ailixir-api.hf.space/api/admet/predict \
             -H "Authorization: Bearer $TOKEN" \
             -H "Content-Type: application/json" \
             -d '{"smiles": "c1ccccc1, CCO, CCC"}')
@@ -176,7 +176,7 @@ jobs:
         run: |
           TOKEN=$(cat token.txt)
           echo "POST /api/ai-services/test/chemical-search"
-          HTTP_CODE=$(curl -s -o chemical.json -w "%{http_code}" -X POST https://RottenShadow-ailixir-api.hf.space/api/ai-services/test/chemical-search \
+          HTTP_CODE=$(curl -s -o chemical.json -w "%{http_code}" -X POST https://Ailixir-AI-Team-ailixir-api.hf.space/api/ai-services/test/chemical-search \
             -H "Authorization: Bearer $TOKEN" \
             -H "Content-Type: application/json" \
             -d '{"query": "malaria drug"}')
@@ -196,7 +196,7 @@ jobs:
         run: |
           TOKEN=$(cat token.txt)
           echo "GET /api/ai-services/test/drug-repurposing"
-          HTTP_CODE=$(curl -s -o drug.json -w "%{http_code}" https://RottenShadow-ailixir-api.hf.space/api/ai-services/test/drug-repurposing \
+          HTTP_CODE=$(curl -s -o drug.json -w "%{http_code}" https://Ailixir-AI-Team-ailixir-api.hf.space/api/ai-services/test/drug-repurposing \
             -H "Authorization: Bearer $TOKEN")
           echo "HTTP Status: $HTTP_CODE"
           cat drug.json
@@ -221,7 +221,7 @@ jobs:
       - name: Warm up ailixir-api Space
         run: |
           for i in $(seq 1 60); do
-            if curl -sf https://RottenShadow-ailixir-api.hf.space/ > /dev/null 2>&1; then
+            if curl -sf https://Ailixir-AI-Team-ailixir-api.hf.space/ > /dev/null 2>&1; then
               echo "ailixir-api is up"
               sleep 5
               exit 0
@@ -233,7 +233,7 @@ jobs:
 
       - name: Login and get Bearer token
         run: |
-          HTTP_CODE=$(curl -s -o login.json -w "%{http_code}" -X POST https://RottenShadow-ailixir-api.hf.space/api/user/login \
+          HTTP_CODE=$(curl -s -o login.json -w "%{http_code}" -X POST https://Ailixir-AI-Team-ailixir-api.hf.space/api/user/login \
             -H "Content-Type: application/json" \
             -d '{"email":"salehyasmeen080@gmail.com","password":"123456789"}')
           if [ "$HTTP_CODE" != "200" ]; then exit 1; fi
@@ -250,7 +250,7 @@ jobs:
         run: |
           TOKEN=$(cat token.txt)
           echo "POST /api/chemical-search (retrieval-only)"
-          HTTP_CODE=$(curl -s -o search.json -w "%{http_code}" -X POST https://RottenShadow-ailixir-api.hf.space/api/chemical-search \
+          HTTP_CODE=$(curl -s -o search.json -w "%{http_code}" -X POST https://Ailixir-AI-Team-ailixir-api.hf.space/api/chemical-search \
             -H "Authorization: Bearer $TOKEN" \
             -H "Content-Type: application/json" \
             -d '{"smiles":"CC(=O)O"}')
@@ -276,7 +276,7 @@ jobs:
         run: |
           TOKEN=$(cat token.txt)
           echo "POST /api/chemical-search/full-rag"
-          HTTP_CODE=$(curl -s -o rag.json -w "%{http_code}" -X POST https://RottenShadow-ailixir-api.hf.space/api/chemical-search/full-rag \
+          HTTP_CODE=$(curl -s -o rag.json -w "%{http_code}" -X POST https://Ailixir-AI-Team-ailixir-api.hf.space/api/chemical-search/full-rag \
             -H "Authorization: Bearer $TOKEN" \
             -H "Content-Type: application/json" \
             -d '{"smiles":"CC(=O)O"}')
@@ -313,7 +313,7 @@ jobs:
       - name: Warm up ailixir-api Space
         run: |
           for i in $(seq 1 60); do
-            if curl -sf https://RottenShadow-ailixir-api.hf.space/ > /dev/null 2>&1; then
+            if curl -sf https://Ailixir-AI-Team-ailixir-api.hf.space/ > /dev/null 2>&1; then
               echo "ailixir-api is up"
               sleep 5
               exit 0
@@ -325,7 +325,7 @@ jobs:
 
       - name: Login and get Bearer token
         run: |
-          HTTP_CODE=$(curl -s -o login.json -w "%{http_code}" -X POST https://RottenShadow-ailixir-api.hf.space/api/user/login \
+          HTTP_CODE=$(curl -s -o login.json -w "%{http_code}" -X POST https://Ailixir-AI-Team-ailixir-api.hf.space/api/user/login \
             -H "Content-Type: application/json" \
             -d '{"email":"salehyasmeen080@gmail.com","password":"123456789"}')
           if [ "$HTTP_CODE" != "200" ]; then exit 1; fi
@@ -341,7 +341,7 @@ jobs:
       - name: Test unauthenticated DR request is rejected
         run: |
           echo "POST /api/drug-repurposing/targets (no auth)"
-          HTTP_CODE=$(curl -s -o dr_unauth.json -w "%{http_code}" -X POST https://RottenShadow-ailixir-api.hf.space/api/drug-repurposing/targets \
+          HTTP_CODE=$(curl -s -o dr_unauth.json -w "%{http_code}" -X POST https://Ailixir-AI-Team-ailixir-api.hf.space/api/drug-repurposing/targets \
             -H "Content-Type: application/json" \
             -d '{"disease_name":"Type 2 Diabetes"}')
           if [ "$HTTP_CODE" != "401" ]; then
@@ -359,7 +359,7 @@ jobs:
         run: |
           TOKEN=$(cat token.txt)
           echo "POST /api/drug-repurposing/targets (missing disease_name)"
-          HTTP_CODE=$(curl -s -o dr_validation.json -w "%{http_code}" -X POST https://RottenShadow-ailixir-api.hf.space/api/drug-repurposing/targets \
+          HTTP_CODE=$(curl -s -o dr_validation.json -w "%{http_code}" -X POST https://Ailixir-AI-Team-ailixir-api.hf.space/api/drug-repurposing/targets \
             -H "Authorization: Bearer $TOKEN" \
             -H "Content-Type: application/json" \
             -d '{"top_n": 2}')
@@ -373,7 +373,7 @@ jobs:
         run: |
           TOKEN=$(cat token.txt)
           echo "POST /api/drug-repurposing/targets"
-          HTTP_CODE=$(curl -s -o dr_targets.json -w "%{http_code}" -X POST https://RottenShadow-ailixir-api.hf.space/api/drug-repurposing/targets \
+          HTTP_CODE=$(curl -s -o dr_targets.json -w "%{http_code}" -X POST https://Ailixir-AI-Team-ailixir-api.hf.space/api/drug-repurposing/targets \
             -H "Authorization: Bearer $TOKEN" \
             -H "Content-Type: application/json" \
             -d '{"disease_name":"Type 2 Diabetes","top_n":2}')
@@ -398,7 +398,7 @@ jobs:
 
           # Poll for completion
           import time, urllib.request
-          base = "https://RottenShadow-ailixir-api.hf.space/api/drug-repurposing/targets"
+          base = "https://Ailixir-AI-Team-ailixir-api.hf.space/api/drug-repurposing/targets"
           with open("token.txt") as f: token = f.read().strip()
           for i in range(30):
               req = urllib.request.Request(f"{base}/{job_id}")
@@ -431,7 +431,7 @@ jobs:
       - name: Warm up ailixir-api Space
         run: |
           for i in $(seq 1 60); do
-            if curl -sf https://RottenShadow-ailixir-api.hf.space/ > /dev/null 2>&1; then
+            if curl -sf https://Ailixir-AI-Team-ailixir-api.hf.space/ > /dev/null 2>&1; then
               echo "ailixir-api is up"
               sleep 5
               exit 0
@@ -443,7 +443,7 @@ jobs:
 
       - name: Login and get Bearer token
         run: |
-          HTTP_CODE=$(curl -s -o login.json -w "%{http_code}" -X POST https://RottenShadow-ailixir-api.hf.space/api/user/login \
+          HTTP_CODE=$(curl -s -o login.json -w "%{http_code}" -X POST https://Ailixir-AI-Team-ailixir-api.hf.space/api/user/login \
             -H "Content-Type: application/json" \
             -d '{"email":"salehyasmeen080@gmail.com","password":"123456789"}')
           if [ "$HTTP_CODE" != "200" ]; then exit 1; fi
@@ -460,7 +460,7 @@ jobs:
         run: |
           TOKEN=$(cat token.txt)
           echo "POST /api/docking/submit"
-          HTTP_CODE=$(curl -s -o docking.json -w "%{http_code}" -X POST https://RottenShadow-ailixir-api.hf.space/api/docking/submit \
+          HTTP_CODE=$(curl -s -o docking.json -w "%{http_code}" -X POST https://Ailixir-AI-Team-ailixir-api.hf.space/api/docking/submit \
             -H "Authorization: Bearer $TOKEN" \
             -F "protein_name=EGFR" \
             -F "protein_file=@tests/Fixtures/docking/egfr_clean.pdbqt" \

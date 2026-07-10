@@ -29,7 +29,7 @@ jobs:
         run: |
           echo "Waiting for ailixir-api HF Space to be ready..."
           for i in $(seq 1 60); do
-            if curl -sf https://RottenShadow-ailixir-api.hf.space/ > /dev/null 2>&1; then
+            if curl -sf https://Ailixir-AI-Team-ailixir-api.hf.space/ > /dev/null 2>&1; then
               echo "ailixir-api is up"
               sleep 5
               exit 0
@@ -42,7 +42,7 @@ jobs:
 
       - name: Run API tests
         env:
-          BASE_URL: https://RottenShadow-ailixir-api.hf.space/api
+          BASE_URL: https://Ailixir-AI-Team-ailixir-api.hf.space/api
           TEST_EMAIL: test@example.com
           TEST_PASSWORD: password123
           TEST_NAME: testuser
