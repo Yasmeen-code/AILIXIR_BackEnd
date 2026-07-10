@@ -19,3 +19,8 @@ jobs:
         run: |
           curl -s -o /dev/null -w "%{http_code}" \
             "https://shdwrow-ailixir-generation.hf.space/health"
+
+      - name: Hit chat bot health endpoint
+        run: |
+          curl -s -o /dev/null -w "%{http_code}" \
+            "https://shdwrow-ailixir-chat-bot.hf.space/health"
