@@ -199,12 +199,13 @@ CHANGELOG_SQLITE_HF.md (this file)
 
 ## Remaining Steps (Manual)
 
-1. **Set `HF_TOKEN` GitHub secret** — Required for auto-sync workflows
+1. **Set HF tokens as GitHub secrets** — Required for auto-sync workflows
    - Go to: https://github.com/RottenShadow/AILIXIR_BackEnd/settings/secrets/actions
-   - Add secret: `HF_TOKEN` = `YOUR_HF_TOKEN`
+   - Add secret: `HF_TOKEN` = `YOUR_ROTTENSHADOW_TOKEN`
+   - Add secret: `HF_TOKEN_AILIXIR` = `YOUR_AILIXIR_AI_TEAM_TOKEN`
 
 2. **Set backend Space secrets** — Required for `ailixir-api` to function
-   - Go to: https://huggingface.co/spaces/RottenShadow/ailixir-api/settings
+   - Go to: https://huggingface.co/spaces/Ailixir-AI-Team/ailixir-api/settings
    - Add all secrets listed in `HF_SPACES_GUIDE.md` section 3.1
    - **Minimum:** `APP_KEY`, `RUN_MODE=hf`, and all AI service URLs
 

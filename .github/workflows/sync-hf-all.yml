@@ -4,11 +4,13 @@ name: Sync to Hugging Face Spaces
 # Each job syncs a different subset of the repo to a specific HF Space.
 #
 # Two HF accounts are used:
-#   - RottenShadow (main): ailixir-api, ailixir-drug-repurposing, ailixir-chemical-rag
+#   - RottenShadow: ailixir-drug-repurposing, ailixir-chemical-rag
 #   - shdwRow (secondary): ailixir-admet, ailixir-generation
+#   - Ailixir-AI-Team: ailixir-api
 #
 # Required GitHub secrets:
 #   HF_TOKEN            — HF access token for RottenShadow account (read+write permissions)
+#   HF_TOKEN_AILIXIR    — HF access token for Ailixir-AI-Team account (read+write permissions)
 #   HF_TOKEN_SHDWROW    — HF access token for shdwRow account (read+write permissions)
 #   GOOGLE_CLIENT_ID    — Google OAuth client ID
 #   GOOGLE_CLIENT_SECRET — Google OAuth client secret
@@ -20,7 +22,7 @@ on:
 
 jobs:
   # ── Backend API (Laravel) ──────────────────────────────────────
-  # Syncs the full repo minus AI app directories to RottenShadow/ailixir-api.
+  # Syncs the full repo minus AI app directories to Ailixir-AI-Team/ailixir-api.
   # The live SQLite database (database/ailixir.sqlite) is preserved across syncs:
   #   - Excluded from rsync so it's never overwritten
   #   - Restored from HEAD via git checkout so live data isn't committed
@@ -32,10 +34,10 @@ jobs:
           fetch-depth: 0
       - name: Sync ailixir-api
         env:
-          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+          HF_TOKEN_AILIXIR: ${{ secrets.HF_TOKEN_AILIXIR }}
         run: |
-          SPACE="RottenShadow/ailixir-api"
-          REPO_URL="https://RottenShadow:${HF_TOKEN}@huggingface.co/spaces/${SPACE}"
+          SPACE="Ailixir-AI-Team/ailixir-api"
+          REPO_URL="https://Ailixir-AI-Team:${HF_TOKEN_AILIXIR}@huggingface.co/spaces/${SPACE}"
           git clone --depth 1 "$REPO_URL" /tmp/hf-space
           cd /tmp/hf-space
           # Sync files (new, modified, deleted) but preserve the live database
@@ -46,7 +48,7 @@ jobs:
             'RUN_MODE=hf' \
             'APP_KEY=base64:T/MgQZht16genNJN3aZ5flCuvfe7Zfs4yFhuAFO2itU=' \
             'AI_INTEGRATION_ROUTES_ENABLED=true' \
-            'APP_URL=https://RottenShadow-ailixir-api.hf.space' \
+            'APP_URL=https://Ailixir-AI-Team-ailixir-api.hf.space' \
             'APP_DEBUG=true' \
             'ADMET_AI_URL=https://shdwRow-ailixir-admet.hf.space' \
             'CHEMICAL_AI_URL=https://RottenShadow-ailixir-chemical-rag.hf.space' \
@@ -54,7 +56,7 @@ jobs:
             'GENERATION_SERVICE_URL=https://shdwRow-ailixir-generation.hf.space' \
             'GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }}' \
             'GOOGLE_CLIENT_SECRET=${{ secrets.GOOGLE_CLIENT_SECRET }}' \
-            'GOOGLE_REDIRECT_URI=https://RottenShadow-ailixir-api.hf.space/api/user/auth/google' \
+            'GOOGLE_REDIRECT_URI=https://Ailixir-AI-Team-ailixir-api.hf.space/api/user/auth/google' \
             'CLOUDINARY_CLOUD_NAME=dummy_cloud' \
             'CLOUDINARY_API_KEY=dummy_key' \
             'CLOUDINARY_API_SECRET=dummy_secret' \
