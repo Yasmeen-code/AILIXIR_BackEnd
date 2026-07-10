@@ -3,6 +3,9 @@ set -e
 
 cd /var/www/html
 
+# Ensure AI integration routes are always enabled at runtime
+echo "AI_INTEGRATION_ROUTES_ENABLED=true" >> /var/www/html/.env
+
 php artisan config:clear --no-interaction 2>/dev/null || true
 
 # Create SQLite database file if it doesn't exist
