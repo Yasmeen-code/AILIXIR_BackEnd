@@ -38,9 +38,9 @@ jobs:
 
       - name: Set RUN_MODE=hf on Hugging Face Space
         env:
-          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+          HF_TOKEN: ${{ secrets.HF_TOKEN_AILIXIR }}
         run: |
-          hf spaces secrets add RottenShadow/ailixir-api \
+          hf spaces secrets add Ailixir-AI-Team/ailixir-api \
             -s RUN_MODE=hf \
             --token "$HF_TOKEN" 2>/dev/null || true
 
