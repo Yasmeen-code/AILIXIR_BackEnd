@@ -17,7 +17,7 @@ class MdSimulationE2ETest extends TestCase
         parent::setUp();
 
         $this->baseUrl = rtrim(
-            (string) getenv('MD_E2E_BASE_URL') ?: 'http://localhost:8000/api',
+            (string) getenv('MD_E2E_BASE_URL') ?: 'http://localhost:7860/api',
             '/'
         );
         $this->email = (string) getenv('MD_E2E_EMAIL') ?: 'test@example.com';

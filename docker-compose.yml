@@ -9,7 +9,7 @@ services:
     container_name: ailixir-laravel
     restart: unless-stopped
     ports:
-      - "${LARAVEL_HTTP_PORT:-8080}:8000"
+      - "${LARAVEL_HTTP_PORT:-8080}:7860"
     env_file:
       - docker/laravel.env
     environment:

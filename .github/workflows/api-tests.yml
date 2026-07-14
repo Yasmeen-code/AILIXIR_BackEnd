@@ -58,7 +58,7 @@ jobs:
         run: |
           echo "Waiting for Laravel API to be ready..."
           for i in {1..60}; do
-            if docker exec ailixir-laravel curl -f http://127.0.0.1:8000 > /dev/null 2>&1; then
+            if docker exec ailixir-laravel curl -f http://127.0.0.1:7860 > /dev/null 2>&1; then
               echo "Laravel API is ready"
               break
             fi
