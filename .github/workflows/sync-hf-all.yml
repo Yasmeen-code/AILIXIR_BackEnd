@@ -36,12 +36,17 @@ jobs:
       - name: Install Hugging Face CLI
         run: pip install -U "huggingface_hub[cli]"
 
-      - name: Set RUN_MODE=hf on Hugging Face Space
+      - name: Set HF Space secrets
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN_AILIXIR }}
+          GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+          GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
         run: |
           hf spaces secrets add Ailixir-AI-Team/ailixir-api \
             -s RUN_MODE=hf \
+            -s APP_KEY=base64:T/MgQZht16genNJN3aZ5flCuvfe7Zfs4yFhuAFO2itU= \
+            -s GOOGLE_CLIENT_ID="$GOOGLE_CLIENT_ID" \
+            -s GOOGLE_CLIENT_SECRET="$GOOGLE_CLIENT_SECRET" \
             --token "$HF_TOKEN" 2>/dev/null || true
 
       - name: Sync ailixir-api
@@ -55,16 +60,6 @@ jobs:
           # Sync files (new, modified, deleted) but preserve the live database
           rsync -av --delete --exclude=ai_apps --exclude=.git --exclude=.env --exclude=.dockerignore --exclude=public/imgs --exclude=storage --exclude=Diagrams --exclude=database/ailixir.sqlite "$GITHUB_WORKSPACE/" .
           cp "$GITHUB_WORKSPACE/README_HF.md" README.md 2>/dev/null || true
-          # Write .env from .env.hf (single source of truth for all AI service URLs)
-          cp "$GITHUB_WORKSPACE/.env.hf" .env
-          printf '%s\n' \
-            'APP_KEY=base64:T/MgQZht16genNJN3aZ5flCuvfe7Zfs4yFhuAFO2itU=' \
-            'APP_DEBUG=true' \
-            'GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }}' \
-            'GOOGLE_CLIENT_SECRET=${{ secrets.GOOGLE_CLIENT_SECRET }}' \
-            'GOOGLE_REDIRECT_URI=https://Ailixir-AI-Team-ailixir-api.hf.space/api/user/auth/google' \
-            'QUEUE_CONNECTION=sync' \
-            >> .env
           git config user.name "AILIXIR Bot"
           git config user.email "bot@ailixir.app"
           # Prevent the live database from being tracked/committed

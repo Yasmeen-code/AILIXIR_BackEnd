@@ -3,6 +3,17 @@ set -e
 
 cd /var/www/html
 
+# Generate .env from .env.hf on HF Spaces
+if [ "${RUN_MODE}" = "hf" ] && [ -f /var/www/html/.env.hf ]; then
+    cp /var/www/html/.env.hf /var/www/html/.env
+    echo "QUEUE_CONNECTION=sync" >> /var/www/html/.env
+    echo "APP_DEBUG=true" >> /var/www/html/.env
+    [ -n "${APP_KEY}" ] && echo "APP_KEY=${APP_KEY}" >> /var/www/html/.env
+    [ -n "${GOOGLE_CLIENT_ID}" ] && echo "GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}" >> /var/www/html/.env
+    [ -n "${GOOGLE_CLIENT_SECRET}" ] && echo "GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}" >> /var/www/html/.env
+    [ -n "${APP_URL}" ] && echo "GOOGLE_REDIRECT_URI=${APP_URL}/api/user/auth/google" >> /var/www/html/.env
+    echo ".env generated from .env.hf"
+fi
 
 php artisan config:clear --no-interaction 2>/dev/null || true
 
