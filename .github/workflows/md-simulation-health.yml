@@ -36,7 +36,7 @@ jobs:
         run: |
           docker run -d --name ailixir-laravel \
             --network ailixir-md \
-            -p 8000:7860 \
+            -p 8000:8000 \
             --env-file docker/laravel.env \
             -e MD_SIMULATION_URL=http://md-api:5005 \
             ailixir-laravel

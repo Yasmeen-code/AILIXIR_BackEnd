@@ -59,7 +59,6 @@ jobs:
           printf '%s\n' \
             'RUN_MODE=hf' \
             'APP_KEY=base64:T/MgQZht16genNJN3aZ5flCuvfe7Zfs4yFhuAFO2itU=' \
-            'AI_INTEGRATION_ROUTES_ENABLED=true' \
             'APP_URL=https://Ailixir-AI-Team-ailixir-api.hf.space' \
             'APP_DEBUG=true' \
             'ADMET_AI_URL=https://shdwRow-ailixir-admet.hf.space' \
