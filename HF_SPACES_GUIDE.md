@@ -6,7 +6,7 @@ The AILIXIR platform is deployed across **5 Hugging Face Spaces**:
 
 | Space | Purpose | URL |
 |-------|---------|-----|
-| `ailixir-api` | Backend API (Laravel + SQLite) | https://huggingface.co/spaces/RottenShadow/ailixir-api |
+| `ailixir-api` | Backend API (Laravel + SQLite) | https://huggingface.co/spaces/Ailixir-AI-Team/ailixir-api |
 | `ailixir-admet` | ADMET Prediction Service | https://huggingface.co/spaces/shdwRow/ailixir-admet |
 | `ailixir-drug-repurposing` | Drug Repurposing Service | https://huggingface.co/spaces/RottenShadow/ailixir-drug-repurposing |
 | `ailixir-chemical-rag` | Chemical RAG Service | https://huggingface.co/spaces/RottenShadow/ailixir-chemical-rag |
@@ -23,7 +23,7 @@ https://RottenShadow-{space-name}.hf.space
 ```
 
 For example:
-- **Backend API:** `https://RottenShadow-ailixir-api.hf.space`
+- **Backend API:** `https://Ailixir-AI-Team-ailixir-api.hf.space`
 - **ADMET:** `https://shdwRow-ailixir-admet.hf.space`
 - **Drug Repurposing:** `https://RottenShadow-ailixir-drug-repurposing.hf.space`
 - **Chemical RAG:** `https://RottenShadow-ailixir-chemical-rag.hf.space`
@@ -59,7 +59,7 @@ Each Space requires certain environment variables. These are set as **Space Secr
 ### 3.1 Backend Space: `ailixir-api`
 
 These are **required** secrets — set them in:  
-https://huggingface.co/spaces/RottenShadow/ailixir-api/settings
+https://huggingface.co/spaces/Ailixir-AI-Team/ailixir-api/settings
 
 | Secret | Value | Description |
 |--------|-------|-------------|
@@ -156,18 +156,18 @@ php artisan key:generate --show
 Once all spaces are running, the backend API is available at:
 
 ```
-https://RottenShadow-ailixir-api.hf.space/api
+https://Ailixir-AI-Team-ailixir-api.hf.space/api
 ```
 
 ### Authentication
 ```bash
 # Register
-curl -X POST https://RottenShadow-ailixir-api.hf.space/api/user/register \
+curl -X POST https://Ailixir-AI-Team-ailixir-api.hf.space/api/user/register \
   -H "Content-Type: application/json" \
   -d '{"name":"User","email":"user@example.com","password":"password123"}'
 
 # Login
-curl -X POST https://RottenShadow-ailixir-api.hf.space/api/user/login \
+curl -X POST https://Ailixir-AI-Team-ailixir-api.hf.space/api/user/login \
   -H "Content-Type: application/json" \
   -d '{"email":"user@example.com","password":"password123"}'
 
@@ -179,19 +179,19 @@ All AI endpoints are proxied through the backend:
 
 ```bash
 # ADMET prediction
-curl -X POST https://RottenShadow-ailixir-api.hf.space/api/admet/predict \
+curl -X POST https://Ailixir-AI-Team-ailixir-api.hf.space/api/admet/predict \
   -H "Authorization: Bearer YOUR_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"smiles": "c1ccccc1"}'
 
 # Chemical search
-curl -X POST https://RottenShadow-ailixir-api.hf.space/api/chemical-search \
+curl -X POST https://Ailixir-AI-Team-ailixir-api.hf.space/api/chemical-search \
   -H "Authorization: Bearer YOUR_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"smiles": "CC(=O)O"}'
 
 # Health check (no auth needed)
-curl https://RottenShadow-ailixir-api.hf.space/api/ai-services/health
+curl https://Ailixir-AI-Team-ailixir-api.hf.space/api/ai-services/health
 ```
 
 ---
@@ -210,8 +210,9 @@ For the auto-sync to work, you **must** add both HF tokens as GitHub Actions sec
 
 1. Go to: https://github.com/RottenShadow/AILIXIR_BackEnd/settings/secrets/actions
 2. Click **"New repository secret"**
-3. **Name:** `HF_TOKEN` — **Value:** your main account token (for `RottenShadow` spaces)
-4. **Name:** `HF_TOKEN_SHDWROW` — **Value:** your second account token (for `shdwRow` spaces)
+3. **Name:** `HF_TOKEN` — **Value:** RottenShadow account token (for `RottenShadow` spaces)
+4. **Name:** `HF_TOKEN_SHDWROW` — **Value:** shdwRow account token (for `shdwRow` spaces)
+5. **Name:** `HF_TOKEN_AILIXIR` — **Value:** Ailixir-AI-Team account token (for `ailixir-api`)
 
 Without these, the auto-sync workflows will fail with an authentication error.
 

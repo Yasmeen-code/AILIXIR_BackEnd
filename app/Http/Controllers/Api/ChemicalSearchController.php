@@ -44,11 +44,6 @@ class ChemicalSearchController extends BaseController
             'metadata' => $result['metadata'],
         ]);
     }
-
-    /**
-     * POST /api/chemical-search/full-rag
-     * Full RAG - Synchronous
-     */
     public function fullRag(ChemicalSearchRequest $request): JsonResponse
     {
         $user = Auth::user();

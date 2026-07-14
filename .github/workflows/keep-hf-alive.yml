@@ -13,9 +13,14 @@ jobs:
       - name: Hit main API health endpoint
         run: |
           curl -s -o /dev/null -w "%{http_code}" \
-            "https://RottenShadow-ailixir-api.hf.space/api/ai-services/health"
+            "https://Ailixir-AI-Team-ailixir-api.hf.space/api/ai-services/health"
 
       - name: Hit generation health endpoint
         run: |
           curl -s -o /dev/null -w "%{http_code}" \
             "https://shdwrow-ailixir-generation.hf.space/health"
+
+      - name: Hit chat bot health endpoint
+        run: |
+          curl -s -o /dev/null -w "%{http_code}" \
+            "https://shdwrow-ailixir-chat-bot.hf.space/health"
