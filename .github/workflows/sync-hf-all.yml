@@ -30,6 +30,18 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+
+      - name: Install Hugging Face CLI
+        run: pip install -U "huggingface_hub[cli]"
+
+      - name: Set RUN_MODE=hf on Hugging Face Space
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+        run: |
+          hf spaces secrets add RottenShadow/ailixir-api \
+            -s RUN_MODE=hf \
+            --token "$HF_TOKEN" 2>/dev/null || true
+
       - name: Sync ailixir-api
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
