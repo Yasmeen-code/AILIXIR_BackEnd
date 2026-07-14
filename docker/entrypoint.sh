@@ -3,18 +3,6 @@ set -e
 
 cd /var/www/html
 
-# Ensure AI integration routes and service URLs are set at runtime
-# (the sync workflow writes these to .env, but .env is gitignored and never reaches the container)
-cat >> /var/www/html/.env << 'EOF'
-AI_INTEGRATION_ROUTES_ENABLED=true
-ADMET_AI_URL=https://shdwRow-ailixir-admet.hf.space
-CHEMICAL_AI_URL=https://RottenShadow-ailixir-chemical-rag.hf.space
-DRUG_REPURPOSING_URL=https://RottenShadow-ailixir-drug-repurposing.hf.space
-GENERATION_SERVICE_URL=https://shdwRow-ailixir-generation.hf.space
-APP_URL=https://Ailixir-AI-Team-ailixir-api.hf.space
-APP_DEBUG=true
-QUEUE_CONNECTION=sync
-EOF
 
 php artisan config:clear --no-interaction 2>/dev/null || true
 

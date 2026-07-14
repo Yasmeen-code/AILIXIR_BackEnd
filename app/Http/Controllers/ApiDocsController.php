@@ -26,6 +26,12 @@ class ApiDocsController extends Controller
     public function showDocs()
     {
         $path = base_path('API.md');
+
+        if (!file_exists($path) || !is_readable($path)) {
+            $content = '<div class="alert alert-warning">API documentation file not found.</div>';
+            return view('api-docs', compact('content'));
+        }
+
         $markdown = file_get_contents($path);
         $content = Str::markdown($markdown);
 
