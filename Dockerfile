@@ -109,7 +109,7 @@ USER www-data
 EXPOSE 8000 7860
 
 HEALTHCHECK --interval=15s --timeout=5s --start-period=40s --retries=5 \
-    CMD php -r "exit((int)(@file_get_contents('http://127.0.0.1:7860') === false));"
+    CMD php -r "exit((int)(@file_get_contents('http://127.0.0.1:8000') === false));"
 
 ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
-CMD ["php", "artisan", "serve", "--host=0.0.0.0", "--port=7860"]
+CMD ["php", "artisan", "serve", "--host=0.0.0.0", "--port=8000"]
