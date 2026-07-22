@@ -31,7 +31,7 @@ app = FastAPI(
         "AI Scientific OS for Drug Discovery — Chemical analysis, biomedical mechanisms, "
         "RAG knowledge base, and real-time voice interaction.\n\n"
         "---\n\n"
-        "🚀 **[Live Demo →  https://scientific-operating-system.vercel.app/]"
+        "🚀 **[Live Demo (Frontend) →  https://scientific-operating-system.vercel.app/]"
         "(https://scientific-operating-system.vercel.app/)**"
     ),
     version="2.0.0",
