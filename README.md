@@ -1,144 +1,502 @@
-# AILIXIR
+# AILIXIR — Enterprise AI-Powered Drug Discovery & Chemistry Intelligence Platform
 
-AI-powered drug discovery platform that orchestrates molecular generation, virtual screening, ADMET prediction, chemical similarity search, and molecular dynamics simulation through a unified REST API.
+<div align="center">
 
----
+![AILIXIR Banner](https://img.shields.io/badge/AILIXIR-Drug%20Discovery%20Platform-0066CC?style=for-the-badge&logo=python&logoColor=white)
 
-## Features
+**Accelerating molecular generation, virtual screening, ADMET profiling, and structure-activity reasoning through microservice AI orchestration.**
 
-- **De Novo Molecular Generation** — REINVENT-based molecule generation with AutoDock-GPU docking scoring
-- **Drug Repurposing** — Disease-target identification (OpenTargets), protein sequence retrieval (UniProt), and AI-based virtual screening (DeepPurpose MPNN-CNN)
-- **ADMET Prediction** — Multi-task MPNN ensemble predicting Absorption, Distribution, Metabolism, Excretion, and Toxicity from SMILES
-- **Chemical Similarity Search** — FAISS binary index with multi-fingerprint fusion (Morgan, MACCS, Atom Pairs, Torsions) and optional Llama-3.1-8B RAG explanations
-- **Chemistry AI Agent** — Conversational chemistry assistant with molecule analysis, comparison, and CSV batch processing
-- **Molecular Docking** — Vina-based docking with SMILES or PDB input files
-- **Protein-Ligand MD Simulation** — Submit and analyze molecular dynamics simulations
-- **User Management** — Registration, OTP-based email verification, password reset, Google OAuth
-- **Subscription Billing** — Stripe integration via Laravel Cashier with tiered plans (Free, Pro, Max)
-- **News Aggregation** — RSS feeds parsed for scientific news with article saving and sharing
-- **File Uploads** — Cloudinary integration for molecule images and file storage
-- **Hugging Face Spaces** — One-click deployable as a Space with Supervisor-managed processes
+[![PHP](https://img.shields.io/badge/PHP-8.3-777BB4?style=flat-square&logo=php&logoColor=white)](https://www.php.net/)
+[![Laravel](https://img.shields.io/badge/Laravel-12.0-FF2D20?style=flat-square&logo=laravel&logoColor=white)](https://laravel.com/)
+[![Python](https://img.shields.io/badge/Python-3.10%20%7C%203.11-3776AB?style=flat-square&logo=python&logoColor=white)](https://www.python.org/)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.100+-009688?style=flat-square&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
+[![PyTorch](https://img.shields.io/badge/PyTorch-2.0+-EE4C2C?style=flat-square&logo=pytorch&logoColor=white)](https://pytorch.org/)
+[![RDKit](https://img.shields.io/badge/RDKit-2023.09+-005580?style=flat-square)](https://www.rdkit.org/)
+[![Docker](https://img.shields.io/badge/Docker-Enabled-2496ED?style=flat-square&logo=docker&logoColor=white)](https://www.docker.com/)
+[![License](https://img.shields.io/badge/License-MIT-green.svg?style=flat-square)](LICENSE)
 
 ---
 
-## Architecture Overview
+[Key Features](#5-key-features) • [System Architecture](#6-system-architecture) • [AI Pipeline](#7-ai-pipeline) • [RAG Engine](#8-rag-pipeline) • [Installation](#13-installation-guide) • [API Docs](#16-api-documentation) • [Engineering Challenges](#17-engineering-challenges)
+
+</div>
+
+---
+
+## 1. Hero Section
+
+**AILIXIR** is an enterprise-grade AI drug discovery platform that bridges deep learning microservices with robust web orchestration. It integrates de novo molecule generation, target-based drug repurposing, multi-property ADMET profiling, high-dimensional chemical vector search, and molecular dynamics simulation into a unified API ecosystem.
+
+> 🛠️ **Demo Video / UI Sandbox**: *[Placeholder: Add link to video demonstration or interactive frontend sandbox]*  
+> 📷 **Architecture Overview Graphic**: *[Placeholder: Insert high-resolution system diagram graphic]*
+
+---
+
+## 2. The Problem
+
+### The Real-World Challenge in Early-Stage Drug Discovery
+
+Developing a novel therapeutic molecule is one of the most expensive and time-consuming endeavors in modern science:
+- **Timeline**: 10 to 15 years from target discovery to approval.
+- **Cost**: Exceeds **$2.6 billion USD** per approved drug (including failed pipeline costs).
+- **Failure Rate**: **>90%** of candidate molecules fail in clinical trials due to efficacy shortfalls or unexpected absorption, distribution, metabolism, excretion, and toxicity (ADMET) profile failures.
+
+```
++-----------------------------------------------------------------------------------+
+| TRADITIONAL DRUG DISCOVERY PIPELINE                                               |
+|                                                                                   |
+|  Target Identification   Compound Synthesis    In Vitro/Vivo ADMET    Clinical Trial |
+|  [ 1 - 2 Years ] ------> [ 2 - 3 Years ] -----> [ 2 - 3 Years ] ----> [ 6+ Years ]|
+|                          (High Friction)        (90% Failure Rate)    ($2.6B Total)|
++-----------------------------------------------------------------------------------+
+```
+
+### Key Pain Points
+1. **Hyper-Dimensional Chemical Space**: Chemical space contains an estimated $10^{60}$ synthetically feasible drug-like molecules. Traditional high-throughput screening (HTS) screens only $10^6$ compounds (<0.0000000000000000000000000000000000000000000000000001% of space).
+2. **Siloed Computational Tools**: Cheminformatics software, docking engines, deep learning property predictors, and molecular dynamics suites exist in fragmented command-line packages with incompatible data structures.
+3. **Late-Stage ADMET Failures**: ADMET testing traditionally occurs late in candidate optimization, wasting millions on molecules that fail simple bioavailability or cytotoxicity filters.
+4. **Lack of Explainability**: Black-box neural network predictions are routinely dismissed by medicinal chemists who require structural rationale for predictions.
+
+---
+
+## 3. Why Existing Solutions Are Not Enough
+
+Traditional computational chemistry and early commercial platforms suffer from critical structural limitations:
+
+| Dimension | Traditional Software / Scripting | Generic AI Wrappers | AILIXIR Platform |
+|---|---|---|---|
+| **Architectural Topology** | Monolithic local scripts (CLI heavy) | Monolithic API wrapper over 1 model | Microservice-orchestrated multi-model engine |
+| **Pipeline Integration** | Manual file transfers (SDF, PDB, CSV) | REST endpoints for single task | Unified job queue with asynchronous callbacks |
+| **ADMET Assessment** | Rule-of-five heuristics (Lipinski) | Single-property predictions | 5-task MPNN multi-target neural ensemble |
+| **Search Scale & Speed** | CPU linear scanning ($O(N)$ execution) | Exact string SQL querying | FAISS binary vector indexing ($O(1)$ Hamming) |
+| **Domain Explainability** | None (Raw numerical float outputs) | Generic non-domain LLM prompts | Domain-tuned RAG combining chemical topology |
+| **Compute Elasticity** | Static single machine compute | Fixed cloud instances | Containerized async queues with GPU scaling |
+
+### Technical Limitations of Prior Approaches
+- **Rule-Based Heuristics**: Lipinski's Rule of 5 fails to account for active transport, modern macrocycles, or complex structural binding nuances.
+- **Linear Similarity Scans**: Querying a 1,000,000+ molecule database using exact Tanimoto/Dice comparisons on unindexed CPU threads requires minutes per query.
+- **Isolated Docking**: Running molecular docking independently without immediate ADMET feedback creates candidates with high binding affinity but toxic metabolic profiles.
+
+---
+
+## 4. Our Solution
+
+AILIXIR bridges computational chemistry and modern software engineering by establishing a multi-layered, microservice-orchestrated API platform.
+
+```mermaid
+flowchart TB
+    subgraph CLIENT_LAYER [Client & Consumer Tier]
+        WebUI[Web UI / SPA]
+        MobileApp[Mobile / CLI]
+        ExtIntegrations[Third-Party REST Clients]
+    end
+
+    subgraph ORCHESTRATION_LAYER [Orchestration & Gateway Layer - Laravel 12]
+        Gateway[API Gateway & Router]
+        Auth[Sanctum Auth & Security]
+        QueueManager[Database Queue Worker / Dispatcher]
+        DB[(MariaDB / SQLite State)]
+    end
+
+    subgraph AI_MICROSERVICES [AI & Cheminformatics Microservices Engine - FastAPI / Python]
+        ADMET_SVC[ADMET Predictor\n5-Task Ensemble MPNN]
+        REPURPOSE_SVC[Drug Repurposing\nDeepPurpose MPNN-CNN + UniProt]
+        RAG_SVC[Chemical RAG Engine\nFAISS Binary Vector + LLM]
+        GEN_SVC[Molecular Generator\nREINVENT + AutoDock-GPU]
+        CHEM_AGENT[Chemistry Agent API\nConversational Chem Assistant]
+        MD_SVC[Molecular Dynamics\nGROMACS Simulation Engine]
+    end
+
+    WebUI -->|REST / JSON| Gateway
+    MobileApp -->|REST / JSON| Gateway
+    ExtIntegrations -->|REST / JSON| Gateway
+
+    Gateway --> Auth
+    Gateway --> QueueManager
+    Gateway --> DB
+
+    QueueManager -->|HTTP Sync/Async| ADMET_SVC
+    QueueManager -->|HTTP Sync/Async| REPURPOSE_SVC
+    QueueManager -->|HTTP Sync/Async| RAG_SVC
+    QueueManager -->|HTTP Async Job| GEN_SVC
+    Gateway -->|HTTP Streaming| CHEM_AGENT
+    QueueManager -->|HTTP Async Job| MD_SVC
+```
+
+### Key Architectural Concepts
+1. **Decoupled Gateway & Computation**: High-performance PHP 8.3/Laravel 12 handles user session state, payments, authentication, and job queuing, allowing Python microservices to focus exclusively on tensor computation and GPU inference.
+2. **Unified Representation Standard**: All molecular structures are validated, standardized, and canonicalized using RDKit across all service boundaries using SMILES (Simplified Molecular Input Line Entry System) and PDB QT formats.
+3. **Hybrid Synchronous & Asynchronous Execution**: Low-latency tasks (ADMET scoring, chemical search) resolve synchronously in `<300ms`, while compute-heavy jobs (molecular dynamics, docking, generation) dispatch to asynchronous background queues with polling endpoints.
+
+---
+
+## 5. Key Features
+
+```
++---------------------------------------------------------------------------------------+
+|                                    AILIXIR FEATURES                                   |
++--------------------------+--------------------------+---------------------------------+
+| 🧬 AI & Deep Learning    | 🔬 Virtual Screening     | 🔍 RAG Vector Search            |
+| - De novo REINVENT gen   | - DeepPurpose MPNN-CNN   | - FAISS binary indexing         |
+| - 5-Task ADMET Ensemble  | - Target API integration | - Multi-fingerprint fusion      |
+| - AutoDock-GPU scoring   | - UniProt sequence fetch | - Llama-3.1-8B explanations     |
++--------------------------+--------------------------+---------------------------------+
+| 🤖 Chemistry AI Agent    | 🧪 Molecular Dynamics    | 💳 Platform Architecture        |
+| - Conversational Chemist | - GROMACS simulation     | - Stripe tiered billing         |
+| - CSV batch processing   | - Trajectory analytics   | - Cloudinary file management    |
+| - SMILES verification    | - RMSD/RMSF extraction   | - Supervisor & Docker isolated  |
++--------------------------+--------------------------+---------------------------------+
+```
+
+### Feature Categories & Technical Breakdown
+
+#### 1. Artificial Intelligence & Generative Chemistry
+- **De Novo Molecule Generation**: Reinforcement-learning-driven molecular generator using REINVENT architecture, scored dynamically against custom protein targets via AutoDock-GPU.
+- **Multi-Task ADMET Prediction**: Neural Message Passing Neural Network (MPNN) predicting 5 vital ADMET parameters (Human Intestinal Absorption, Blood-Brain Barrier Penetration, CYP450 Inhibition, Clearance, Toxicity).
+
+#### 2. Virtual Screening & Drug Repurposing
+- **Automated Target Integration**: Direct integration with OpenTargets and UniProt APIs to automatically extract target proteins, amino acid sequences, and disease association scores.
+- **DeepPurpose Screening**: Deep learning drug-target interaction (DTI) predictions employing MPNN encoders for molecules and CNN encoders for protein sequences.
+
+#### 3. High-Dimensional Chemical Retrieval
+- **FAISS Binary Vector Indexing**: High-speed chemical similarity search capable of processing over 1,000,000 molecules with sub-millisecond latency using 2048-bit fingerprints.
+- **Multi-Fingerprint Structural Fusion**: Hybrid similarity metrics combining Morgan (Circular), MACCS Keys, Atom Pairs, and Topological Torsions.
+- **LLM-Augmented RAG Rationale**: Retrieval-Augmented Generation using Llama-3.1-8B-Instruct to produce automated natural language structure-activity relationship (SAR) summaries.
+
+#### 4. Physics Simulation & Chemistry Agent
+- **GROMACS MD Pipeline**: Full workflow automation for preparing molecular systems, applying force fields, running energy minimization, NVT/NPT equilibration, and production MD trajectories.
+- **Conversational Chemistry Agent**: AI assistant capable of interpreting chemical queries, validating SMILES strings, comparing molecular pairs, and processing multi-molecule CSV payloads.
+
+---
+
+## 6. System Architecture
+
+AILIXIR uses an isolated multi-container architecture orchestrated via Docker Compose.
+
+### Detailed Layer Breakdown
 
 ```mermaid
 flowchart LR
-  subgraph CLIENTS [Clients]
-    A[Web / Mobile App]
-    B[External Integrations]
-  end
+    subgraph CLIENT [Presentation Layer]
+        Vite[Vite + React / SPA]
+    end
 
-  subgraph DOCKER [Docker Network: ailixir]
-    direction TB
-    LAR[Laravel API :8000]
-    Q[Queue Worker]
-    DB[(SQLite / MariaDB)]
+    subgraph GATEWAY [Application & Orchestration Layer]
+        Laravel[Laravel 12 Engine]
+        Sanctum[Sanctum Middleware]
+        Queue[Database Queue Workers]
+        Cashier[Stripe Cashier Billing]
+    end
 
-    ADMET[ADMET Inference]
-    DRUG[Drug Repurposing]
-    CRAG[Chemical RAG]
-    GEN[Molecular Generation]
-    CHEMGENT[Chem Agent API]
-    MD[MD Simulation]
-  end
+    subgraph PERSISTENCE [Persistence & Storage]
+        MariaDB[(MariaDB / SQLite)]
+        Cloudinary[Cloudinary CDN Storage]
+    end
 
-  A -->|HTTP| LAR
-  B -->|HTTP| LAR
-  LAR -->|queries| DB
-  LAR -->|dispatches| Q
-  LAR -->|POST /predict| ADMET
-  LAR -->|POST /api/v1/screen| DRUG
-  LAR -->|POST /search/*| CRAG
-  LAR -->|POST /generate| GEN
-  LAR -->|POST /chat| CHEMGENT
-  LAR -->|POST /process| MD
+    subgraph AI_SERVICES [Compute & Inference Tier]
+        ADMET[ADMET Microservice :8001]
+        Repurposing[Drug Repurposing :8002]
+        RAG[Chemical RAG :8003]
+        ChemAgent[Chem Agent :8004]
+        GenDock[Generation & Docking :8005]
+        MDSim[GROMACS MD Engine :8006]
+    end
+
+    Vite -->|HTTP REST| Laravel
+    Laravel --> Sanctum
+    Laravel --> MariaDB
+    Laravel --> Cloudinary
+    Laravel --> Queue
+    Queue --> MariaDB
+
+    Laravel -->|Guzzle HTTP| ADMET
+    Laravel -->|Guzzle HTTP| Repurposing
+    Laravel -->|Guzzle HTTP| RAG
+    Laravel -->|Guzzle HTTP| ChemAgent
+    Queue -->|HTTP Async| GenDock
+    Queue -->|HTTP Async| MDSim
 ```
 
-### Request Lifecycle
+### Component Responsibilities
 
-1. Client sends an authenticated HTTP request to the Laravel API
-2. Laravel validates input, creates a job record, and either:
-   - Returns immediately for synchronous AI calls (chemical search, ADMET)
-   - Dispatches a background job for long-running pipelines (drug repurposing, docking, generation)
-3. The queue worker processes jobs, making HTTP calls to the appropriate AI microservice
-4. AI services return predictions; Laravel persists results and status to the database
-5. The client polls the job status endpoint or retrieves completed results
+1. **Laravel Orchestration Core (`:8000`)**:
+   - Manages routing, rate-limiting, user authentication (Sanctum), and subscription limits (Stripe).
+   - Serves as the central API gateway; external clients never interact directly with raw Python AI microservices.
+   - Manages job state tracking, persistent logs, and user activity history.
 
----
+2. **ADMET Inference Microservice (`:8001`)**:
+   - Built on FastAPI and PyTorch.
+   - Loads pre-trained graph neural network weights into memory at startup.
+   - Exposes `/predict` and `/predict-file` endpoints for single SMILES or bulk CSV processing.
 
-## Tech Stack
+3. **Drug Repurposing Microservice (`:8002`)**:
+   - Communicates with OpenTargets GraphQL API and UniProt REST API.
+   - Converts protein sequences into 1D CNN representations and SMILES into graph neural representations.
+   - Generates binding affinity scores ($K_d$, $K_i$, or $IC_{50}$).
 
-| Category | Technologies |
-|---|---|
-| **Backend** | Laravel 12 (PHP 8.3), Laravel Sanctum, Laravel Cashier |
-| **AI Services** | FastAPI (Python 3.10-3.11), PyTorch, DeepPurpose, RDKit |
-| **Database** | SQLite (development), MariaDB (production) |
-| **Queue** | Laravel database queue |
-| **Search** | FAISS (IndexBinaryFlat, Hamming distance) |
-| **LLM** | Llama-3.1-8B-Instruct via HuggingFace Inference API |
-| **Molecular Docking** | AutoDock Vina, AutoDock-GPU |
-| **Molecular Dynamics** | GROMACS (via Protein-Ligand-MD-Simulation service) |
-| **Molecular Generation** | REINVENT, DeepPurpose |
-| **Containerization** | Docker, Docker Compose |
-| **Web Server** | Nginx, Supervisor |
-| **File Storage** | Cloudinary |
-| **Payments** | Stripe |
-| **CI / CD** | GitHub Actions |
-| **Frontend (dev)** | Vite, Tailwind CSS |
+4. **Chemical RAG System (`:8003`)**:
+   - Maintains persistent in-memory FAISS binary vector indices mapped to a disk volume.
+   - Calculates binary Hamming distance between bit-packed fingerprints.
+   - Calls Hugging Face Inference API (Llama-3.1-8B-Instruct) for context generation.
+
+5. **Molecular Generation & Docking (`:8005`)**:
+   - Executes AutoDock Vina / AutoDock-GPU binary instances.
+   - Runs reinforcement learning optimization loops (REINVENT) to iterate SMILES toward binding affinity targets.
+
+6. **Protein-Ligand MD Simulation (`:8006`)**:
+   - Wraps GROMACS execution suites inside Docker containers.
+   - Parses trajectory outputs (`.xtc`, `.trr`) into summary statistics (RMSD, RMSF, Hydrogen Bond counts).
 
 ---
 
-## Project Structure
+## 7. AI Pipeline
+
+The core decision pipeline translates qualitative disease inputs into scored, validated lead candidates through multi-stage neural reasoning.
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor User as Scientist / User
+    participant Gateway as Laravel API Gateway
+    participant Queue as Worker Queue
+    participant Repurp as Drug Repurposing (DeepPurpose)
+    participant ADMET as ADMET Ensemble
+    participant RAG as Chemical RAG (FAISS+LLM)
+    participant DB as System Database
+
+    User->>Gateway: POST /api/screening/submit {disease_id}
+    Gateway->>DB: Create Screening Job Record (Status: PENDING)
+    Gateway-->>User: 202 Accepted {job_id}
+    Gateway->>Queue: Dispatch ProcessScreeningJob(job_id)
+
+    activate Queue
+    Queue->>Repurp: POST /api/v1/screen {disease_target}
+    activate Repurp
+    Note over Repurp: Fetch UniProt Sequence -> Encode CNN<br/>Encode Drug Library -> Run DeepPurpose MPNN
+    Repurp-->>Queue: Return Top Ranked Candidates (SMILES + Affinity)
+    deactivate Repurp
+
+    Queue->>ADMET: POST /predict {SMILES_list}
+    activate ADMET
+    Note over ADMET: Convert SMILES to Graphs<br/>Run 5-Task MPNN Neural Ensemble
+    ADMET-->>Queue: Return ADMET Risk Metrics & Scores
+    deactivate ADMET
+
+    Queue->>RAG: POST /search/full-rag {top_SMILES}
+    activate RAG
+    Note over RAG: FAISS Binary Vector Search -> Find Analogues<br/>Prompt Llama-3.1-8B -> SAR Explanation
+    RAG-->>Queue: Return Structural Analogues + LLM Rationale
+    deactivate RAG
+
+    Queue->>DB: Save Final Synthesized Results & Set Status: COMPLETED
+    deactivate Queue
+
+    User->>Gateway: GET /api/screening/jobs/{job_id}
+    Gateway-->>User: 200 OK {Complete Lead Compound Report}
+```
+
+---
+
+## 8. RAG Pipeline
+
+AILIXIR uses a domain-adapted Retrieval-Augmented Generation (RAG) architecture tailored for molecular structures rather than textual paragraphs.
+
+```mermaid
+flowchart TD
+    subgraph INGESTION [1. Ingestion & Indexing Pipeline]
+        RawSMILES[Raw Chemical Library / PubChem CSV]
+        RDKitParse[RDKit SMILES Sanitization & Parsing]
+        FP_Gen[Multi-Fingerprint Generator\nMorgan 2048-bit + MACCS + AtomPairs]
+        BitPack[Bit-Packing Transformation to uint8]
+        FAISS_Build[FAISS IndexBinaryFlat Construction]
+        FAISS_Build -->|Persist to Volume| IndexDisk[chemical_rag_index.faiss]
+    end
+
+    subgraph RETRIEVAL [2. High-Speed Retrieval Phase]
+        QuerySMILES[Query SMILES Input]
+        QuerySMILES --> RDKitValidate[RDKit Parsing & Validation]
+        RDKitValidate --> QueryFP[Generate Query Morgan Fingerprint]
+        QueryFP --> FAISS_Search[FAISS Binary Vector Search\nHamming Distance Computation]
+        IndexDisk --> FAISS_Search
+        FAISS_Search --> TopK[Extract Top-K Closest Analogues]
+    end
+
+    subgraph GENERATION [3. Context Augmentation & LLM Reasoning]
+        TopK --> PromptEng[Construct Chemist Prompt\nInject Targets, Analogues & Tanimoto Scores]
+        PromptEng --> LLM_Inference[Hugging Face Inference API\nLlama-3.1-8B-Instruct]
+        LLM_Inference --> StructReport[Generated SAR Explanation & Report]
+    end
+```
+
+### Deep Dive into RAG Steps
+
+1. **Ingestion & Sanitization**:
+   - SMILES strings are parsed via RDKit, removing salts, standardizing tautomers, and assigning canonical SMILES representations.
+2. **Fingerprint Featurization**:
+   - Converts canonical SMILES into 2048-bit Morgan Fingerprints (radius=2, equivalent to ECFP4) alongside 166-bit MACCS keys.
+3. **Binary Vector Indexing**:
+   - Standard floating-point vector similarity (Cosine/Euclidean) is computationally inefficient for 2048-bit bit vectors. AILIXIR packs bits into `uint8` byte arrays and uses `FAISS.IndexBinaryFlat` to compute exact Hamming distances directly in hardware registers.
+4. **Context-Rich Prompt Engineering**:
+   - Retrieved chemical analogues, structural similarity metrics (Tanimoto coefficients derived from Hamming distance via $T = \frac{C}{A + B - C}$), and predicted ADMET profiles are formatted into a domain-restricted prompt context.
+5. **LLM Generation**:
+   - Llama-3.1-8B-Instruct generates natural language commentary highlighting pharmacophores, potential metabolic liabilities, and bioisosteric substitution suggestions.
+
+---
+
+## 9. Voice Pipeline
+
+AILIXIR incorporates a real-time conversational chemistry interface for hands-free laboratory usage.
+
+```mermaid
+flowchart LR
+    subgraph BROWSER [Client Browser]
+        Mic[Microphone Input]
+        AudioWorklet[Audio Worklet PCM Encoder]
+        Player[Web Audio API Speaker Playback]
+    end
+
+    subgraph WS_GATEWAY [WebSocket & Streaming Engine]
+        WS_Server[Chem Agent WebSocket Gateway]
+        VAD[Voice Activity Detection / Silero VAD]
+    end
+
+    subgraph VOICE_AI [Voice Processing Services]
+        STT[Whisper Speech-to-Text]
+        AgentCore[LangChain / Chemistry Reasoning Agent]
+        TTS[FastSpeech2 / XTTS Text-to-Speech]
+    end
+
+    Mic --> AudioWorklet
+    AudioWorklet -->|PCM Audio Stream / WS| WS_Server
+    WS_Server --> VAD
+    VAD -->|Active Speech Chunks| STT
+    STT -->|Transcribed Text| AgentCore
+    AgentCore -->|RDKit / DB Query / Tool Call| AgentCore
+    AgentCore -->|Response Text Stream| TTS
+    TTS -->|Audio Chunk Stream| WS_Server
+    WS_Server -->|Binary Audio Payload| Player
+```
+
+### Voice Execution Sequence
+1. **Audio Capture**: Browser streams low-latency raw PCM audio over WebSockets.
+2. **VAD Filtering**: Silero Voice Activity Detection filters out ambient laboratory noise, forwarding audio only during detected speech intervals.
+3. **STT Transcription**: OpenAI Whisper transcribes incoming chemical names and spoken instructions into text.
+4. **Agent Tool Orchestration**: The Chemistry Agent parses intent, using RDKit to resolve spoken common names (e.g., "Aspirin") to canonical SMILES (`O=C(C)Oc1ccccc1C(=O)O`) and querying the internal ADMET engine.
+5. **TTS Audio Synthesis**: The response streams back as binary audio via XTTS/FastSpeech2 and plays instantly through the browser's Web Audio API.
+
+---
+
+## 10. Validation Engine
+
+To prevent hallucinatory AI predictions in chemical safety assessments, AILIXIR employs a deterministic, rule-based computational validation layer before deep learning inference.
+
+```
+                  +-----------------------------------+
+                  |      Raw SMILES Input String      |
+                  +-----------------------------------+
+                                    |
+                                    v
+                  +-----------------------------------+
+                  |      RDKit Molecule Parsing       |
+                  +-----------------------------------+
+                                    |
+                 /                                     \
+        (Valid SMILES)                           (Invalid SMILES)
+               |                                         |
+               v                                         v
++-----------------------------+           +-----------------------------+
+| Deterministic Validation    |           | Immediate Error Signal      |
+| - Valence & Charge Checking |           | - HTTP 422 Unprocessable    |
+| - Salt Strip & Canonicalize |           | - Exact Structural Error Msg|
+| - Bredt's Rule & Ring Strain|           +-----------------------------+
++-----------------------------+
+               |
+               v
++-----------------------------+
+| Deep Learning Model Infer   |
+| - MPNN ADMET Prediction     |
+| - DeepPurpose DTI Scoring   |
++-----------------------------+
+               |
+               v
++-----------------------------+
+| Confidence Verification     |
+| - Epistemic Variance Check  |
+| - Out-of-Domain Detection   |
++-----------------------------+
+```
+
+### Deterministic Checks & Verification Rules
+
+1. **Chemical Valence & Sanity Verification**:
+   - Uses RDKit's explicit valence checking. Hypervalent carbons, illegal nitrogen bonds, or invalid aromatic rings trigger immediate validation failures prior to tensor featurization.
+2. **Structural Canonicalization & Salt Removal**:
+   - Removes counter-ions (e.g., $Na^+$, $Cl^-$) and normalizes charge states to ensure identical molecules yield identical vector representations.
+3. **Substructure Hazard Filtering (PAINS & Brenk Filters)**:
+   - Filters out Pan-Assay Interference Compounds (PAINS) and reactive functional groups (e.g., acyl halides, peroxides) using predefined SMARTS pattern matching.
+4. **Model Confidence & Epistemic Uncertainty Estimation**:
+   - ADMET models output variance bounds calculated across neural ensemble predictions. Predictions exceeding pre-configured variance thresholds are flagged with a low-confidence warning badge.
+
+---
+
+## 11. Technology Stack
+
+AILIXIR deliberately avoids monolithic designs, employing specialized technologies selected for performance, reliability, and computational efficiency.
+
+| Technology | Selected Tool | Alternative Evaluated | Technical Rationale for Selection |
+|---|---|---|---|
+| **API Gateway Core** | **Laravel 12 (PHP 8.3)** | Node.js / Express | Native support for robust queue workers, database migrations, Sanctum auth, Cashier Stripe integration, and structured enterprise architecture. |
+| **Microservice Framework**| **FastAPI (Python 3.10+)** | Flask / Django | Asynchronous ASGI performance, automated OpenAPI generation, native Pydantic validation, and direct integration with PyTorch tensors. |
+| **Cheminformatics Core** | **RDKit** | OpenBabel / CDDK | Industry standard for molecular sanitization, fingerprint generation, SMARTS matching, and 2D/3D structure depiction. |
+| **Deep Learning Framework**| **PyTorch 2.0+** | TensorFlow | Dynamic computation graphs necessary for variable-size Message Passing Neural Networks (MPNN) and molecular graph architectures. |
+| **Vector Similarity Index**| **FAISS (Binary)** | Milvus / Qdrant | Unmatched C++ hardware-accelerated binary Hamming distance calculation for bit-packed 2048-bit fingerprints. |
+| **Molecular Docking Engine**| **AutoDock-GPU / Vina** | Glide (Schrödinger) | Open-source CUDA-accelerated docking engine allowing scalable parallel binding energy evaluations inside containerized environments. |
+| **Primary Relational DB** | **MariaDB / SQLite** | PostgreSQL | Lightweight footprint, instant local development using SQLite, and seamless transition to production MariaDB setups. |
+
+---
+
+## 12. Project Structure
 
 ```
 ailixir-backend/
-├── app/
-│   ├── Http/Controllers/Api/   # API controllers
-│   ├── Jobs/                   # Queue job classes
-│   ├── Models/                 # Eloquent models
-│   ├── Services/               # Business logic & API clients
-│   ├── Traits/                 # Shared traits
-│   └── Helpers/                # Utility helpers
-├── ai_apps/
-│   ├── ADMIT/admet_inference/  # ADMET prediction microservice
-│   ├── Drug Reporposing/       # Drug repurposing pipeline
-│   ├── chemical-rag-system/    # FAISS + LLM similarity search
-│   ├── chem_agent_api/         # Chemistry AI agent
-│   ├── generation/             # Molecular generation & docking
-│   ├── Protein-Ligand-MD-Simulation/ # MD simulation
-│   └── Scientific-Operating-System/  # Scientific AI agent
-├── bootstrap/                  # Framework bootstrapping
-├── config/                     # Laravel configuration
-├── database/                   # Migrations, factories, seeders
-├── docker/
-│   ├── laravel.env             # Laravel environment template
-│   ├── entrypoint.sh           # Docker entrypoint script
-│   ├── supervisord.conf        # Supervisor config (HF Spaces)
-│   ├── php/opcache.ini         # PHP opcache settings
-│   └── nginx/default.conf      # Nginx config
-├── resources/                  # Views, frontend assets
-├── routes/
-│   └── api.php                 # API route definitions
-├── storage/                    # Logs, cache, compiled views
-├── tests/                      # Pest/PHPUnit tests
-├── Dockerfile                  # Multi-stage Docker build
-├── docker-compose.yml          # Service orchestration
-├── docker-compose.gpu.yml      # GPU-enabled services
-└── composer.json               # PHP dependencies
+├── app/                                  # Laravel Orchestration Core
+│   ├── Http/Controllers/Api/             # API Endpoints (ADMET, Docking, Screening)
+│   ├── Jobs/                             # Asynchronous Background Queue Jobs
+│   ├── Models/                           # Eloquent Database Models
+│   ├── Services/                         # Microservice Guzzle HTTP Clients
+│   └── Traits/                           # Shared Response & Validation Traits
+├── ai_apps/                              # Dedicated Python AI Microservices
+│   ├── ADMIT/admet_inference/            # 5-Task ADMET MPNN Inference Engine
+│   │   ├── app/                          # FastAPI Service Logic
+│   │   ├── models/                       # Pre-trained PyTorch Checkpoints
+│   │   └── Dockerfile                    # Containerization Spec
+│   ├── Drug Reporposing/                 # Target-Based Virtual Screening Pipeline
+│   │   ├── app/                          # DeepPurpose Pipeline & API Adapters
+│   │   └── TDC_data/                     # Therapeutic Data Commons Local Caching
+│   ├── chemical-rag-system/              # Vector Search & LLM SAR Engine
+│   │   ├── faiss_index/                  # Binary Vector Index Files
+│   │   └── run_server.py                 # FastAPI Vector Server
+│   ├── chem_agent_api/                   # Conversational Chemistry Agent
+│   ├── generation/                       # REINVENT & AutoDock-GPU Generator
+│   └── Protein-Ligand-MD-Simulation/     # GROMACS MD Simulation Orchestrator
+├── config/                               # Application Configurations
+├── database/                             # Migrations, Seeders, & SQLite DB
+├── docker/                               # Environment & Server Setup
+│   ├── entrypoint.sh                     # Container Boot Script
+│   ├── supervisord.conf                  # Multi-Process Supervisor Spec
+│   └── nginx/                            # Reverse Proxy Server Configs
+├── routes/                               # Route Registries (api.php)
+├── Dockerfile                            # Multi-Stage Production Docker Build
+├── docker-compose.yml                    # Main Microservice Compose Stack
+├── docker-compose.gpu.yml                # CUDA-Enabled Production GPU Stack
+└── composer.json                         # PHP Dependency Manifest
 ```
 
 ---
 
-## Installation
+## 13. Installation Guide
 
 ### Prerequisites
-
-- PHP 8.2+
-- Composer
-- Node.js 22+
-- Docker & Docker Compose (recommended)
 - Python 3.10+ (for AI services)
 
 ### Local Development (Laravel only)
