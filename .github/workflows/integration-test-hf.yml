@@ -387,35 +387,58 @@ jobs:
           fi
 
           python3 - <<'PY'
-          import json, sys
+          import json, sys, time, urllib.request
+
           data = json.load(open("dr_targets.json"))
           if not data.get("success"):
               print("DR target lookup failed:", json.dumps(data, indent=2))
               sys.exit(1)
+
           job_id = data.get("data", {}).get("job_id")
           status = data.get("data", {}).get("status")
           print(f"DR target lookup OK - job_id={job_id}, status={status}")
 
-          # Poll for completion
-          import time, urllib.request
+          # Poll for completion with exponential backoff
           base = "https://Ailixir-AI-Team-ailixir-api.hf.space/api/drug-repurposing/targets"
           with open("token.txt") as f: token = f.read().strip()
-          for i in range(30):
-              req = urllib.request.Request(f"{base}/{job_id}")
-              req.add_header("Authorization", f"Bearer {token}")
-              resp = urllib.request.urlopen(req)
-              status_data = json.loads(resp.read())
-              s = status_data.get("data", {}).get("status")
-              if s == "completed":
-                  output = status_data.get("data", {}).get("output", {})
-                  assert len(output.get("targets", [])) > 0, "No targets found"
-                  print(f"DR targets completed - {len(output['targets'])} targets found")
-                  sys.exit(0)
-              elif s == "failed":
-                  print("DR target lookup failed:", json.dumps(status_data, indent=2))
-                  sys.exit(1)
-              print(f"  Polling... attempt {i+1}/30, status={s}")
-              time.sleep(5)
+
+          max_attempts = 30
+          backoff_base = 5  # Start with 5 second delay
+          retry_count = 0
+          max_retries = 3
+
+          for i in range(max_attempts):
+              try:
+                  req = urllib.request.Request(f"{base}/{job_id}")
+                  req.add_header("Authorization", f"Bearer {token}")
+                  resp = urllib.request.urlopen(req)
+                  status_data = json.loads(resp.read())
+                  retry_count = 0  # Reset retry count on success
+
+                  s = status_data.get("data", {}).get("status")
+                  if s == "completed":
+                      output = status_data.get("data", {}).get("output", {})
+                      assert len(output.get("targets", [])) > 0, "No targets found"
+                      print(f"DR targets completed - {len(output['targets'])} targets found")
+                      sys.exit(0)
+                  elif s == "failed":
+                      print("DR target lookup failed:", json.dumps(status_data, indent=2))
+                      sys.exit(1)
+
+                  print(f"  Polling... attempt {i+1}/{max_attempts}, status={s}")
+                  time.sleep(backoff_base)
+
+              except urllib.error.HTTPError as e:
+                  if e.code == 429 and retry_count < max_retries:
+                      # Rate limited - exponential backoff
+                      retry_count += 1
+                      wait_time = backoff_base * (2 ** retry_count)
+                      print(f"  Rate limited (429). Retry {retry_count}/{max_retries}, waiting {wait_time}s...")
+                      time.sleep(wait_time)
+                  else:
+                      print(f"HTTP Error {e.code}: {e.reason}")
+                      sys.exit(1)
+
           print("DR target lookup did not complete in time")
           sys.exit(1)
           PY
