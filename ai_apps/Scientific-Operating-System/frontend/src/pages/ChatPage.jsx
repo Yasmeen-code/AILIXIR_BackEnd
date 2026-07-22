@@ -12,19 +12,34 @@ const THOUGHTS = [
   '📡  Streaming results…',
 ];
 
-// ── Helpers ─────────────────────────────────────────────────────────────────
-let synth = window.speechSynthesis;
-let currentUtterance = null;
+let currentAudio = null;
 
-function speakText(text) {
-  if (!synth) return;
-  synth.cancel();
-  const utt = new SpeechSynthesisUtterance(text.slice(0, 800));
-  utt.rate = 1.0; utt.pitch = 1.0;
-  currentUtterance = utt;
-  synth.speak(utt);
+async function playGroqAudio(text, autoPlayEnabled) {
+  if (!autoPlayEnabled || !text || !text.trim()) return;
+  stopTTS();
+  try {
+    const res = await fetch(`${API_BASE}/audio/synthesize`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text: text.slice(0, 1000), voice: 'auto' }),
+    });
+    if (!res.ok) return;
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    currentAudio = new Audio(url);
+    currentAudio.play().catch(() => {});
+  } catch (err) {
+    console.error("Audio playback error:", err);
+  }
 }
-function stopTTS() { if (synth) synth.cancel(); }
+
+function stopTTS() {
+  if (currentAudio) {
+    currentAudio.pause();
+    currentAudio = null;
+  }
+  if (window.speechSynthesis) window.speechSynthesis.cancel();
+}
 
 // ── Message component ────────────────────────────────────────────────────────
 function Message({ role, text, variant }) {
@@ -77,6 +92,7 @@ export default function ChatPage() {
   ]);
   const [inputText, setInputText]     = useState('');
   const [sending, setSending]         = useState(false);
+  const [soundEnabled, setSoundEnabled] = useState(true);
   const [ttsActive, setTtsActive]     = useState(false);
 
   // WebSocket state
@@ -127,13 +143,17 @@ export default function ChatPage() {
       const msg = JSON.parse(ev.data);
       if (msg.type === 'vad_status') {
         setVoiceSpeaking(msg.speaking);
+      } else if (msg.type === 'status') {
+        setVoiceStatus(msg.status);
+        if (msg.status.includes('Transcribing')) setVoiceProcessing(true);
       } else if (msg.type === 'transcript') {
         setVoiceTranscript(msg.text);
-        setVoiceStatus('Processing…');
+        setVoiceStatus('Processing response…');
         setVoiceProcessing(true);
         if (msg.final) addMsg('user', msg.text);
       } else if (msg.type === 'ai_token') {
         aiStreamingRef.current = true;
+        setVoiceStatus('Responding…');
         setMessages(prev => {
           const last = prev[prev.length - 1];
           if (last?.role === 'ai' && last?.streaming) {
@@ -142,6 +162,21 @@ export default function ChatPage() {
           const id = nextId.current++;
           return [...prev, { id, role: 'ai', text: msg.token, streaming: true }];
         });
+      } else if (msg.type === 'ai_audio') {
+        if (msg.data) {
+          try {
+            stopTTS();
+            const binary = atob(msg.data);
+            const array = new Uint8Array(binary.length);
+            for (let i = 0; i < binary.length; i++) array[i] = binary.charCodeAt(i);
+            const blob = new Blob([array.buffer], { type: 'audio/wav' });
+            const url = URL.createObjectURL(blob);
+            currentAudio = new Audio(url);
+            currentAudio.play().catch(() => {});
+          } catch (err) {
+            console.error("WS audio playback error:", err);
+          }
+        }
       } else if (msg.type === 'ai_done') {
         aiStreamingRef.current = false;
         setVoiceProcessing(false);
@@ -273,7 +308,7 @@ export default function ChatPage() {
         updateMsg(aiId, full);
       }
       setMessages(prev => prev.map(m => m.id === aiId ? { ...m, streaming: false } : m));
-      if (full) speakText(full);
+      if (full) playGroqAudio(full, soundEnabled);
     } catch (err) {
       clearInterval(iv);
       setMessages(prev => prev.filter(m => m.id !== thinkId));
@@ -334,6 +369,17 @@ export default function ChatPage() {
             {voiceActive ? '⏹' : '🎙'}
           </button>
 
+          <button
+            className={`icon-btn ${soundEnabled ? 'ws-on' : ''}`}
+            title={soundEnabled ? "Audio response: ON" : "Audio response: OFF"}
+            onClick={() => {
+              if (soundEnabled) stopTTS();
+              setSoundEnabled(!soundEnabled);
+            }}
+          >
+            {soundEnabled ? '🔊' : '🔇'}
+          </button>
+
           <textarea
             className="user-input"
             rows={1}
@@ -354,7 +400,7 @@ export default function ChatPage() {
           <div className={`ws-dot ${wsConnected ? 'on' : 'off'}`} />
           <span>{wsConnected ? 'Voice channel connected' : 'Reconnecting…'}</span>
           <span style={{ marginLeft: 'auto', color: 'var(--text-muted)' }}>
-            Session: {SESSION_ID}
+            Audio: {soundEnabled ? 'Enabled (Groq Orpheus)' : 'Muted'} | Session: {SESSION_ID}
           </span>
         </div>
       </div>
