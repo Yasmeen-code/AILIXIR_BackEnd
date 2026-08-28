@@ -56,6 +56,7 @@ class VoiceSession:
         self.SILENCE_THRESHOLD = 8     # ~800 ms of silence before auto-stop
         self.current_task: Optional[asyncio.Task] = None  # Active processing task
         self.turn_id: str = ""         # Unique ID per voice turn
+        self.current_turn_seq: int = 0  # Sequence number to reject stray chunks from prior turns
         self._closed = False           # Track if we've detected a close
 
     def new_turn(self) -> str:
@@ -364,9 +365,13 @@ async def websocket_voice_channel(
 
             # ── Audio chunk accumulation ──────────────────────────────────────
             if msg_type == "audio_chunk":
-                chunk_b64 = msg.get("data", "")
-                if chunk_b64:
-                    session.audio_chunks.append(base64.b64decode(chunk_b64))
+                chunk_turn = msg.get("turn", session.current_turn_seq)
+                if chunk_turn == session.current_turn_seq:
+                    chunk_b64 = msg.get("data", "")
+                    if chunk_b64:
+                        session.audio_chunks.append(base64.b64decode(chunk_b64))
+                else:
+                    logger.debug(f"[WS] Dropped stray chunk from turn {chunk_turn} (active turn={session.current_turn_seq})")
 
                 # If AI is streaming and user starts speaking, interrupt
                 if session.ai_streaming and session.current_task and not session.interrupted:
@@ -378,7 +383,7 @@ async def websocket_voice_channel(
             # ── Client-side VAD energy ────────────────────────────────────────
             elif msg_type == "vad_energy":
                 rms = float(msg.get("rms", 0))
-                speaking = audio_processor.is_speech(rms)
+                speaking = audio_processor.is_speech(rms, threshold=18.0) if rms <= 255.0 else audio_processor.is_speech(rms, threshold=1200.0)
                 if speaking != session.is_speaking:
                     session.is_speaking = speaking
                     await _safe_send_json(websocket, {
@@ -389,6 +394,9 @@ async def websocket_voice_channel(
 
             # ── User finished speaking → start processing in background ──────
             elif msg_type == "audio_end":
+                # Increment turn sequence counter so any trailing in-flight chunks are dropped
+                session.current_turn_seq += 1
+
                 # Cancel any in-flight processing from a previous turn
                 if session.current_task and not session.current_task.done():
                     session.interrupted = True
