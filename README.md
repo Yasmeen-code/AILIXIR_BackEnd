@@ -17,7 +17,7 @@
 
 ---
 
-[Key Features](#5-key-features) • [System Architecture](#6-system-architecture) • [AI Pipeline](#7-ai-pipeline) • [RAG Engine](#8-rag-pipeline) • [Installation](#13-installation-guide) • [API Docs](#16-api-documentation) • [Engineering Challenges](#17-engineering-challenges)
+[Key Features](#5-key-features) • [System Architecture](#6-system-architecture) • [AI Pipeline](#7-ai-pipeline) • [RAG Engine](#8-rag-pipeline) • [Installation](#13-installation-guide) • [Docker vs. HF Build](#14-docker-build-vs-hugging-face-spaces-build) • [API Docs](#16-api-documentation) • [Engineering Challenges](#17-engineering-challenges)
 
 </div>
 
@@ -469,24 +469,35 @@ ailixir-backend/
 │   ├── ADMIT/admet_inference/            # 5-Task ADMET MPNN Inference Engine
 │   │   ├── app/                          # FastAPI Service Logic
 │   │   ├── models/                       # Pre-trained PyTorch Checkpoints
-│   │   └── Dockerfile                    # Containerization Spec
+│   │   └── Dockerfile                    # Containerization Spec (Port 7860 / 8000 mapped)
 │   ├── Drug Reporposing/                 # Target-Based Virtual Screening Pipeline
 │   │   ├── app/                          # DeepPurpose Pipeline & API Adapters
+│   │   ├── docker/Dockerfile             # Full Docker Build (DeepPurpose + TDC)
+│   │   ├── Dockerfile.hf                 # Lightweight HF Spaces Build (Mock-ready)
 │   │   └── TDC_data/                     # Therapeutic Data Commons Local Caching
 │   ├── chemical-rag-system/              # Vector Search & LLM SAR Engine
-│   │   ├── faiss_index/                  # Binary Vector Index Files
-│   │   └── run_server.py                 # FastAPI Vector Server
+│   │   ├── chemical-rag-system/
+│   │   │   ├── Dockerfile                # Containerization Spec (Port 7860 / API_PORT)
+│   │   │   └── app/                      # FastAPI Vector Server
 │   ├── chem_agent_api/                   # Conversational Chemistry Agent
-│   ├── generation/                       # REINVENT & AutoDock-GPU Generator
+│   │   └── Dockerfile                    # Containerization Spec (Port 7860)
+│   ├── generation/                       # REINVENT4 & AutoDock-GPU Generator
+│   │   ├── Dockerfile.api                # Docker CUDA Build (AutoDock-GPU CUDA)
+│   │   ├── Dockerfile.dp                 # Docker DeepPurpose Affinity Sidecar
+│   │   ├── Dockerfile.hf                 # Unified HF Spaces Build (CPU/OpenCL + DP)
+│   │   └── start_hf.sh                   # HF Spaces Dual-Process Boot Script
 │   └── Protein-Ligand-MD-Simulation/     # GROMACS MD Simulation Orchestrator
 ├── config/                               # Application Configurations
 ├── database/                             # Migrations, Seeders, & SQLite DB
 ├── docker/                               # Environment & Server Setup
-│   ├── entrypoint.sh                     # Container Boot Script
-│   ├── supervisord.conf                  # Multi-Process Supervisor Spec
+│   ├── entrypoint.sh                     # Container Boot Script (RUN_MODE switch)
+│   ├── laravel.env                       # Docker Compose Container Env Defaults
+│   ├── supervisord.conf                  # Multi-Process Supervisor Spec (HF Mode)
 │   └── nginx/                            # Reverse Proxy Server Configs
 ├── routes/                               # Route Registries (api.php)
-├── Dockerfile                            # Multi-Stage Production Docker Build
+├── .env.example                          # Unified Env Template (HF Default + Docker Comments)
+├── Dockerfile                            # Multi-Stage Production Laravel Docker Build
+├── README_HF.md                          # Hugging Face Space Card Frontmatter
 ├── docker-compose.yml                    # Main Microservice Compose Stack
 ├── docker-compose.gpu.yml                # CUDA-Enabled Production GPU Stack
 └── composer.json                         # PHP Dependency Manifest
@@ -526,7 +537,7 @@ composer dev
 ### Full Stack with Docker
 
 ```bash
-# Build and start all services
+# Build and start all services (uses docker/laravel.env and internal Docker DNS)
 docker compose up -d
 
 # Run migrations
@@ -535,42 +546,51 @@ docker compose exec laravel php artisan migrate
 # Access the API at http://localhost:8080
 ```
 
+> **Note on `.env.example`:** The unified `.env.example` file at the repository root uses **Hugging Face Spaces (`RUN_MODE=hf`) as the active default**, with Docker Compose and local development alternatives included as commented-out options and line-by-line documentation.
+
 ---
 
 ## Configuration
 
 ### Environment Variables
 
-| Variable | Description | Default |
-|---|---|---|
-| `APP_KEY` | Laravel application key | auto-generated |
-| `APP_ENV` | Environment mode | `production` |
-| `APP_DEBUG` | Debug mode | `false` |
-| `DB_CONNECTION` | Database driver | `sqlite` |
-| `DB_DATABASE` | SQLite path | `/var/www/html/database/ailixir.sqlite` |
-| `QUEUE_CONNECTION` | Queue driver | `database` |
-| `CACHE_STORE` | Cache driver | `database` |
-| `SESSION_DRIVER` | Session driver | `database` |
+`.env.example` is the single canonical environment template for both Hugging Face Spaces and Docker/local setups (with HF values enabled by default):
+
+| Variable | Description | Default (HF Mode) | Docker Alternative |
+|---|---|---|---|
+| `APP_KEY` | Laravel encryption key | auto-generated on first boot | auto-generated / `php artisan key:generate` |
+| `APP_ENV` | Application environment | `production` | `production` |
+| `APP_DEBUG` | Debug mode | `false` | `false` |
+| `APP_URL` | Public base URL | `https://Ailixir-AI-Team-ailixir-api.hf.space` | `http://localhost:8080` |
+| `RUN_MODE` | Boot mode (`hf` starts `supervisord`) | `hf` | unset / `docker` |
+| `DB_CONNECTION` | Database driver | `sqlite` | `sqlite` |
+| `DB_DATABASE` | SQLite file path | `/var/www/html/database/ailixir.sqlite` | `/var/www/html/database/ailixir.sqlite` (or `database/ailixir.sqlite` locally) |
+| `QUEUE_CONNECTION` | Queue driver | `database` | `database` |
+| `CACHE_STORE` | Cache driver | `database` | `database` |
+| `SESSION_DRIVER` | Session driver | `database` | `database` |
 
 ### AI Service URLs
 
-| Variable | Service | Default |
-|---|---|---|
-| `CHEMICAL_AI_URL` | Chemical RAG | `http://chemical-rag:5000` |
-| `ADMET_AI_URL` | ADMET Inference | `http://admet:8000` |
-| `AI_ADMET_SERVICE_URL` | ADMET (alt) | `http://admet:8000` |
-| `DRUG_REPURPOSING_URL` | Drug Repurposing | `http://drug-repurposing:8000` |
-| `AI_SERVICE_URL` | Drug Repurposing (alt) | `http://drug-repurposing:8000` |
-| `GENERATION_SERVICE_URL` | Molecular Generation | `http://generation:8000` |
+| Variable | Service | Default (HF Spaces) | Docker Internal DNS |
+|---|---|---|---|
+| `CHEMICAL_AI_URL` | Chemical RAG | `https://RottenShadow-ailixir-chemical-rag.hf.space` | `http://chemical-rag:5000` |
+| `ADMET_AI_URL` | ADMET Inference | `https://shdwRow-ailixir-admet.hf.space` | `http://admet:8000` |
+| `AI_ADMET_SERVICE_URL` | ADMET (alt) | `https://shdwRow-ailixir-admet.hf.space` | `http://admet:8000` |
+| `DRUG_REPURPOSING_URL` | Drug Repurposing | `https://RottenShadow-ailixir-drug-repurposing.hf.space` | `http://drug-repurposing:8000` |
+| `AI_SERVICE_URL` | Drug Repurposing (alt) | `https://RottenShadow-ailixir-drug-repurposing.hf.space` | `http://drug-repurposing:8000` |
+| `GENERATION_SERVICE_URL` | Molecular Generation | `https://shdwRow-ailixir-generation.hf.space` | `http://generation:8000` |
+| `CHEMISTRY_API_BASE_URL` | Chemistry Agent | `https://shdwrow-ailixir-chat-bot.hf.space/` | external / configurable |
+| `MD_SIMULATION_URL` | MD Simulation | `http://localhost:5005` | `http://protein-ligand-md:5005` |
 
 ### External Integrations
 
 | Variable | Service | Required |
 |---|---|---|
-| `CLOUDINARY_URL` | Cloudinary file storage | For file uploads |
+| `CLOUDINARY_URL` | Cloudinary file storage | For file uploads (dummy values allowed) |
 | `CLOUDINARY_CLOUD_NAME` | Cloudinary cloud name | For file uploads |
 | `CLOUDINARY_API_KEY` | Cloudinary API key | For file uploads |
 | `CLOUDINARY_API_SECRET` | Cloudinary secret | For file uploads |
+| `MAIL_MAILER` / `MAIL_*` | SMTP mail transport | For OTP verification emails (`log` for dry runs) |
 | `HF_TOKEN` | HuggingFace API token | For LLM explanations |
 | `STRIPE_KEY` | Stripe publishable key | For subscriptions |
 | `STRIPE_SECRET` | Stripe secret key | For subscriptions |
@@ -600,7 +620,74 @@ docker compose -f docker-compose.yml -f docker-compose.gpu.yml up -d
 
 ### Hugging Face Spaces
 
-The project includes Supervisor configuration for running on Hugging Face Spaces. Set `RUN_MODE=hf` in the Space secrets.
+The project includes Supervisor configuration for running on Hugging Face Spaces. Set `RUN_MODE=hf` (active by default in `.env.example`), or deploy automatically via `.github/workflows/sync-hf-all.yml`.
+
+---
+
+## 14. Docker Build vs. Hugging Face Spaces Build
+
+AILIXIR supports two distinct deployment topologies using the same codebase: a **full local/cloud Docker Compose stack** (`docker-compose.yml`) and a **distributed Hugging Face Spaces deployment** (`.github/workflows/sync-hf-all.yml`).
+
+### Architecture & Topology Comparison
+
+```mermaid
+flowchart TB
+    subgraph DOCKER_BUILD [Docker Compose Build - Single Host / Bridge Network]
+        direction LR
+        D_Web[laravel :8080->8000] -->|DB Queue| D_Queue[queue container]
+        D_Web -->|http://admet:8000| D_ADMET[admet :8002->8000]
+        D_Web -->|http://drug-repurposing:8000| D_DR[drug-repurposing :8001->8000]
+        D_Web -->|http://chemical-rag:5000| D_RAG[chemical-rag :5000->5000]
+        D_Web -->|http://generation:8000| D_Gen[generation CUDA :8005->8000]
+        D_Gen -->|http://generation-deeppurpose:8001| D_DP[generation-deeppurpose :8006->8001]
+    end
+
+    subgraph HF_BUILD [Hugging Face Spaces Build - 6 Independent Spaces]
+        direction LR
+        HF_Web["Ailixir-AI-Team/ailixir-api\n(supervisord: artisan:7860 + queue)"]
+        HF_Web -->|HTTPS :443| HF_ADMET["shdwRow/ailixir-admet\n(:7860)"]
+        HF_Web -->|HTTPS :443| HF_DR["RottenShadow/ailixir-drug-repurposing\n(:7860, Mock-Ready)"]
+        HF_Web -->|HTTPS :443| HF_RAG["RottenShadow/ailixir-chemical-rag\n(:7860)"]
+        HF_Web -->|HTTPS :443| HF_Gen["shdwRow/ailixir-generation\n(:7860 OpenCL + 127.0.0.1:8001 DP)"]
+        HF_Web -->|HTTPS :443| HF_Chat["shdwRow/ailixir-chat-bot\n(:7860)"]
+    end
+```
+
+### Side-by-Side Comparison
+
+| Dimension | Docker Compose Build (`docker-compose.yml`) | Hugging Face Spaces Build (`sync-hf-all.yml`) |
+|---|---|---|
+| **Deployment Topology** | 7 containers on one host connected via the `ailixir` Docker bridge network | 6 standalone HF Spaces distributed across 3 accounts (`Ailixir-AI-Team`, `RottenShadow`, `shdwRow`) |
+| **Inter-Service Networking** | Private Docker internal DNS (`http://admet:8000`, `http://chemical-rag:5000`, etc.) | Public HTTPS Space endpoints (`https://<owner>-<space>.hf.space`) |
+| **Container Ports** | Service-specific (`8000`, `8001`, `5000`) mapped to host ports (`8080`, `8001`–`8006`, `5000`) | Standardized on port `7860` across every Space |
+| **Laravel Process Model** | Split into two containers: `laravel` (`php artisan serve --port=8000`) and `queue` (`php artisan queue:work`) | Single container triggered by `RUN_MODE=hf` in `docker/entrypoint.sh`, running `supervisord` (`docker/supervisord.conf`) to manage both `artisan serve --port=7860` and `queue:work` |
+| **Environment Source** | `docker/laravel.env` + inline `environment:` overrides in `docker-compose.yml` | `.env.example` defaults (`RUN_MODE=hf`) / HF Space Secrets + `.env` generated during `.github/workflows/sync-hf-all.yml` |
+| **Model & Binary Storage** | Git LFS checkout + local bind mounts/volumes (`./ai_apps/generation/bundle`, `chemical-rag-data`, `laravel-storage`) | Hugging Face Hub dataset download (`shdwRow/ailixir-generation-models`) + Git LFS with **HF Xet** (`git-xet`) for `.ckpt` files |
+| **Hardware & Acceleration** | Supports NVIDIA CUDA GPU passthrough via `docker-compose.gpu.yml` (up to 8 GB per service) | CPU-only free tier (`2 vCPU, 16 GB RAM`); Spaces sleep after 15 minutes of inactivity |
+| **Database Persistence** | Persisted in container/volumes across restarts (`RUN_MIGRATIONS=false` on `queue` container) | Live `database/ailixir.sqlite` preserved across code syncs via `--exclude=database/ailixir.sqlite`, but resets on full Space rebuild |
+
+### Per-Service Dockerfile Differences
+
+1. **Laravel Backend API (`Dockerfile` + `docker/entrypoint.sh`)**
+   - Uses the exact same 3-stage `Dockerfile` (Composer 2.8 → Node 22 Vite build → PHP 8.3 CLI + Miniconda Python 3.10 + AutoDock Vina 1.2.5 + RDKit + Open Babel + Supervisor) and exposes both `8000` and `7860`.
+   - **Docker Build**: `RUN_MODE` is unset, so `entrypoint.sh` executes `CMD ["php", "artisan", "serve", "--host=0.0.0.0", "--port=8000"]`, while a second container (`queue`) runs `php artisan queue:work` with `RUN_MIGRATIONS=false`.
+   - **HF Build**: `RUN_MODE=hf` causes `entrypoint.sh` to hand off to `exec supervisord -c /etc/supervisor/conf.d/supervisord.conf`, running the web server on port `7860` and the queue worker together in one container.
+
+2. **Molecular Generation (`ai_apps/generation/`)**
+   - **Docker Build (`Dockerfile.api` + `Dockerfile.dp`)**: Split across two dedicated containers:
+     - `generation` (`Dockerfile.api`) builds on `nvidia/cuda:12.4.1-devel-ubuntu22.04` and compiles **AutoDock-GPU for CUDA** (`make DEVICE=CUDA NUMWI=64`, producing `/opt/AutoDock-GPU/bin/autodock_gpu_64wi`) on port `8000`.
+     - `generation-deeppurpose` (`Dockerfile.dp`) runs in a separate `condaforge/miniforge3` Python 3.8 container serving DeepPurpose affinity prediction on port `8001` (`http://generation-deeppurpose:8001/reinvent_predict`).
+   - **HF Build (`Dockerfile.hf` + `start_hf.sh`)**: Consolidated into a single `condaforge/miniforge3` container containing both Conda environments (`ailixir` Python 3.11 for REINVENT4 + `dp` Python 3.8 for DeepPurpose CPU). AutoDock-GPU is compiled in **CPU/OpenCL mode** (`make DEVICE=CPU NUMWI=1` with `pocl-opencl-icd`, producing `/opt/AutoDock-GPU/bin/autodock_cpu_1wi`). On boot, `start_hf.sh` launches DeepPurpose in the background on `127.0.0.1:8001`, waits for `/health`, and starts the main Generation FastAPI app on `0.0.0.0:7860`.
+
+3. **Drug Repurposing (`ai_apps/Drug Reporposing/`)**
+   - **Docker Build (`docker/Dockerfile`)**: Multi-stage `python:3.10-slim` build that compiles and installs full `DeepPurpose`, `TDC`, `descriptastorus`, and `torch`, downloading pretrained `MPNN_CNN_BindingDB` weights into `/app/save_folder` during image build (`USE_MOCK_MODEL=False`, `USE_MOCK_DRUGS=False`, port `8000`).
+   - **HF Build (`Dockerfile.hf`)**: Renamed to `Dockerfile` by the sync workflow. Uses a lightweight single-stage `python:3.10-slim` image that omits heavy `torch`, `DeepPurpose`, and `TDC` installs to stay within HF Spaces build limits, defaulting to `USE_MOCK_MODEL=True` and `USE_MOCK_DRUGS=True` on port `7860`.
+
+4. **ADMET (`ai_apps/ADMIT/admet_inference/Dockerfile`), Chemical RAG (`ai_apps/chemical-rag-system/chemical-rag-system/Dockerfile`), & Chemistry Agent (`ai_apps/chem_agent_api/Dockerfile`)**
+   - **Shared CPU Images**: Each uses a single Dockerfile built for port `7860`.
+   - **Docker Compose & HF Differences**: In `docker-compose.yml`, `chemical-rag` overrides `API_PORT=5000` (mapped to `5000:5000`), while `admet` maps `8002:8000` in Compose (`ai_apps/ADMIT/admet_inference/Dockerfile` exposes `7860` for HF Spaces, where `.ckpt` files are synced via `git-xet` and `git lfs`).
+
+> For step-by-step operational details, see [DOCKER.md](DOCKER.md), [HF_SPACES_GUIDE.md](HF_SPACES_GUIDE.md), and [HUGGINGFACE_FLOW.md](HUGGINGFACE_FLOW.md).
 
 ---
 
