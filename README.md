@@ -2,7 +2,7 @@
 
 <div align="center">
 
-![AILIXIR Banner](https://img.shields.io/badge/AILIXIR-Drug%20Discovery%20Platform-0066CC?style=for-the-badge&logo=python&logoColor=white)
+<img src="Diagrams/ailixir_hero_logo.png" alt="AILIXIR Logo" width="240">
 
 **Accelerating molecular generation, virtual screening, ADMET profiling, and structure-activity reasoning through microservice AI orchestration.**
 
@@ -27,9 +27,11 @@
 
 **AILIXIR** is an enterprise-grade AI drug discovery platform that bridges deep learning microservices with robust web orchestration. It integrates de novo molecule generation, target-based drug repurposing, multi-property ADMET profiling, high-dimensional chemical vector search, and molecular dynamics simulation into a unified API ecosystem.
 
-> 🛠️ **Demo Video / UI Sandbox**: *[Placeholder: Add link to video demonstration or interactive frontend sandbox]*  
-> 📷 **Architecture Overview Graphic**: *[Placeholder: Insert high-resolution system diagram graphic]*
+### Explore AILIXIR
 
+>- **Desktop Application:** [AILIXIR Flutter Frontend](https://github.com/RottenShadow/AiLixir)
+>- **Download Application:** [AILIXIR Releases](https://github.com/RottenShadow/AiLixir/releases)
+>- **System Architecture:** [Architecture & Component Documentation](ARCHITECTURE.md)
 ---
 
 ## 2. The Problem
